@@ -1,45 +1,38 @@
-## Enumeração e correção
+## Quando a enumeração serve
 
-Força bruta gera todos os candidatos, testa a admissibilidade e guarda o melhor. A prova precisa de mostrar que **toda a solução válida** aparece na enumeração. Devolver falso numa procura de existência exige esgotar todos os candidatos possíveis.
+Gera todos os candidatos, testa validade antes de comparar e guarda o melhor. A prova exige que **toda a solução válida** apareça. Em existência, só devolve falso após esgotar ramos.
 
-O tempo depende do número de candidatos e do custo de avaliar cada um. Uma enumeração pequena também permite conferir resultados de algoritmos mais rápidos, sem provar a sua correção geral.
+| Problema            | Candidatos                       | Custo direto                                                       |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------ |
+| Intervalo contíguo  | $n(n+1)/2$ pares $i\le j$        | $\Theta(n^2)$ com soma acumulada; $\Theta(n^3)$ se recalcular      |
+| Mochila 0-1         | $2^n$ subconjuntos               | $\Theta(2^n)$ com acumulados; $\Theta(n2^n)$ por máscara com somas |
+| Soma exata $T$      | Incluir ou excluir cada elemento | $\Theta(2^n)$ nós; pilha $O(n)$                                    |
+| Trocos com stock    | $\prod_i(s_i+1)$ quantidades     | Manter totais evita fator $n$                                      |
+| TSP com origem fixa | $(n-1)!$ ordens                  | $\Theta(n!)$ com $n$ arestas cada                                  |
 
-## Intervalo contíguo não vazio
-
-Para $n$ elementos existem $n(n+1)/2$ intervalos $A[i..j]$, com $i\le j$.
-
-- Recalcular cada soma dá $\Theta(n^3)$.
-- Fixar $i$ e acumular a soma enquanto $j$ avança dá $\Theta(n^2)$ tempo e $\Theta(1)$ memória auxiliar.
-- Inicializa o melhor com um elemento real. Zero admitiria um intervalo vazio quando todos são negativos.
+## Intervalo não vazio
 
 ```text
-melhor = A[0]                         # entrada não vazia
+melhor = A[0]
 para i = 0 até n-1:
     soma = 0
     para j = i até n-1:
         soma += A[j]
-        se soma > melhor:
-            guardar soma e extremos i, j
+        se soma > melhor: guardar soma, i, j
 ```
 
-Em `[-4,3,-1,5,-6,2]`, o melhor é `[3,-1,5]`, soma 7. Somar só os positivos não conserva contiguidade.
+- Inicializa com elemento real; zero admitiria vazio com todos negativos.
+- Em `[-4,3,-1,5,-6,2]`, o melhor é `[3,-1,5]`, soma 7.
 
-## Subconjuntos e quantidades
+## Subconjuntos e podas
 
-| Problema         | Candidatos                                                | Custo direto                                          |
-| ---------------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| Mochila 0-1      | $2^n$ subconjuntos; peso no máximo $W$, valor máximo      | $\Theta(n2^n)$ se recalculas as somas em cada máscara |
-| Soma exata       | Incluir/excluir cada elemento; soma igual a $T$           | $\Theta(2^n)$ nós com soma acumulada; pilha $O(n)$    |
-| Trocos com stock | Quantidade $q_i\in\{0,\ldots,s_i\}$; soma $\sum q_ic_i=T$ | $\prod_i(s_i+1)$ combinações completas                |
-
-A recursão da mochila com peso e valor acumulados visita $2^{n+1}-1$ nós, com trabalho constante por extensão. Copiar seleções pode acrescentar custo; uma máscara guarda a melhor sem copiar um vetor inteiro.
-
-Podar uma soma parcial acima de $T$ só é seguro se os restantes forem não negativos. Com alvo 5, $8+(-3)$ ainda chega ao alvo. Em C++, máscaras exigem respeitar a largura do tipo antes de deslocar bits.
+- Valida peso antes de comparar valor; $C,D$ com valor 13 pode exceder $W$.
+- Máscara com $1\ll n$ exige respeitar largura do tipo.
+- Soma parcial acima de $T$ só poda se restantes forem não negativos.
+- Para reconstruir, guarda melhor máscara ou copia escolhas do caminho.
 
 ## TSP
 
-Fixar a cidade inicial deixa $(n-1)!$ ordens. Avaliar as $n$ arestas, incluindo o **regresso**, dá $\Theta(n!)$ tempo. Numa instância não dirigida e simétrica podes eliminar rotas inversas duplicadas; num grafo dirigido essa simetria não é válida.
+Fixa origem para remover rotações. Em instância simétrica não dirigida, podes eliminar inversas duplicadas com regra explícita. Em dirigida, essa regra pode remover o ótimo. Não confundas hamiltoniano (vértices) com euleriano (arestas).
 
-Um circuito hamiltoniano visita vértices uma vez. Um circuito euleriano visita arestas uma vez.
-
-[Enumeração, exemplos e execução](/cadeiras/da/forca-bruta/).
+[Enumeração e execução](/cadeiras/da/forca-bruta/).

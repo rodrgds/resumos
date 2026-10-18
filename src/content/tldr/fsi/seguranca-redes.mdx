@@ -1,68 +1,47 @@
 import Dot from '../../../components/Dot.astro';
 import rede from '../../fsi/rede-segura.dot?raw';
 
-## Posição do atacante e canais
+## Posição do atacante e TLS
 
-Um atacante no caminho pode observar/alterar tráfego desprotegido; um atacante apenas remoto não vê necessariamente pacotes alheios. Declara que mensagens controla.
+- Atacante no caminho observa ou altera tráfego desprotegido; atacante remoto só envia os seus pedidos. Declara que mensagens controla.
 
-| Caso                                              | Defesa e limite                                                                             |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| ARP falso associa IP do router ao MAC do atacante | Controlos locais e canal autenticado; a defesa depende da posição na rede local.            |
-| DNS adulterado                                    | DNSSEC valida dados onde aplicável; não cifra consultas nem garante honestidade do serviço. |
-| TCP manipulado                                    | Validações do protocolo e transporte autenticado; IP não prova identidade.                  |
-| HTTP legível/alterável no caminho                 | TLS validado protege trânsito entre os seus extremos.                                       |
+| Caso | Defesa e limite |
+| --- | --- |
+| ARP falso | Controlos locais e canal autenticado. |
+| DNS adulterado | DNSSEC valida onde aplicável; não cifra nem garante honestidade do serviço. |
+| TCP manipulado | Validações do protocolo e transporte autenticado; IP não prova identidade. |
+| HTTP sem TLS | TLS validado protege entre os seus extremos. |
 
-TLS autentica o handshake, estabelece chaves de sessão e protege registos. O handshake TCP não faz essa autenticação. HTTPS protege caminho HTTP, cabeçalhos e corpo, mas pode expor IPs, tamanhos, tempos e nome do servidor conforme DNS/handshake.
+TLS autentica o handshake, estabelece chaves e protege registos. Handshake TCP não autentica. HTTPS protege caminho HTTP, mas pode expor IP, tamanhos, tempos e nome do servidor.
 
 <Dot
   source={rede}
-  alt="TLS do navegador termina no proxy, que pode ler o HTTP. Outro canal TLS protege proxy a servidor. Quem controla o proxy controla um extremo de ambos os canais."
+  alt="TLS do navegador termina no proxy, que pode ler o HTTP. Outro canal protege proxy a servidor."
 />
 
-No HTTPS habitual, o cliente autentica o servidor por certificado; o servidor não exige certificado de cliente. Os dados ficam protegidos nos dois sentidos. Login e autorização da aplicação são decisões adicionais. TLS também admite autenticação de cliente e segredo prévio.
+No HTTPS habitual, só o servidor apresenta certificado; dados ficam protegidos nos dois sentidos. Login e autorização são decisões da aplicação. Handshake estabelece parâmetros; Record protege dados. SSH exige validar a chave do servidor.
 
-Handshake estabelece parâmetros/material e autentica conforme a configuração; Record protege dados. SSH exige validar a chave do servidor e pode autenticar utilizadores por chave pública, palavra-passe ou outros métodos configurados, incluindo certificados.
+TLS 1.3 com 0-RTT usa chave pré-partilhada sem frescura da nova sessão e pode ser repetido. Só pedidos com perfil explícito de segurança sob repetição, por decisão do servidor. Ausência de escrita não basta.
 
-IPsec atua no nível IP. ESP com cifragem em transporte protege a carga; em túnel protege o pacote original dentro de um novo, com cabeçalho exterior necessário ao encaminhamento. Não elimina todo spoofing nem interpreta autorizações da aplicação. Em HTTPS sobre TCP, a ordem é IP, TCP, TLS e HTTP. VPN não concede autorização de objetos.
+IPsec atua no nível IP; transporte protege carga, túnel protege pacote original. Não elimina spoofing noutros pontos nem decide autorizações. Ordem habitual: IP, TCP, TLS e HTTP.
 
-## Firewall, IDS e IPS
+## Firewall, IDS e taxa base
 
-Uma regra de firewall especifica direção, origem, destino, protocolo, porta e estado quando aplicável. Confirma ordem e decisão por defeito.
+Regra indica direção, origem, destino, protocolo, porta e estado. Ordem e omissão importam:
 
-1. Permitir TCP de saída para 443, novo ou estabelecido.
-2. Permitir entrada só de conexões estabelecidas.
-3. Negar o resto.
+1. Aceita saída TCP para 443, nova ou estabelecida.
+2. Aceita entrada só de conexão estabelecida.
+3. Nega o resto.
 
-Um SYN inicial externo é negado; ACK sem conexão conhecida também. O bit ACK sozinho não demonstra estado estabelecido. Permitir HTTPS não impede ataques em pedidos HTTPS válidos.
+SYN inicial externo nega-se; ACK sem estado conhecido nega-se. Permitir HTTPS não impede ataques em pedidos válidos. Sem estado usa campos; com estado acompanha conexões; proxy aplica regras da aplicação. IDS deteta; IPS pode bloquear.
 
-Filtros sem estado usam campos do pacote; com estado acompanham conexões; proxies podem aplicar regras da aplicação. IDS deteta; IPS pode bloquear. Assinaturas reconhecem padrões conhecidos; anomalias comparam com um modelo. Ambos podem ter falsos positivos e negativos.
+Com $A$ ataques, $L$ legítimos, sensibilidade $s$ e falsos positivos $f$: $VP=sA$, $FP=fL$, precisão $=VP/(VP+FP)$. Exemplo: 10 ataques em 10 000 eventos com $s=0{,}9$ e $f=0{,}01$ dá $9/108{,}9$ cerca de 8,3%. Valores esperados, não contagens observadas.
 
-## Taxa base e precisão
+## Malware e DoS
 
-Com $A$ ataques, $L$ eventos legítimos, sensibilidade $s$ e taxa falsa positiva $f$:
+- Vírus propaga-se por hospedeiro; worm propaga-se sozinho. Troia disfarça e esconde ações; ransomware bloqueia e extorque. Bot é nó controlado; botnet coordena nós. Categorias não exclusivas.
+- Inatividade em sandbox não prova inocuidade. Combina origem, análise estática, execução isolada e telemetria. Corrige via de entrada; restauro pode exigir isolamento e troca de credenciais.
 
-$$VP=sA,\quad FP=fL,\quad \text{precisão}=\frac{VP}{VP+FP}.$$
+DoS esgota disponibilidade; DDoS usa origens distribuídas. SYN flood ocupa estado de conexões incompletas; SYN cookies reduzem estado, sem resolver todos os limites. Reflexão usa IP falsificado; amplificação $F$ é resposta sobre pedido. Exemplo: 60 bytes para 3 000 dá $F=50$. Identifica o recurso esgotado; filtrar tarde ou bloquear IP partilhado tem limites.
 
-Em 10 000 eventos com dez ataques, $s=0{,}9$ e $f=0{,}01$, esperamos nove alertas verdadeiros e 99,9 falsos. A precisão é $9/108{,}9\approx8{,}26\%$. São valores esperados, não contagens observadas. Alta deteção não garante maioria de alertas corretos quando ataques são raros.
-
-## Malware e recuperação
-
-- Vírus replica-se através de hospedeiro; worm propaga-se autonomamente.
-- Cavalo de Troia apresenta-se como desejável e executa ações ocultas; ransomware procura impedir acesso e extorquir.
-- Bot é um componente comprometido controlável; botnet coordena bots. Um worm pode instalar bots, portanto categorias não são exclusivas.
-
-Inatividade numa sandbox não prova inocuidade: podem faltar tempo ou condições. Combina origem, análise estática, execução isolada e telemetria. Corrigir a via de entrada não elimina necessariamente persistência instalada; recuperação pode exigir isolamento, restauro verificado e troca de credenciais comprometidas.
-
-## Negação de serviço
-
-DoS esgota disponibilidade; DDoS usa origens distribuídas. SYN flood ocupa estado de conexões incompletas. SYN cookies reduzem estado antes de completar o handshake, mas não todos os limites de capacidade.
-
-Em reflexão, pedidos com IP falsificado da vítima fazem terceiros responder-lhe. Há amplificação quando a resposta é maior:
-
-$$F=\frac{\text{bytes de resposta}}{\text{bytes de pedido}}.$$
-
-Pedidos de 60 bytes e respostas de 3 000 dão $F=50$: 2 Mbit/s de pedidos podem gerar 100 Mbit/s de respostas, ignorando cabeçalhos/perdas e assumindo capacidade dos refletores.
-
-Identifica o recurso esgotado. Se a ligação já está saturada, filtrar no servidor chega tarde; trabalho caro por pedido exige limites/filas adequados. Bloquear um IP pode afetar utilizadores que o partilham.
-
-[Interpretar alertas](/cadeiras/fsi/seguranca-redes/#o-problema-da-taxa-base).
+[Alertas e defesas](/cadeiras/fsi/seguranca-redes/#o-problema-da-taxa-base).

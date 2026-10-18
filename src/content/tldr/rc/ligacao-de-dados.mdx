@@ -1,67 +1,44 @@
 import Dot from '../../../components/Dot.astro';
+import JanelaArq from '../../rc/JanelaArq.astro';
 import stopAndWait from '../../rc/stop-and-wait.dot?raw';
 
-## Delimitação e deteção de erros
+## Delimitação e CRC
 
-- Byte stuffing escapa bytes especiais segundo o protocolo. HDLC insere um zero após cinco uns consecutivos entre flags, incluindo o CRC.
-- Forma primeiro o conteúdo protegido, depois aplica stuffing. No recetor, retira stuffing antes de verificar. Conta escapes e cabeçalhos no comprimento transmitido.
-- Paridade simples deteta alterações em número ímpar. CRC divide polinómios binários por XOR, sem transportes.
+- Entre flags, dados nunca podem parecer flags. HDLC insere 0 após cinco uns; o recetor remove-o antes de verificar.
+- Gerador de grau $r$: acrescenta $r$ zeros, divide por XOR, coloca o resto de $r$ bits. A palavra fica divisível por $G$.
+- Resto zero significa **nenhum erro detetado**, não ausência de erro. Rajada do primeiro ao último bit alterado: CRC de grau $r$ deteta rajadas até $r$.
 
-Para mensagem $D$ e gerador $G$ de grau $r$, acrescenta $r$ zeros, divide por $G$ e substitui os zeros pelo resto de $r$ bits. `1101` com `1011` dá resto `001` e palavra `1101001`.
+## Stop-and-Wait
 
-Resto zero pode esconder um erro múltiplo de $G$. Com termo constante 1, um CRC de grau $r$ deteta rajadas até $r$ bits. Outras garantias dependem do gerador e comprimento. Um código de distância mínima $d$ deteta até $d-1$ alterações e pode corrigir até $\lfloor(d-1)/2\rfloor$ com descodificação apropriada; um verificador CRC não faz automaticamente essa correção.
-
-## Stop-and-Wait e janelas
-
-O emissor espera confirmação e repete no timeout; o bit alternado impede entregar duplicados. Aqui **RR(n)** indica a próxima trama esperada: recebe I(0), entrega uma vez e responde RR(1), e se RR(1) se perder, a repetição I(0) recebe outro RR(1) sem nova entrega.
+- Envia uma, espera confirmação. Timeout retransmite: ACK ausente não distingue trama perdida de ACK perdido.
+- Bits 0/1 evitam dupla entrega. **RR(n)**: pronto para a trama $n$.
 
 <Dot
   source={stopAndWait}
-  alt="Emissor alterna I(0) e I(1) apenas ao receber RR(1) e RR(0), respetivamente. Um timeout repete a mesma trama."
+  alt="Emissor Stop-and-Wait: após I(0) espera RR(1); timeout repete I(0); RR(1) liberta I(1)."
 />
 
-| Propriedade            | Go-Back-N                              | Selective Repeat                          |
-| ---------------------- | -------------------------------------- | ----------------------------------------- |
-| Fora de ordem          | Habitualmente descarta                 | Guarda dentro da janela                   |
-| Recuperação            | Repete a falta e posteriores pendentes | Repete só as faltas                       |
-| Confirmação            | Cumulativa                             | Individual ou seletiva, conforme variante |
-| Janela usual, $m$ bits | $W\le2^m-1$                            | $W\le2^{m-1}$ com janelas iguais          |
+- Utilização sem perdas, ciclo $t_f+2t_p+t_a$: $U=t_f/(t_f+2t_p+t_a)$.
+- Janela $W$: $U=\min(1,Wt_f/(t_f+2t_p+t_a))$.
 
-SR precisa de $2W\le2^m$ para separar janela antiga e nova, assumindo que duplicados não sobrevivem a várias voltas. Com perda de 1 em 0, 1, 2, 3, GBN descarta 2 e 3; SR guarda-os e entrega por ordem quando recebe 1.
+## Go-Back-N e Selective Repeat
 
-Na variante da lição, REJ(n) pede n e posteriores pendentes; SREJ(n) só n; RR(n) confirma o bloco até n−1. Piggybacking leva confirmações em dados da direção contrária. Num traço, separa chegada, confirmação e entrega e segue a máquina de estados do enunciado.
+| | Go-Back-N | Selective Repeat |
+| --- | --- | --- |
+| Fora de ordem | Descarta | Guarda na janela |
+| Confirmações | Cumulativas | Individuais ou seletivas |
+| Retransmite | Em falta e posteriores | Só em falta |
+| Limite, $m$ bits | $W\le2^m-1$ | $W\le2^{m-1}$ |
 
-Num **bloco finito**, respeita a janela de pendentes e os instantes dos ACKs. Sem perdas nem processamento e com ACKs imediatos de duração desprezável, o último bit chega uma propagação depois de acabar a última transmissão; o último ACK chega após outra. Dividir o tamanho pelo débito prolongado pode falhar por causa do arranque e da última janela incompleta. [Calendário completo](/cadeiras/rc/ligacao-de-dados/#terminar-uma-transferência-finita).
+- Recetor SR avançou antes do emissor quando ACKs se perdem: com $W=3$ e 2 bits, a repetição de 0 cai na janela nova. Com $W=2$ as janelas não se sobrepõem.
+- Com erros independentes $p_e$, ACK desprezável: $U_{SW}=(1-p_e)/(1+2a)$; $E_{SR}=(1-p_e)\min(1,W/(1+2a))$, fração de entregas, não ocupação.
+- Bloco finito: segue transmissões e ACKs reais; a utilização prolongada não dá o instante do último bit nem do último ACK.
 
-## Eficiência e débito útil
+## Lab 1
 
-Sem perdas nem processamento, com $t_f=L/R$, propagação num sentido $t_p$ e ACK de duração $t_a$:
+- Deteção por XOR de bytes (BCC), não CRC. Escapa `7E` e `7D` **após** calcular o BCC; verifica após destuffing.
+- API 2026/27: `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx`, `llCloseRx`.
 
-$$U_{SW}=\frac{t_f}{t_f+2t_p+t_a},\qquad U_0=\min\left(1,\frac{Wt_f}{t_f+2t_p+t_a}\right).$$
+### Ver a diferença
 
-$L$ inclui todos os bits transmitidos. Com ACK desprezável, define $a=t_p/t_f$. Nos modelos simplificados de erros independentes de trama $p_e$:
-
-$$U_{SW}=\frac{1-p_e}{1+2a},\qquad E_{SR}=(1-p_e)\min\left(1,\frac{W}{1+2a}\right).$$
-
-SW pressupõe ciclos de tentativa iguais. SR mede entregas úteis normalizadas, não ocupação física. Para GBN:
-
-$$
-U_{GBN}=\begin{cases}
-\frac{1-p_e}{1+2ap_e},&W\ge1+2a,\\
-\frac{W(1-p_e)}{(1+2a)(1-p_e+Wp_e)},&W<1+2a.
-\end{cases}
-$$
-
-Calcula tempo e janela, depois FER, finalmente $D_{\text{útil}}=RU\,L_{dados}/L_{transmitido}$. Acrescentar FEC exige recalcular $t_f$, $a$ e fração útil; usa a FER residual fornecida. As fórmulas não abrangem todos os timeouts, perdas de ACK ou erros correlacionados.
-
-Com $a=2$, $W=5$ e $p_e=0,1$, SW dá 0,18, SR 0,9 e GBN cerca de 0,6429. O número médio de tentativas independentes é $1/(1-p_e)$.
-
-ARQ por salto recupera localmente; de extremo a extremo pode repetir trabalho anterior. No modelo ideal de $K$ saltos iguais de capacidade $C$ e perdas independentes $p$, os limites são $C(1-p)$ e $C(1-p)^K$, respetivamente. Não são uma previsão de TCP real.
-
-## BCC no Lab 1
-
-BCC1 é `A XOR C`; BCC2 é XOR dos bytes originais de dados. Depois escapa `7E` como `7D 5E` e `7D` como `7D 5D`. Para `7E 01 7D`, BCC2 é `02`, e o conteúdo escapado é `7D 5E 01 7D 5D 02`.
-
-A API 2026/27 usa `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx`, `llCloseRx`. A leitura configurada com `VMIN=1`, `VTIME=0` é bloqueante. Reconhece SET byte a byte e só responde UA após validar BCC1 e flag final. Uma SET repetida precisa de nova UA; uma trama I repetida pode receber RR, mas não voltar a entregar dados. A ligação não interpreta START, END ou nomes da aplicação.
-
-[Combinar janela, BER e FEC](/cadeiras/rc/ligacao-de-dados/#combinar-ber-janela-e-redundância). [Máquina de receção do laboratório](/cadeiras/rc/ligacao-de-dados/#estado-da-receção-no-lab-1).
+<JanelaArq />

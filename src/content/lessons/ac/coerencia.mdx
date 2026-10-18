@@ -33,7 +33,7 @@ Uma redução por pares vizinhos pode transportar uma soma sem par à ronda segu
 
 São quatro rondas, cada uma com uma adição por participante ativo. Uma **barreira** faz os participantes esperar pelos resultados necessários antes da ronda seguinte. Sem ela, um núcleo poderia ler a soma anterior de outro. Uma implementação deve também evitar sobrescrever um valor que outro ainda precise de ler.
 
-A ficha docente usa outro emparelhamento: combina a metade baixa com a alta e incorpora a soma ímpar no núcleo 0 antes de reduzir a metade restante.
+A ficha docente usa outro emparelhamento: combina a metade baixa com a alta e incorpora a soma ímpar no núcleo 0 antes de reduzir a metade restante. São dois algoritmos diferentes para a mesma soma, com custos diferentes por ronda.
 
 | Transição de participantes | Somas ativas depois       | Máximo de adições num núcleo |
 | -------------------------- | ------------------------- | ---------------------------- |
@@ -49,7 +49,7 @@ Com oito núcleos e 128 elementos, cada soma local usa 16 adições a partir de 
 
 Coerência organiza leituras/escritas da **mesma posição** e propagação das escritas. Consistência define que ordenações de operações sobre **posições diferentes** os programas podem observar.
 
-Um núcleo pode escrever `dados=42` e depois `pronto=1`. Ver `pronto=1` em outro núcleo não garante automaticamente que uma leitura seguinte de dados veja 42 em qualquer modelo. Usa as operações de sincronização exigidas pelo modelo de memória. A coerência de cada linha não substitui essa ordenação.
+Um núcleo pode escrever `dados=42` e depois `pronto=1`. Ver `pronto=1` noutro núcleo não garante que uma leitura seguinte de dados veja 42: a coerência de cada linha não ordena acessos a posições diferentes. Usa as operações de sincronização exigidas pelo modelo de memória.
 
 Também não torna uma atualização indivisível, ou **atómica**. Se dois núcleos leem um contador antes de qualquer um escrever, ambos podem calcular e guardar o mesmo incremento. Uma operação atómica ou exclusão mútua impede que outra atualização se intercale entre a leitura e a escrita. Uma barreira, por si só, só coordena fases.
 
@@ -81,7 +81,7 @@ Uma escrita em X não altera Y. Uma leitura de Y pode, contudo, precisar de obte
 
 Partilha verdadeira: um núcleo lê o valor que outro modifica. Partilha falsa: núcleos modificam ou leem **palavras diferentes** da mesma linha e sofrem invalidações por causa da granularidade do protocolo.
 
-Dois contadores independentes de 4 bytes numa linha de 64 B podem disputar essa linha a cada atualização. Separá-los em linhas diferentes pode reduzir tráfego; isso aumenta espaço e deve atender ao alinhamento real.
+A falsa partilha não altera resultados, só gera tráfego: cada núcleo continua a ler e escrever os seus valores corretos, mas as linhas viajam entre caches a cada invalidação. Dois contadores independentes de 4 bytes numa linha de 64 B podem disputar essa linha a cada atualização. Separá-los em linhas diferentes pode reduzir tráfego; isso aumenta espaço e deve atender ao alinhamento real, porque dois contadores na mesma linha continuam a partilhá-la mesmo depois de os afastar alguns bytes.
 
 Uma falta após invalidação não é apenas uma falta por conflito de índice. É uma falta de coerência. Identifica qual escrita invalidou a linha e se o acesso usa o dado modificado ou apenas um vizinho.
 

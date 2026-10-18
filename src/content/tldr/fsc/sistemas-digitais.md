@@ -1,30 +1,21 @@
-## Bits e transístores
+## Bits e níveis
 
-Um **bit** representa 0 ou 1 por intervalos de tensão. A zona entre os níveis válidos não é um terceiro valor lógico. As margens toleram algum ruído; os sinais físicos continuam a ter atrasos.
+- Um **bit** vale 0 ou 1. No circuito, cada valor é um **intervalo de tensão**; a zona intermédia não é um terceiro valor.
+- Margens entre intervalos toleram ruído pequeno e permitem regenerar o sinal. Atrasos físicos continuam a existir.
+- Conversão analógica-digital: amostra e quantifica. Com $n$ bits há $2^n$ códigos; valores próximos podem partilhar o código.
 
-Um conversor analógico-digital amostra e quantifica. Com $n$ bits há $2^n$ códigos; tensões distintas podem receber o mesmo código e perder a sua distinção.
+## Transístores e portas
 
-No FET, a tensão entre gate e source controla o canal. NMOS conduz para $V_{GS}>V_t$; PMOS para $V_{SG}>|V_t|$. No modelo lógico ideal, NMOS conduz com controlo 1 e PMOS com controlo 0.
+- NMOS conduz com controlo 1; PMOS, com controlo 0. Rede **pull-up** liga à alimentação; **pull-down**, à massa.
+- Inversor: um PMOS e um NMOS; saída $\overline A$. NAND: NMOS em série, PMOS em paralelo. NOR: o inverso.
+- Na NAND, só $A=B=1$ fecha o caminho à massa. Com $A=1,B=0$, o PMOS de B liga a saída a 1.
+- Em CMOS ideal estável, sem caminho direto alimentação-massa. Consumo e atrasos exigem outro modelo.
 
-## Portas CMOS
+## Abstração
 
-A rede **pull-up** liga a saída à alimentação; a **pull-down**, à massa.
+Transístores → portas → somadores → ALU. A CPU executa instruções guardadas em memória.
 
-| Porta    | NMOS        | PMOS        | Saída            |
-| -------- | ----------- | ----------- | ---------------- |
-| Inversor | Um          | Um          | $\overline A$    |
-| NAND     | Em série    | Em paralelo | $\overline{AB}$  |
-| NOR      | Em paralelo | Em série    | $\overline{A+B}$ |
+- **Combinatório:** a saída depende das entradas atuais, após propagação.
+- **Sequencial:** guarda estado e atualiza-o no instante permitido.
 
-Na NAND, só $A=B=1$ fecha todo o caminho para a massa. Com $A=1,B=0$, o NMOS de B interrompe a série e o PMOS de B liga a alimentação, dando 1.
-
-Em CMOS ideal estável não há caminho direto alimentação-massa. O consumo de transição e os atrasos exigem um modelo elétrico mais completo.
-
-## Composição
-
-Portas compõem somadores; somadores e lógica compõem a ALU. A CPU executa instruções guardadas em memória, alterando registos ou memória.
-
-- Um bloco **combinatório** calcula a partir das entradas atuais, após propagação.
-- Um bloco **sequencial** guarda estado e atualiza-o no instante permitido. Um somador pode mudar entre flancos enquanto o registo de saída conserva o resultado anterior.
-
-[Construção das portas CMOS](/cadeiras/fsc/sistemas-digitais/#construir-nand-e-nor).
+[Portas CMOS na lição](/cadeiras/fsc/sistemas-digitais/#construir-nand-e-nor).

@@ -8,7 +8,9 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Bracket from '../../../components/Bracket.astro';
+import Typst from '../../../components/Typst.astro';
 import contraexemplos from '../../md/contraexemplos.js?raw';
+import karnaughAbc from '../../md/karnaugh-abc.typ?raw';
 
 «Há autorização» ou é verdade ou é falso. Uma frase assim, que é verdadeira ou falsa sem meio termo, chama-se **proposição**, uma afirmação com valor de verdade $T$ ou $F$. «Abre a porta!» é uma ordem, por isso não é uma proposição: não faz sentido dizer que é verdadeira ou falsa.
 
@@ -54,6 +56,16 @@ A disjunção $\lor$ é inclusiva: aceita que ambas as partes sejam verdadeiras.
 Uma implicação é falsa apenas quando o antecedente é verdadeiro e o consequente é falso. No exemplo da porta, introduzimos $r$ para «a porta abre». A condição $(p\land\neg q)\to r$ só falha quando há autorização, o sistema não está bloqueado e a porta não abre. Saber essa condição não afirma que há autorização, nem que esta é a única forma de abrir a porta. A implicação inversa $r\to(p\land\neg q)$ é outra afirmação.
 
 "$p$ só se $q$" escreve-se $p\to q$: $q$ é uma condição necessária para $p$. "$p$ se $q$" escreve-se $q\to p$: $q$ é suficiente para $p$. "Se e só se" exige as duas direções, abreviadas por $p\leftrightarrow q$.
+
+A partir de $p\to q$ formam-se três implicações diferentes. Só uma delas é equivalente à original:
+
+| Nome           | Forma             | Relação com $p\to q$                      |
+| -------------- | ----------------- | ----------------------------------------- |
+| Recíproca      | $q\to p$          | Não é equivalente. Afirmar o consequente. |
+| Inversa        | $\neg p\to\neg q$ | Equivale à recíproca, não à original.     |
+| Contrapositiva | $\neg q\to\neg p$ | Equivalente à original. Negar e trocar.   |
+
+No exemplo da porta, a recíproca $r\to(p\land\neg q)$ diz que a porta só abre com autorização e sistema desbloqueado. A contrapositiva $\neg r\to\neg(p\land\neg q)$ diz que, se a porta não abre, então faltou autorização ou o sistema estava bloqueado. Confundir a original com a recíproca é a falácia de afirmar o consequente: ver a porta aberta não prova que houve autorização, pois outra forma de abrir também satisfaz $p=F,q$ qualquer, $r=T$.
 
 ## Atribuições e tabelas de verdade
 
@@ -194,6 +206,53 @@ p\land q\Leftrightarrow\neg(p\to\neg q).
 $$
 
 Por outro lado, $\{\land,\lor\}$ não é completo. Qualquer fórmula construída só com estas conetivas vale $T$ quando todas as variáveis valem $T$, por isso não representa $\neg p$.
+
+## Circuitos, mapas de Karnaugh e portas NAND
+
+Uma fórmula booleana também se lê como um circuito: cada ocorrência de conetiva é uma porta, sem partilhar saídas entre portas. $\neg$ usa uma porta NOT unária com uma entrada; $\land$ e $\lor$ usam portas binárias com duas entradas. Para a expressão
+
+$$
+(\neg B\land((\neg A\land C)\lor\neg C))\lor(A\land\neg(B\land C)),
+$$
+
+uma construção direta usa 4 portas NOT, 4 portas AND binárias e 2 portas OR binárias, uma por cada ocorrência na escrita. O circuito calcula a mesma função que a FND obtida por equivalências:
+
+$$
+(\neg B\land\neg A\land C)\lor(\neg B\land\neg C)\lor(A\land\neg B)\lor(A\land\neg C).
+$$
+
+Esta FND é outra árvore sintática, por isso a contagem é outra. Sem partilhar subexpressões e com portas binárias, ela usa 6 ocorrências de NOT, 5 AND binários e 3 OR binários. Só a forma simplificada abaixo é que usa poucas portas.
+
+Os termos desta FND não são todos mintermos. Um mintermo fixa as três variáveis e cobre uma só linha; um termo incompleto deixa variáveis de fora e cobre várias linhas. Aqui:
+
+- $\neg B\land\neg A\land C$ cobre só $A=0,B=0,C=1$.
+- $\neg B\land\neg C$ cobre $A=0,B=0,C=0$ e $A=1,B=0,C=0$.
+- $A\land\neg B$ cobre $A=1,B=0,C=0$ e $A=1,B=0,C=1$.
+- $A\land\neg C$ cobre $A=1,B=0,C=0$ e $A=1,B=1,C=0$.
+
+A união dá as cinco linhas verdadeiras $000,001,100,101,110$. Para ver estes conjuntos, o **mapa de Karnaugh** dispõe as oito combinações numa grelha onde células vizinhas diferem numa só variável. As colunas seguem a ordem Gray $00,01,11,10$ para $BC$; as arestas opostas contam como vizinhas, como se o mapa desse a volta. Agrupamos os uns em retângulos com $1$, $2$, $4$ ou $8$ células. Cada grupo elimina as variáveis que mudam dentro dele.
+
+<Typst
+  source={karnaughAbc}
+  format="svg"
+  alt="Mapa de Karnaugh com linhas A 0 e 1 e colunas BC 00, 01, 11 e 10. Valores 1, 1, 0, 0 na linha de cima e 1, 1, 0, 1 na linha de baixo. Um retângulo marca as duas primeiras colunas; dois retângulos pequenos marcam as células de baixo à esquerda e à direita."
+/>
+
+No mapa, o bloco das duas primeiras colunas reúne as quatro células com $B=0$; elimina $A$ e $C$. O par da linha $A=1$ reúne as células $100$ e $110$, que são vizinhas pela borda direita e esquerda e partilham $A=1,C=0$; elimina $B$. A célula $100$ pertence aos dois grupos. A expressão simplificada é:
+
+$$
+\neg B\lor(A\land\neg C).
+$$
+
+O circuito simplificado usa 2 portas NOT, 1 AND binário e 1 OR binário. A simplificação conserva a função de verdade: os dois blocos cobrem exatamente as cinco linhas verdadeiras listadas acima.
+
+A mesma função escreve-se com um só tipo de porta. A porta NAND define-se por $P\uparrow Q=\neg(P\land Q)$. Como $\neg P\Leftrightarrow P\uparrow P$, obtemos NOT; negando um NAND obtemos AND; por De Morgan obtemos OR. Para a forma simplificada, a construção explícita com três NAND binários é:
+
+$$
+B\uparrow(A\uparrow(C\uparrow C)).
+$$
+
+Lê de dentro para fora: $C\uparrow C$ é $\neg C$; $A\uparrow(\neg C)$ é $\neg(A\land\neg C)$; $B\uparrow\neg(A\land\neg C)$ é $\neg B\lor(A\land\neg C)$. As oito atribuições dão $1,1,0,0,1,1,1,0$ por $ABC=000$ até $111$, tal como a original, a FND e a simplificada. A construção análoga com NOR usa $P\downarrow Q=\neg(P\lor Q)$. Escolher NAND ou NOR não muda a função representada, só o conjunto de portas permitido.
 
 ## Conferir uma equivalência
 

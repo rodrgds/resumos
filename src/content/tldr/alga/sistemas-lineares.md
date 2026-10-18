@@ -1,12 +1,12 @@
 ## Gauss e Gauss-Jordan
 
-Um sistema real de $m$ equações a $n$ incógnitas escreve-se $Ax=b$. Trabalha na matriz ampliada $[A\mid b]$ e aplica cada operação à linha inteira, incluindo o termo independente.
+Um sistema real de $m$ equações a $n$ incógnitas escreve-se $Ax=b$. Trabalha na matriz ampliada $[A\mid b]$, aplicando cada operação à linha inteira.
 
 1. Escolhe um pivô não nulo, trocando linhas se necessário.
-2. Elimina as entradas abaixo dele e avança para a coluna seguinte. Os pivôs ficam sucessivamente à direita; as linhas nulas ficam no fim.
-3. Em Gauss, resolve por substituição de baixo para cima. Em Gauss-Jordan, transforma os pivôs em 1 e elimina também acima deles.
+2. Elimina abaixo dele e avança para a coluna seguinte: pivôs à direita, linhas nulas no fim.
+3. Resolve por substituição (Gauss) ou normaliza os pivôs e elimina acima (Gauss-Jordan).
 
-As operações permitidas são trocar linhas, multiplicar uma linha por um escalar **não nulo** e somar a uma linha um múltiplo de outra. São reversíveis e preservam as soluções.
+As operações são trocar linhas, multiplicar uma linha por escalar **não nulo** e somar a uma linha um múltiplo de outra. São reversíveis e preservam as soluções.
 
 ## Classificação pela característica
 

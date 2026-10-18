@@ -21,11 +21,11 @@ add t1, t0, t2
 sw t1, 4(a0)
 ```
 
-Com `a0=0x1000`, uma palavra de valor 7 nesse endereço e `t2=5`, este fragmento lê 7, soma 5 e guarda 12 em `0x1004`. Os **registos** `t0` e `t1` mantêm os valores intermédios dentro do processador. A memória conserva as palavras em endereços de byte; o deslocamento 4 passa à palavra seguinte.
+Com `a0=0x1000`, uma palavra de valor 7 nesse endereço e `t2=5`, este fragmento lê 7, soma 5 e guarda 12 em `0x1004`. Os **registos** `t0` e `t1` guardam os valores intermédios dentro do processador; a memória conserva palavras em endereços de byte, por isso o deslocamento 4 avança exatamente uma palavra.
 
-Cada linha é uma instrução. A **ISA**, arquitetura do conjunto de instruções, define as operações, os registos e os seus efeitos visíveis. Duas organizações internas podem executar o mesmo programa, embora demorem tempos diferentes.
+Cada linha é uma instrução. A **ISA**, arquitetura do conjunto de instruções, fixa as operações, os registos e os seus efeitos visíveis. Duas organizações internas podem executar o mesmo programa em tempos diferentes.
 
-Usamos RV32: 32 registos inteiros de 32 bits e instruções base de 32 bits, sem a extensão de instruções comprimidas. O **PC** identifica o endereço da instrução em execução; um salto relativo usa o PC dessa instrução. Numa pipeline coexistem várias instruções, cada uma com o seu PC, enquanto a obtenção já procura instruções mais novas.
+Trabalhamos em RV32: 32 registos inteiros de 32 bits e instruções base de 32 bits, sem instruções comprimidas. O **PC** identifica o endereço da instrução em execução, e um salto relativo usa o PC dessa instrução. Numa pipeline, várias instruções coexistem, cada uma com o seu PC, enquanto a obtenção já procura instruções mais novas.
 
 :::details[Vídeo de apoio: RISC-V Assembly]
 Introdução em vídeo de Rodrigo Dias:
@@ -73,9 +73,9 @@ O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal, 
 
 Em `lw t0,12(a0)`, o endereço é `a0 + 12`, em **bytes**. Para ler `vetor[i]` de palavras, calcula `base + 4i`. `ld/sd` pertencem ao modelo inteiro RV64, não a este RV32.
 
-Em little endian, a palavra `0x12345678` ocupa os bytes `78 56 34 12`, do endereço menor para o maior. Um `lb` sobre o byte `0xFE` produz −2; `lbu` produz 254. O alinhamento natural de uma palavra exige endereço múltiplo de 4.
+A memória é little endian: a palavra `0x12345678` ocupa os bytes `78 56 34 12`, do endereço menor para o maior. O alinhamento natural de uma palavra exige endereço múltiplo de 4. Ler um byte com sinal estende esse sinal aos 32 bits: um `lb` sobre o byte `0xFE` produz −2, enquanto `lbu` produz 254.
 
-`slli` desloca à esquerda e preenche os bits baixos com zeros. `srli` desloca à direita e preenche os bits altos com zeros; `srai` desloca à direita e preenche-os com o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo, enquanto `div` arredonda para zero, pelo que não são sempre equivalentes. A multiplicação e a divisão, como `div`, vêm da extensão M; as instruções SIMD empacotadas têm um modelo próprio, tratado em [SIMD](/cadeiras/ac/simd/).
+Os deslocamentos trabalham por via aritmética ou lógica. `slli` desloca à esquerda e preenche os bits baixos com zeros. `srli` preenche os altos com zeros; `srai` preenche-os com o bit de sinal. Os imediatos de deslocamento em RV32 vão de 0 a 31. Para valores negativos, o arredondamento difere: dividir −3 por 2 com `srai` dá −2, por arredondar para baixo, enquanto `div` dá −1, por arredondar para zero. A multiplicação e a divisão, como `div`, vêm da extensão M. As instruções SIMD empacotadas têm um modelo próprio, tratado em [SIMD](/cadeiras/ac/simd/).
 
 ## Vírgula flutuante e conversões
 
@@ -91,7 +91,9 @@ As extensões F e D acrescentam operações de precisão simples e dupla. Os end
 | `fcvt.s.d fa0,ft1`                     | Converte de dupla para simples, arredondando quando necessário     |
 | `flt.s t0,ft1,ft2`                     | Escreve 1 ou 0 no **registo inteiro** conforme a comparação        |
 
-Uma carga não converte um inteiro para um número real. Se a memória contém o inteiro 3, `flw` copia o padrão `0x00000003`; esse padrão não é a representação de 3,0. Para converter, lê com `lw` e usa `fcvt.s.w`. As instruções `fmv.w.x` e `fmv.x.w` também copiam bits entre bancos, sem conversão numérica. `fmv.s` copia entre registos de precisão simples; não alarga um valor para dupla.
+Uma carga não converte um inteiro para um número real. Se a memória contém o inteiro 3, `flw` copia o padrão `0x00000003`, que não é a representação de 3,0. Para converter, lê com `lw` e usa `fcvt.s.w`.
+
+As instruções `fmv.w.x` e `fmv.x.w` copiam bits entre bancos, sem conversão numérica: uma apenas move o padrão, a outra faz o inverso. `fmv.s` copia entre registos de precisão simples; não alarga um valor para dupla.
 
 ### Média de elementos não negativos
 
@@ -124,7 +126,9 @@ Para `[1,5; −2,0; 4,5; 0,0]`, acompanha soma e contagem:
 | 4,5        | 0                           | 6,0  | 2        |
 | 0,0        | 0                           | 6,0  | 3        |
 
-O zero entra porque o teste exclui apenas valores estritamente negativos. O divisor é 3, convertido para 3,0, e a média é 2,0. Dividir pelo comprimento 4 daria 1,5 e responderia a outra pergunta. O comprimento zero precisa de uma verificação antes da primeira carga; uma sequência só de negativos precisa de tratamento antes da divisão por zero. Esses casos estão excluídos do contrato do fragmento, não resolvidos pelo ciclo.
+O zero entra na média, porque o teste exclui apenas valores estritamente negativos. O divisor é 3, convertido para 3,0, e a média é 2,0. Dividir a soma filtrada 6,0 pelo comprimento 4 daria 1,5, que não responde a nenhuma das duas perguntas: a média filtrada é 2,0 e a média de todos os elementos é (1,5−2,0+4,5+0,0)/4=1,0.
+
+O comprimento zero precisa de verificação antes da primeira carga, e uma sequência só de negativos precisa de tratamento antes da divisão por zero. Esses casos estão excluídos do contrato do fragmento, não resolvidos pelo ciclo.
 
 Para acumular em dupla dados guardados em simples, mantém o avanço de quatro bytes. Converte **cada carga** com `fcvt.d.s`, inicializa a soma com `fcvt.d.w ...,zero`, usa `fadd.d`, converte a contagem com `fcvt.d.w` e divide com `fdiv.d`. Só no retorno usa `fcvt.s.d` se o resultado pedido for simples. Aumentar a precisão do cálculo não aumenta o tamanho dos elementos em memória nem torna exatas todas as somas.
 

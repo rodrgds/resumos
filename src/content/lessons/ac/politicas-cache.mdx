@@ -26,7 +26,7 @@ O modelo WT/no-allocate não instala uma linha por uma escrita que falha. WB/all
 | Escrita com acerto | Atualizar cache e nível seguinte             | Atualizar cache; `D=1`                                                                |
 | Escrita com falta  | Escrever no nível seguinte; cache fica igual | Descarregar vítima válida dirty; instalar linha, alterar os bytes escritos; `V=1,D=1` |
 
-Em uma escrita parcial de uma linha, a alocação normalmente lê os bytes restantes do nível seguinte. Se a escrita substitui **a linha inteira**, não é necessário lê-la antes. Por exemplo, uma cache com uma palavra por linha pode instalar uma escrita de palavra completa sem uma leitura adicional. Esta condição muda a contagem de acessos.
+Em uma escrita parcial de uma linha, a alocação normalmente lê os bytes restantes do nível seguinte. No modelo adotado, se a escrita substitui **a linha inteira**, não é necessário lê-la antes. Por exemplo, uma cache com uma palavra por linha pode instalar uma escrita de palavra completa sem uma leitura adicional. Esta condição muda a contagem de acessos.
 
 ## Um traço com vítimas modificadas
 
@@ -44,7 +44,16 @@ Total: duas leituras e duas escritas de linhas na memória principal. O último 
 
 O endereço de uma vítima é reconstruído com **a etiqueta antiga**, o índice da entrada e deslocamento zero. Usar a etiqueta do pedido escreveria os dados da vítima no sítio errado.
 
-Aplica WT/no-allocate ao mesmo traço. E0 escreve na RAM sem instalar; L0 carrega a linha 0. E8 escreve na RAM e mantém na cache o bloco 0; L4 carrega a linha 4; a última L0 acerta. São duas escritas e duas leituras, tal como no total WB, mas por causas diferentes. No traço WB, a leitura final falha e provoca dois acessos; em WT, acerta.
+Aplica WT/no-allocate ao mesmo traço. E0 escreve na RAM sem instalar nada; L0 carrega a linha 0. E8 escreve na RAM e mantém na cache o bloco 0; L4 carrega a linha 4; a última L0 acerta.
+
+Os totais coincidem, duas escritas e duas leituras, mas por causas diferentes:
+
+| Acesso final | WB: o que acontece              | WT: o que acontece       |
+| ------------ | ------------------------------- | ------------------------ |
+| L0 final     | Falta; descarrega 9 e carrega 0 | Acerto na linha guardada |
+| E8           | Sem tráfego; só marca dirty     | Escrita direta na RAM    |
+
+No traço WB, a leitura final falha e provoca dois acessos; em WT, acerta.
 
 Para reconstruir a vítima no acesso L0, a etiqueta antiga é 1, o índice é 0 e cada linha tem 4 B: $(1\times2+0)\times4=8$. É nesse endereço que se descarrega 9 antes de ler 0.
 
@@ -76,9 +85,11 @@ Para uma cache unificada, o número médio de acessos é $1+r$: $CPI_{\rm prot}=
 
 ## Recuperar a mistura a partir das esperas
 
-A equação também permite obter uma grandeza que não foi medida diretamente. Num CPU de 2 GHz, uma falta que acrescenta 50 ns custa 100 ciclos, porque cada ciclo demora 0,5 ns. Suponhamos uma cache unificada com taxa de falta 9% **por acesso** e 12 ciclos de espera por instrução. Cada instrução faz uma obtenção e, se for load/store, mais um acesso a dados.
+A equação também permite obter uma grandeza que não foi medida diretamente. Num CPU de 2 GHz, cada ciclo demora 0,5 ns, por isso uma falta que acrescenta 50 ns custa 100 ciclos.
 
-Se $r$ é a fração de loads/stores, as esperas são:
+Suponhamos uma cache unificada com taxa de falta 9% **por acesso** e 12 ciclos de espera por instrução. Cada instrução faz uma obtenção e, se for load/store, mais um acesso a dados.
+
+Se $r$ é a fração de instruções que são loads/stores, com uma obtenção por instrução e no máximo um acesso a dados, as esperas são:
 
 $$12=(1+r)\times0,09\times100.$$
 
@@ -88,7 +99,7 @@ $$1+r=\frac{12}{9}=\frac43.$$
 
 A obtenção obrigatória explica o primeiro acesso. Subtraí-la dá $r=1/3$, ou 33,33% de instruções com acesso a dados. Se fossem caches I/D separadas e os 12 ciclos contassem **apenas dados**, não haveria esse 1: o denominador e a equação seriam outros.
 
-Neste modelo, $0\le r\le1$. Um resultado fora desse intervalo indica que os dados não cabem nas hipóteses, por exemplo várias operações de memória por instrução ou custos de escrita não incluídos. Também é necessário conhecer só a parcela de esperas, não usar o CPI total como se toda a execução fosse protelamento.
+Neste modelo, $0\le r\le1$. Um resultado fora desse intervalo indica que os dados não cabem nas hipóteses: pode haver várias operações de memória por instrução, ou custos de escrita não incluídos. Também é necessário partir só da parcela de esperas. Usar o CPI total como se toda a execução fosse protelamento mistura grandezas diferentes.
 
 Se a fonte dá uma razão entre acertos e faltas, transforma-a antes de calcular. Acertos nove vezes mais frequentes que faltas significam $h=9m$ e $h+m=1$, logo $m=1/10$. A taxa de falta não é $1/9$: essa razão tem acertos no denominador.
 
@@ -122,4 +133,4 @@ Segue duas escritas de palavra, `E0=7` e `E64=9`, com estas hipóteses: L1 diret
 
 São **duas leituras e uma escrita de linha** na RAM. A descarga da vítima atravessou L2 num acerto, mas gerou escrita porque L2 é WT. A RAM termina com 7 no endereço 0 e ainda 0 no endereço 64; o CPU lê 9 nesse último por acerto em L1. Um flush final acrescentaria outra escrita de linha na RAM, segundo as mesmas regras.
 
-A taxa global $m_1m_{2,l}$ conta pedidos de leitura que faltam nos dois níveis quando essas taxas usam os respetivos denominadores. Não a apliques a todas as escritas WB: segue carregamentos, descargas e alocação de cada nível separadamente.
+A taxa global $m_1m_{2,l}$ conta pedidos de leitura que faltam nos dois níveis, quando cada taxa usa o seu denominador. Não a apliques a todas as escritas WB. Para contar tráfego de escritas, segue separadamente carregamentos, descargas e a alocação de cada nível.

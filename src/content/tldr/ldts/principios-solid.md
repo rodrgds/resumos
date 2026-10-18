@@ -1,20 +1,19 @@
 ## Responsabilidades e extensão
 
-- **SRP:** separa razões independentes para mudar. `Pontos` protege a regra de pontuação, `PontuacoesFicheiro` trata formato e escrita, `PontosVista` trata apresentação. Não é uma classe por método.
-- **OCP:** escolhe uma variação concreta e mantém estável o cliente que a usa. Um controlador que chama `Comando.executar()` pode receber novos comandos sem mudar. A montagem continua a registar as alternativas.
-- Um `switch` pequeno sobre opções fechadas pode ser mais claro que uma hierarquia criada para extensões hipotéticas.
+- **SRP:** uma razão para mudar. `Pontos` guarda a regra, `PontuacoesFicheiro` o formato e escrita, `PontosVista` a apresentação. Não é uma classe por método; sem variação independente, não separes.
+- **OCP:** o cliente estável não muda com a variação. Controlador chama `Comando.executar()`; a montagem regista alternativas. `switch` fechado e pequeno pode continuar mais claro.
 
 ## Substituição e interfaces
 
-**LSP** exige que o subtipo cumpra as promessas da base: não fortalece pré-condições, não enfraquece pós-condições e preserva invariantes e evolução do estado.
+**LSP:** o subtipo cumpre as promessas da base. Sem pré-condições mais fortes, sem pós-condições mais fracas, com invariantes e evolução preservados.
 
-Se `Retangulo.setLargura` promete conservar a altura, `Quadrado` não pode alterar ambas. O cliente que faz largura 4 e altura 3 espera área 12; o quadrado mutável produziria 9. Uma interface `Forma.area()` sem setters independentes permite outro contrato.
+Se `setLargura` promete manter a altura, `Quadrado` mutável que muda ambas quebra o cliente. O cliente fixa largura 4 e altura 3 e espera área 12; com o quadrado, o segundo setter repõe ambos em 3 e a área obtida é 9. Relação matemática não autoriza herança de API mutável; `Forma.area()` sem setters resolve.
 
-**ISP** separa capacidades segundo os clientes. Um controlador que só lê teclas depende de `Entrada`, não de uma interface que também exige desenhar e tocar som. Um dispositivo pode implementar várias capacidades. Métodos vazios ou operações não suportadas merecem investigação.
+**ISP:** interfaces por cliente. Controlador de teclas depende de `Entrada`; desenho e som ficam em `Vista` e `Audio`. Um objeto pode implementar as três. Métodos vazios ou não suportados pedem investigação, não uma interface por operação.
 
 ## Dependências da regra
 
-**DIP** faz a regra depender do contrato de que precisa; os adaptadores implementam esse contrato. Para guardar pontos, a regra não precisa de conhecer CSV, SQL ou caminhos.
+**DIP:** a regra depende do contrato; detalhes implementam-no. Para guardar pontos, `Pontuacoes.guardar(int)` esconde CSV, SQL e caminhos. A montagem escolhe o adaptador.
 
 ```java
 interface Pontuacoes { void guardar(int valor); }
@@ -31,13 +30,23 @@ class FimDeJogo {
 
 ```text
 FimDeJogo --> Pontuacoes <-- FicheiroPontuacoes
-                        <-- PontuacoesMemoria
+                         <-- PontuacoesMemoria
 ```
 
-A montagem escolhe o adaptador. Em execução, a regra chama o objeto concreto; as setas acima representam dependências de código.
+Setas de dependência de código; em execução, a chamada vai para o objeto montado. Passar o colaborador no construtor é **injeção**; escolher contratos adequados para a regra é **inversão**. Receber uma classe concreta no construtor injeta o colaborador, mas sem contrato não há inversão de dependências.
 
-- **Injeção** passa o colaborador ao objeto. Passar uma classe concreta no construtor já é injeção, mas não demonstra DIP.
-- **Coesão** junta elementos que colaboram na mesma responsabilidade. **Acoplamento** mede dependências de outros módulos e das suas decisões.
-- Um ciclo entre pacotes dificulta reutilizá-los isoladamente. Se o modelo importa a vista, identifica a capacidade necessária e coloca o contrato do lado da regra.
+## Coesão e acoplamento
 
-Antes de criar uma abstração, identifica a mudança pretendida, o cliente que deve ficar estável e o contrato comum às alternativas. [Contratos e exemplos completos](/cadeiras/ldts/principios-solid/).
+- **Coesão:** junta num módulo o que colabora na mesma responsabilidade.
+- **Acoplamento:** mede as dependências de um módulo em relação a outros; prefere dependências necessárias e explícitas.
+
+## Pacotes e reutilização
+
+- Agrupa o que se reutiliza e muda em conjunto; evita ciclos entre pacotes, que impedem alterar ou reutilizar um pacote isolado.
+- Pacotes com muitos clientes estendem-se por contrato; pacotes sem reutilização podem continuar concretos.
+
+## Antes de abstrair
+
+Nomeia a mudança esperada, o cliente que deve ficar estável e o contrato comum das alternativas; compara a complexidade nova com a dependência removida.
+
+[Contratos e exemplos completos](/cadeiras/ldts/principios-solid/).

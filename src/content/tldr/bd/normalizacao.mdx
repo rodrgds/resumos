@@ -1,55 +1,45 @@
-## Dependências funcionais e fecho
+## Reconhecer uma DF
 
-Uma **DF** $X\to Y$ exige que quaisquer dois tuplos iguais em $X$ sejam iguais em $Y$, em todas as instâncias válidas. Uma amostra pode refutar uma DF, mas não a prova. $Y\subseteq X$ torna-a trivial.
+$X\to Y$ obriga quaisquer dois tuplos iguais em $X$ a serem iguais em $Y$, em **todas** as instâncias válidas, incluindo dados futuros.
 
-- Reflexividade: $Y\subseteq X\Rightarrow X\to Y$.
-- Aumento: $X\to Y\Rightarrow XZ\to YZ$.
-- Transitividade: $X\to Y$ e $Y\to Z\Rightarrow X\to Z$.
-- $A\to BC$ equivale a $A\to B$ e $A\to C$. **Não se separa a esquerda** de $AB\to C$.
+- Uma amostra **refuta** uma DF com um contraexemplo; nunca a prova. Nomes distintos na tabela não provam nada; dois produtos "Rato" com ids diferentes refutam `nomeProduto → idProduto`.
+- $Y\subseteq X$ torna-a **trivial**: `Produto, Nome → Nome` não restringe nada.
+- A justaposição é união: $AB$ significa $\{A,B\}$.
+- $A\to BC$ equivale a $A\to B$ e $A\to C$; **a esquerda não se separa**: $AB\to C$ não dá $A\to C$.
 
-A justaposição representa união de atributos. Para calcular $X^+$, começa em $X$ e acrescenta direitas de DFs cujas esquerdas estejam no fecho, até estabilizar. $X\to Y$ é implicada se $Y\subseteq X^+$.
+Armstrong: reflexividade ($Y\subseteq X\Rightarrow X\to Y$), aumento ($X\to Y\Rightarrow XZ\to YZ$) e transitividade.
 
-## Chaves e atributos primos
+## Fecho e candidatas
 
-- $X$ é **superchave** se $X^+=R$; é **candidata** se também for mínima por inclusão.
-- Um atributo é **primo** se pertence a alguma candidata, mesmo que não pertença à primária escolhida.
-- Atributos ausentes das direitas das DFs não triviais têm de estar em todas as candidatas. Testa os seus fechos e extensões; descarta supersets de candidatas encontradas.
+Para $X^+$: começa em $X$ e acrescenta direitas de DFs cujas esquerdas já estejam no fecho, até estabilizar. $X\to Y$ vale se $Y\subseteq X^+$.
 
-Em $R(A,B,C,D,E)$ com $AB\to C$, $C\to D$, $D\to E$:
+- **Superchave**: fecho igual a $R$. **Candidata**: superchave mínima por inclusão. **Primo**: pertence a alguma candidata.
+- Atributos que nunca aparecem à direita de DFs não triviais pertencem a **todas** as candidatas; testa os seus fechos e extensões, descartando supersets de candidatas achadas.
 
-| Conjunto | Fecho   |
-| -------- | ------- |
-| $A$      | $A$     |
-| $B$      | $B$     |
-| $AB$     | $ABCDE$ |
-| $C$      | $CDE$   |
+Com $AB\to C$, $C\to D$, $D\to E$ em $R(A,B,C,D,E)$: $A^+=A$, $B^+=B$, $C^+=CDE$ e $(AB)^+=ABCDE$. $AB$ é a única candidata; $C,D,E$ são não primos.
 
-$AB$ é a única candidata: determina tudo, nenhum dos atributos chega sozinho e ambos são obrigatórios.
+## Que forma normal
 
-## Formas normais
+Assume 1FN: valores atómicos nos domínios escolhidos, sem grupos repetidos.
 
-Assume 1FN para as condições seguintes.
+| Forma | Teste para cada DF não trivial $X\to A$                 |
+| ----- | ------------------------------------------------------- |
+| 2FN   | Nenhum não primo depende de parte própria de candidata. |
+| 3FN   | $X$ é superchave **ou** $A$ é primo.                    |
+| BCNF  | $X$ é superchave, sem exceção.                          |
 
-| Forma | Condição                                                                  |
-| ----- | ------------------------------------------------------------------------- |
-| 1FN   | Valores atómicos nos domínios escolhidos, sem grupos repetidos.           |
-| 2FN   | Nenhum atributo não primo depende de parte própria de uma candidata.      |
-| 3FN   | Para toda a DF não trivial $X\to A$, $X$ é superchave **ou** $A$ é primo. |
-| BCNF  | O determinante de toda a DF não trivial é superchave.                     |
+$\mathrm{BCNF}\Rightarrow\mathrm{3FN}\Rightarrow\mathrm{2FN}$. Verifica as DFs **implicadas**, não só as escritas.
 
-$\mathrm{BCNF}\Rightarrow\mathrm{3FN}\Rightarrow\mathrm{2FN}$; as inversas podem falhar. Verifica as dependências implicadas, não apenas setas escolhidas arbitrariamente.
+- No exemplo acima, $C\to D$ viola 3FN ($C$ não é superchave, $D$ não é primo): está em 2FN.
+- Com $AB\to C$ e $C\to B$ em $ABC$, as candidatas são $AB$ e $AC$ e $B$ é primo: $C\to B$ passa em 3FN mas viola BCNF.
+- Em `Venda(encomenda, produto, nomeProduto, qtd)`, o nome depende só do produto: dependência parcial que repete o nome e viola 2FN. Separa Produto de Item.
 
-- No exemplo $ABCDE$, $C\to D$ viola 3FN: $C$ não é superchave e $D$ não é primo. A relação está em 2FN.
-- Com $AB\to C$ e $C\to B$ em $ABC$, as candidatas são $AB$ e $AC$. $C\to B$ passa em 3FN porque $B$ é primo, mas viola BCNF.
+## Reduzir a cobertura
 
-Em `Venda(encomenda, produto, nomeProduto, qtd)`, o nome atual depende só do produto. Essa dependência parcial repete o nome em várias compras e viola 2FN. Separar Produto de Item conserva a quantidade no par encomenda/produto.
+1. Parte as direitas num atributo por DF.
+2. Retira atributos dispensáveis à esquerda, confirmando por fechos.
+3. Retira DFs redundantes, calculando o fecho **sem a DF testada**.
 
-## Cobertura mínima
-
-1. Separa as direitas em um atributo por DF.
-2. Retira atributos dispensáveis das esquerdas, confirmando por fechos.
-3. Retira DFs redundantes. Para testar uma DF inteira, calcula o fecho **sem essa DF**.
-
-$\{A\to BC,B\to C,AB\to D\}$ reduz-se a $\{A\to B,B\to C,A\to D\}$. $B$ é dispensável em $AB\to D$ e $A\to C$ já resulta da transitividade. Coberturas mínimas diferentes podem ser equivalentes.
+$\{A\to BC,B\to C,AB\to D\}$ dá $\{A\to B,B\to C,A\to D\}$: $B$ é dispensável em $AB\to D$ e $A\to C$ segue por transitividade. Ordens diferentes dão coberturas diferentes mas equivalentes.
 
 [Fechos e classificação desenvolvidos](/cadeiras/bd/normalizacao/#classificar-uma-relação).

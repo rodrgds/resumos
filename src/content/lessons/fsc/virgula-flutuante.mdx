@@ -60,7 +60,7 @@ O sinal $s$ vale 0 para positivo e 1 para negativo. A tabela indica o número de
 | binary64 | 1         | 11           | 52         | 1023 |
 | bfloat16 | 1         | 8            | 7          | 127  |
 
-Aqui $E$ e $F$ são os inteiros sem sinal lidos dos respetivos campos; $E_{\max}$ é o valor com todos os bits do expoente a 1, 255 em binary32. O bias é a constante subtraída a $E$, e $p$ é o número de bits da fração.
+Aqui $E$ e $F$ são os inteiros sem sinal lidos dos respetivos campos. $E_{\max}$ é o expoente com todos os bits a 1: 255 em binary32. O bias é a constante subtraída a $E$ para obter o expoente real. $p$ é o número de bits da fração.
 
 Se $0<E<E_{\max}$, o número é normal, com
 
@@ -72,7 +72,9 @@ Se $E=0$, não há esse 1, com
 
 $$x=(-1)^s\frac{F}{2^p}2^{1-\mathrm{bias}}.$$
 
-Com $F\ne0$ obtemos um subnormal. Com $F=0$ obtemos $+0$ ou $-0$. Se todos os bits do expoente forem 1, $F=0$ significa infinito e $F\ne0$ significa NaN, _not a number_. NaN não é um número muito grande.
+Com $F\ne0$ obtemos um subnormal. Com $F=0$ obtemos $+0$ ou $-0$.
+
+Se todos os bits do expoente forem 1, o valor depende só da fração: $F=0$ significa infinito e $F\ne0$ significa NaN, _not a number_. NaN não é um número muito grande; é o código para resultados sem valor numérico.
 
 Binary32 e binary64 são formatos IEEE 754. Bfloat16 usa a disposição indicada na tabela; não se deve inferir que qualquer operação ou conversão de bfloat16 tenha as mesmas regras de um ambiente IEEE 754 completo. Nos exemplos de arredondamento abaixo usamos explicitamente o modo mais próximo, com empates para par.
 
@@ -122,9 +124,9 @@ Um modelo pequeno com três bits de fração ajuda a ver um empate. Entre 1 e 2,
 
 ## Multiplicar e perder precisão
 
-Na multiplicação, faz XOR dos sinais, soma os expoentes reais e multiplica os significandos. $1{,}5\times2{,}5=(1{,}1\times1{,}01)\times2^1=1{,}111\times2^1=3{,}75$. Se o significando atingir 2, divide-o por 2 e aumenta o expoente.
+Na multiplicação, trata cada campo em separado: XOR dos sinais, soma dos expoentes reais e produto dos significandos. Para $1{,}5\times2{,}5$, os significandos dão $(1{,}1\times1{,}01)=1{,}111$, com expoente 1, ou seja, $3{,}75$. Se o produto dos significandos atingir 2, divide-o por 2 e aumenta o expoente em 1.
 
-Overflow pode produzir infinito; resultados demasiado pequenos podem tornar-se subnormais ou zero. Converter binary64 para binary32 também pode exigir arredondamento, mesmo que o valor esteja dentro do intervalo. Por exemplo, $1{,}1$ não tem representação binária finita: em binary64 guarda o arredondado a 52 bits de fração e ao passar a binary32 volta a arredondar a 23 bits. No exercício de bfloat16 do volume 1, a ausência de subnormais é uma hipótese local desse enunciado, não uma propriedade geral do formato.
+Overflow pode produzir infinito; resultados demasiado pequenos podem tornar-se subnormais ou zero. Reduzir a precisão também exige arredondar, mesmo dentro do intervalo: $1{,}1$ não tem representação binária finita, por isso binary64 guarda-o arredondado a 52 bits e a passagem a binary32 arredonda de novo a 23 bits. No exercício de bfloat16 do volume 1, a ausência de subnormais é uma hipótese local desse enunciado, não uma propriedade geral do formato.
 
 A adição não é associativa em geral. Em binary32, $2^{24}+1$ arredonda para $2^{24}$, pois o passo é 2 e o empate conserva o último bit par. Assim $(2^{24}+1)-2^{24}=0$, mas $2^{24}+(1-2^{24})=1$.
 

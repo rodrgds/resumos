@@ -1,11 +1,10 @@
-import Typst from '../../../components/Typst.astro';
-import arvoreBST from '../../pfl/p4arvore.typ?raw';
-
 ## Tipos, construtores e padrões
 
 - `type Ponto = (Double,Double)` é um sinónimo. `data Dia = Seg | Ter` cria um tipo novo com alternativas próprias.
-- `Maybe a` distingue `Nothing` de `Just x`. Uma média de lista vazia pode dar `Nothing`; quem recebe o resultado deve tratar ambos os casos. O tipo, sozinho, não impede padrões incompletos.
-- O nome do tipo aparece nas assinaturas; os construtores aparecem nos valores e padrões. `deriving (Eq,Show)` gera operações a partir dos campos; num tipo parametrizado, a igualdade requer igualdade dos elementos.
+- O nome do tipo aparece nas assinaturas; os construtores aparecem nos valores e nos padrões.
+- `Maybe a` distingue `Nothing` de `Just x`: a ausência passa a ser um caso a tratar, não um erro escondido.
+- `deriving (Eq,Show)` gera implementações a partir dos campos. Num tipo parametrizado, comparar exige igualdade dos elementos.
+- `Either erro valor` permite ainda explicar por que o cálculo falhou.
 
 ```haskell
 data Arvore a = Vazia | No a (Arvore a) (Arvore a)
@@ -15,53 +14,23 @@ emOrdem Vazia = []
 emOrdem (No x esq dir) = emOrdem esq ++ [x] ++ emOrdem dir
 ```
 
-`No :: a -> Arvore a -> Arvore a -> Arvore a`. A recursão estrutural trata cada construtor e recorre nas subárvores. Termina para árvores finitas quando os cálculos usados também terminam.
+Cada equação desmonta um construtor; a recursão segue os componentes menores. Como nas listas, o caso vazio termina a recursão.
 
-## Árvore binária de pesquisa
+## Árvores de pesquisa
 
-A invariância vale **em cada nó**: todos os valores da esquerda são menores que o valor do nó; todos os da direita são maiores ou iguais. Não basta comparar pais com filhos.
+- Invariância: a esquerda tem valores menores que o nó, a direita maiores ou iguais. A condição vale em **cada** nó.
+- `inserir` conserva a invariância; `procura` usa-a para excluir uma subárvore por comparação.
+- A travessia em ordem de uma árvore de pesquisa devolve os valores ordenados, mesmo com duplicados.
+- O custo segue a altura, não `log n` por decreto: numa árvore degenerada degrada-se para linear. `inserir` desta lição não equilibra.
+- Indica a convenção de altura: aqui a árvore vazia tem altura zero e uma folha tem altura um.
 
-- Inserir um menor continua à esquerda; um maior ou igual continua à direita; inserir em `Vazia` cria uma folha.
-- Procurar compara primeiro pela igualdade, depois escolhe uma subárvore pela ordem. Chegar a `Vazia` dá `False`.
-- A travessia em ordem é ordenada quando esta invariância vale. Não é uma propriedade de qualquer árvore binária.
+## Provar e transformar
 
-<Typst
-  source={arvoreBST}
-  format="svg"
-  alt="Após inserir 3,1,4,1,5, o 3 está na raiz; à esquerda há 1 com outro 1 à direita; à direita há 4 com 5 à direita."
-/>
+Para provar `length (map f xs) = length xs` em listas finitas, usa indução: o caso vazio por cálculo direto, o passo aplicando a hipótese à cauda. Testar exemplos reforça a confiança; não substitui a prova.
 
-A figura tem travessia `[1,1,3,4,5]`. O duplicado foi inserido à direita do primeiro `1`. A procura custa $O(h)$ comparações para altura $h$: $O(\log n)$ numa árvore equilibrada, $O(n)$ numa árvore degenerada. A inserção apresentada não mantém equilíbrio.
+- Substituir variáveis conserva a expressão: `lookup` decide por folha. `Nothing` conserva a variável; `Just n` constrói a constante. Nunca inventes zero para a variável ausente.
+- Com nomes repetidos no ambiente, `lookup` usa a primeira ocorrência: decide essa política antes de escrever o resultado.
+- Para converter tipos recursivos, transforma cada componente e conserva a ordem. `Folha x` vira `Rosa x []`; `Ramo e x d` vira `Rosa x [conversao e, conversao d]`.
+- Cada chamada recursiva recebe uma subexpressão ou subárvore própria: essa é a medida de progresso em entradas finitas.
 
-## Medidas e expressões
-
-Com altura de `Vazia` igual a zero:
-
-```haskell
-altura :: Arvore a -> Int
-altura Vazia = 0
-altura (No _ e d) = 1 + max (altura e) (altura d)
-```
-
-Uma folha tem altura um. Contar nós usa `0` no vazio e `1 + tamanho e + tamanho d` no nó.
-
-`data Expr = Valor Integer | Soma Expr Expr | Produto Expr Expr` representa uma árvore sintática. Avaliar `Soma (Valor 2) (Produto (Valor 3) (Valor 4))` dá `14`: o agrupamento está na árvore, não é decidido durante a avaliação.
-
-## Indução estrutural
-
-Para provar uma lei sobre listas finitas:
-
-1. Prova o caso `[]` pelas equações.
-2. Assume a lei para a cauda `xs` e prova-a para `x:xs`.
-
-Em `length (map f xs) == length xs`, o passo reduz a `1 + length (map f xs) == 1 + length xs`. A hipótese sobre a cauda fecha a prova. Pressupõe comprimento representável em `Int` e estrutura definida; `length` não exige avaliar `f x`. Testar exemplos não substitui a prova.
-
-[Prova por indução](/cadeiras/pfl/tipos-algebricos-recursao/#justificar-uma-lei-por-indução).
-
-## Transformar conservando estrutura
-
-Para substituir variáveis, dá um caso a cada construtor: constante fica igual; variável usa `lookup`; soma e produto transformam os dois filhos e conservam o operador. Ausência no ambiente mantém a variável. `lookup` usa a primeira ligação de um nome repetido. Substituir não implica avaliar ou simplificar.
-
-Em `Bin a = Folha a | Ramo (Bin a) a (Bin a)`, a conversão para `Rosa a = Rosa a [Rosa a]` põe a folha num nó sem filhos e o ramo num nó com `[conversao esquerda, conversao direita]`. Não precisa de classes sobre a; preserva valores e posição, não achata a árvore. A imagem só tem nós de zero ou dois filhos, embora Rosa permita outras quantidades.
-
-[Substituição](/cadeiras/pfl/tipos-algebricos-recursao/#substituir-variáveis-conservando-a-expressão) e [conversão de tipos](/cadeiras/pfl/tipos-algebricos-recursao/#converter-uma-árvore-para-outro-tipo).
+[Recursão estrutural e contratos](/cadeiras/pfl/tipos-algebricos-recursao/#construtores-sinónimos-e-recursão-estrutural).

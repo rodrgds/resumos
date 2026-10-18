@@ -4,58 +4,51 @@ import Dot from '../../../components/Dot.astro';
 
 ## Thompson: expressão para ε-NFA
 
-Cada fragmento tem uma entrada e uma saída; a saída é o único final do fragmento completo.
+Cada fragmento tem uma entrada e uma saída, e a saída será o único estado final quando o fragmento estiver completo.
 
-| Expressão     | Construção                                                                                         |
-| ------------- | -------------------------------------------------------------------------------------------------- |
-| $a$           | Dois estados ligados por $a$                                                                       |
-| $\varepsilon$ | Dois estados ligados por ε                                                                         |
-| $\emptyset$   | Dois estados sem ligação                                                                           |
-| $EF$          | Liga a saída de $E$ à entrada de $F$ por ε                                                         |
-| $E+F$         | Entrada nova escolhe um dos fragmentos por ε; ambas as saídas ligam à saída nova                   |
-| $E^*$         | Entrada nova permite entrar no fragmento ou saltá-lo; a saída do fragmento permite repetir ou sair |
+| Expressão                       | Construção                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| $a$, $\varepsilon$, $\emptyset$ | Dois estados; aresta $a$, ε, ou nenhuma                                                                             |
+| $EF$                            | Liga a saída de $E$ à entrada de $F$ por ε; a saída antiga de $E$ passa a intermédia e só a saída de $F$ fica final |
+| $E+F$                           | Uma entrada nova escolhe por ε e as saídas ligam por ε a uma saída nova                                             |
+| $E^*$                           | Uma entrada nova salta ou entra no fragmento; a saída do fragmento repete ou sai para uma saída nova                |
 
-Na estrela, o caminho que salta o fragmento aceita $\varepsilon$. Em $(a+b)^*a$, podes saltar a estrela, mas tens de ler o último $a$. Aceita $a$ e $ba$, rejeita $\varepsilon$ e $ab$.
+Na estrela, o caminho direto aceita $\varepsilon$. Em $(a+b)^*a$, as palavras $a$ e $ba$ são aceites e $\varepsilon$ e $ab$ são rejeitadas. O método é sistemático, não mínimo, e a correção segue por indução estrutural.
 
-A construção não precisa de ser mínima. A correção segue por indução estrutural, mostrando que cada composição realiza a operação da expressão.
+## Eliminação: autómato para expressão
 
-## Eliminação de estados: autómato para expressão
-
-1. Acrescenta início $s$, com ε para o antigo início, e final único $f$, com ε de cada antigo final. Isto preserva a palavra vazia se o antigo início era final.
-2. Usa expressões nas arestas. Junta arestas paralelas por união; uma aresta ausente tem rótulo $\emptyset$.
-3. Para eliminar $k$, atualiza todos os pares restantes com os rótulos **anteriores à ronda**:
-
-$$
-R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}.
-$$
-
-4. Retira $k$ e repete. Quando só ficam $s,f$, lê $R_{sf}$.
-
-A parcela nova entra em $k$, repete o ciclo zero ou mais vezes e sai. O rótulo antigo conserva os caminhos que não passam por $k$.
+1. Acrescenta uma entrada nova $s$ com ε para o antigo início e uma saída nova $f$ com ε desde cada antigo final. Só $f$ fica final.
+2. Cada aresta passa a ter uma expressão; arestas paralelas unem-se por união e a ausência vale $\emptyset$.
+3. Para eliminar o estado $k$, atualiza cada par $i,j$ de estados sobreviventes com $i\ne k$ e $j\ne k$ por $R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}$, sempre com os rótulos anteriores à ronda. Repete até só restarem $s$ e $f$.
 
 <Dot
   source={automatoAbc}
-  alt="Autómato com ciclo a no início p, aresta b para o final q e ciclo c em q. Reconhece a estrela, b, c estrela."
+  alt="Autómato com ciclo a no início p, transição b para o final q e ciclo c em q. Reconhece a estrela, b, c estrela."
 />
 
-Nesta máquina, eliminar $p$ cria $s\to q$ com $a^*b$; eliminar $q$ dá $a^*bc^*$. A ordem pode mudar o texto da expressão, mas não a linguagem.
+Aqui: eliminar $p$ dá $s\to q$ com $a^*b$; eliminar $q$ dá $a^*bc^*$. A ordem muda o texto, não a linguagem.
 
-## Equivalência e complemento
+## Derivadas e equivalência
 
-- Expressões regulares, DFA, NFA e ε-NFA descrevem a mesma classe de linguagens.
-- Para complementar uma expressão, converte para ε-NFA, determiniza, completa o DFA, troca finais e converte para expressão.
-- Para comparar expressões, compara os DFA equivalentes pelo produto. Testes podem revelar uma diferença, mas não provar equivalência geral.
-
-[Eliminação com retorno e vários finais](/cadeiras/tc/expressoes-automatos/#eliminação-completa-com-retorno-e-dois-finais).
-
-## Derivadas
-
-$D_a(E)$ descreve $\{w\mid aw\in L(E)\}$, as continuações depois de ler a. Um estado-expressão é final se aceita ε.
+A derivada $D_a(E)$ é uma expressão que denota o quociente à esquerda pela letra $a$: a sua linguagem é $L(D_a(E))=\{w\mid aw\in L(E)\}$. Um estado-expressão é final exatamente quando a sua expressão aceita $\varepsilon$, isto é, quando é anulável.
 
 $$
-D_a(E+F)=D_a(E)+D_a(F),\qquad D_a(E^*)=D_a(E)E^*.
+D_a(E+F)\equiv D_a(E)+D_a(F),\qquad
+D_a(E^*)\equiv D_a(E)E^*.
 $$
 
-Para EF, usa $D_a(E)F$; acrescenta $D_a(F)$ **se E for anulável**. As bases ε e ∅ dão derivada ∅; um símbolo igual a a dá ε, outro dá ∅.
+Na concatenação, a letra pode vir de $E$ ou, quando $E$ aceita $\varepsilon$, diretamente de $F$:
 
-Em $R=(a+b)^*ab$, os estados são R, R+b e R+ε, sendo só o último final. A estrela anulável explica a continuação b depois de a. O invariante é o conjunto de todas as continuações do prefixo lido. [Tabela e construção](/cadeiras/tc/expressoes-automatos/#derivadas-de-expressões).
+$$
+D_a(EF)\equiv
+\begin{cases}
+D_a(E)F+D_a(F),&\varepsilon\in L(E),\\
+D_a(E)F,&\varepsilon\notin L(E).
+\end{cases}
+$$
+
+- As expressões, os DFA, os NFA e os ε-NFA descrevem a mesma classe das linguagens regulares.
+- Para complementar uma expressão, converte para autómato, determiniza, completa, troca os finais e converte de novo; não basta trocar operadores.
+- Para comparar duas expressões, constrói o produto dos DFA; os testes com palavras revelam diferenças, mas só o algoritmo decide a equivalência.
+
+[Eliminação com retorno e derivadas](/cadeiras/tc/expressoes-automatos/#derivadas-de-expressões).

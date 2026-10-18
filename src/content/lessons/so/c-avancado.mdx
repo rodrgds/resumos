@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import memoria from '../../so/memoria.c?raw';
 
-Dois apontadores podem dar acesso ao mesmo objeto, mas mudar um deles não muda o outro; guardar um endereço também não prolonga a vida do objeto. Estas distinções aparecem tanto numa biblioteca de vetores como nos argumentos que passamos a uma thread.
+Um programa que soma vetores parte-se em cabeçalho, implementação e cliente. Cada ficheiro compila-se em separado e a ligação junta objetos e bibliotecas com `-lvetor -lm`. A ordem nessa linha importa e um erro de compilação tem uma fase diferente de um erro de ligação.
 
 ## Do ficheiro fonte ao executável
 
@@ -95,7 +95,7 @@ Este é um excerto: confirma antes que `novo_tamanho` é positivo e que a multip
 
 Uma string C termina em `\0`. Para guardar `"ola"`, precisas de quatro bytes. `strlen` conta bytes anteriores ao terminador; não mede a capacidade do buffer. `sizeof` de um apontador mede o apontador, não a string.
 
-`strcmp(a, b)` devolve zero se forem iguais, negativo se `a` vier antes de `b` e positivo no caso contrário. Não exijas exatamente `-1` ou `1`. `strcpy` e `strcat` exigem espaço suficiente no destino. Para concatenar duas strings, a reserva precisa de `strlen(a) + strlen(b) + 1` bytes, depois de verificar overflow.
+`strcmp(a, b)` devolve zero se forem iguais, negativo se `a` vier antes de `b` e positivo no caso contrário. Não exijas exatamente `-1` ou `1`. `strcpy(dst, src)` exige `strlen(src)+1` bytes no destino. `strcat(dst, src)` exige `strlen(dst)+strlen(src)+1` bytes, com `dst` já terminada. Em ambos, as regiões não se podem sobrepor e a reserva precisa de verificação de overflow antes de somar.
 
 `strtok` modifica o buffer e mantém estado entre chamadas. Se precisares de conservar o original, faz uma cópia que possas alterar. O argumento de delimitadores é um **conjunto de caracteres**, não uma substring: `" ,"` separa tanto em espaço como em vírgula. `strtok` ignora sequências de delimitadores; `strsep` também pode devolver tokens vazios, que o programa tem de conservar ou ignorar segundo o contrato. `strsep` é uma extensão comum de UNIX, não parte de C17. Ao usar `tolower`, converte primeiro para `unsigned char` se o valor vier de um `char` que pode ser negativo.
 
@@ -121,12 +121,6 @@ if (errno == ERANGE || fim == argv[1] || *fim != '\0') {
 ## Bibliotecas e APIs
 
 Uma API diz que funções existem, que argumentos aceitam e o que devolvem. Uma implementação cumpre esse contrato. Por exemplo, uma biblioteca de vetores pode devolver `struct vetor` por valor ou devolver `struct vetor *` que exige libertação: são contratos diferentes, mesmo que representem o mesmo vetor.
-
-```sh
-gcc -Wall -Wextra -c vetor.c
-ar rcs libvetor.a vetor.o
-gcc usar.c -L. -lvetor -lm -o usar
-```
 
 Um exemplo mínimo completo tem três ficheiros. O cabeçalho `vetor.h` declara a função, a implementação `vetor.c` define-a e o cliente `usar.c` chama-a e imprime o resultado:
 
@@ -164,7 +158,7 @@ cc -std=c17 -Wall -Wextra -Wpedantic usar.c -L. -lvetor -o usar
 ./usar
 ```
 
-A saída observada é `2 + 3 = 5`. O cliente inclui o cabeçalho para conhecer a declaração, mas só a ligação com a biblioteca fornece a definição. A biblioteca estática fornece código ao executável na ligação. `-L.` acrescenta um diretório de pesquisa e `-lvetor` procura uma biblioteca com esse nome. A ordem importa para arquivos estáticos: põe a biblioteca depois dos objetos que usam os seus símbolos. `-lm` fornece a biblioteca matemática em ambientes que a separam.
+A saída observada é `2 + 3 = 5`. O cliente inclui o cabeçalho para conhecer a declaração, mas só a ligação com a biblioteca fornece a definição. A biblioteca estática fornece código ao executável na ligação. `-L.` acrescenta um diretório de pesquisa e `-lvetor` procura uma biblioteca com esse nome. A ordem importa para arquivos estáticos: põe a biblioteca depois dos objetos que usam os seus símbolos. `-lm` fornece a biblioteca matemática em ambientes que a separam. Para inspecionar o conteúdo do arquivo, `ar -t libvetor.a` lista os objetos guardados.
 
 Para uma biblioteca partilhada em Linux:
 

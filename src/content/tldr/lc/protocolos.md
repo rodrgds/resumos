@@ -19,7 +19,8 @@ XOR deteta alguns erros, mas inverter o mesmo bit em dois bytes conserva o check
 
 ## Parser e recuperação
 
-O estado persiste entre chegadas fragmentadas; não bloqueies à espera do frame inteiro.
+- O estado persiste entre chegadas fragmentadas; não bloqueies à espera do frame inteiro.
+- Outro byte após escape invalida o corpo e leva a `WAIT_START`. Delimitadores consecutivos não publicam mensagens vazias. Excesso de capacidade, erro UART ou timeout invalidam o parcial.
 
 | Estado e entrada        | Ação                                   |
 | ----------------------- | -------------------------------------- |
@@ -30,8 +31,6 @@ O estado persiste entre chegadas fragmentadas; não bloqueies à espera do frame
 | `ESCAPED`, `5E` ou `5D` | Guardar byte XOR `20`, voltar a `BODY` |
 | `ESCAPED`, `7E`         | Descartar parcial, iniciar corpo vazio |
 | `BODY`, `7E`            | Validar corpo, preparar o seguinte     |
-
-Outro byte após escape invalida o corpo e leva a `WAIT_START`. Delimitadores consecutivos não publicam mensagens vazias. Excesso de capacidade, erro UART ou timeout invalidam o parcial.
 
 **Só publica um evento depois de validar** tipo, campos, comprimento e checksum no fecho. Aplicar o primeiro campo antes dessa validação deixa efeitos de mensagens inválidas.
 

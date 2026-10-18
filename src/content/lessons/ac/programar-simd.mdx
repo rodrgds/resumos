@@ -79,7 +79,7 @@ fim:
     ret
 ```
 
-A redução usa somas escalares sem misturar contagens: após o primeiro shift/soma, o byte baixo contém `b0+b2`; o seguinte, `b1+b3`. A segunda soma reúne os quatro no byte baixo. Cada parcela vale no máximo 1, pelo que não há carry entre bytes nessas somas. Para máscara `[1,0,1,1]`, o resultado baixo passa de 2 para 3. Se os bytes fossem contadores arbitrários, essa justificação já não bastava.
+A redução usa somas escalares para juntar os quatro bytes da máscara. Cada parcela vale no máximo 1, por isso não há carry entre bytes nestas somas: após o primeiro shift/soma, o byte baixo contém `b0+b2` e o seguinte, `b1+b3`. A segunda soma reúne os quatro no byte baixo. Para a máscara `[1,0,1,1]`, o resultado baixo passa de 2 para 3. Esta justificação vale para contagens 0/1; com contadores arbitrários por via, seria preciso outra análise.
 
 A entrada vazia passa pelas duas verificações e retorna zero sem ler memória. O resto usa `lb`, para estender o sinal, e compara com o limite original. A linha `scmplt8` requer a ISA empacotada; o bloco Python anterior permite conferir a operação em cada via.
 
@@ -136,5 +136,13 @@ Com `a=(2,3)` e `b=(4,−1)`, os produtos diretos são 8 e −3; os cruzados, �
 ## Custo e limites de SIMD
 
 SIMD reduz instruções aritméticas por elemento, mas os dados têm de chegar aos registos. Replicação de constantes, permutações, alinhamento e restos têm custo. Um vetor curto pode não amortizar a preparação.
+
+A apresentação conta instruções para contar ímpares em N bytes, com N múltiplo de 4 nos exemplos. A versão escalar executa $3+6N$ instruções. As 3 de preparação fixam endereço do vetor, contador e acumulador; cada byte custa 6 instruções no ciclo.
+
+A versão SIMD executa $21+1{,}5N$. As 4 de preparação fixam endereço, número de grupos, máscara `0x01010101` e acumulador; cada grupo de 4 bytes custa 6 instruções. A combinação final dos quatro parciais custa $1+16$: 1 para juntar e 16 da redução escalar.
+
+O resto do vetor fica de fora desta conta. Para N=8, são 51 contra 33; para N=4000, 24003 contra 6021. A razão tende para 4 quando N cresce, porque o ciclo escalar faz 6 instruções por byte e o SIMD faz 6 por cada grupo de 4.
+
+Usa esta comparação para calibrar a intuição, sem a confundir com uma medição de tempo: faltas, paragens e o resto do programa não entram nestas contas.
 
 O ganho teórico de 4 vias só se aplica à parte que efetivamente executa 4 operações em paralelo. Se essa parte ocupava 60% do tempo e melhora 4 vezes, Amdahl dá $1/(0,4+0,6/4)=1,818$, antes de contar custos novos. Não multipliques automaticamente o desempenho total pelo número de vias.

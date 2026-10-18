@@ -6,6 +6,8 @@ order: 0
 editorial:
   basedOn: 2025/26
   sources:
+    - title: LTW, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586997
     - title: LTW, SIGARRA 2025/26
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104
     - title: André Restivo, LTW 2025/26
@@ -13,10 +15,10 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Revisão editorial dos Resumos FEUP
-    date: '2026-10-13'
+    date: '2026-10-17'
   coverage: Programa da ficha de 2025/26 e sequência pública de aulas do docente, com exemplos e exercícios próprios.
   gaps:
-    - Programa e avaliação de 2026/27 por confirmar.
+    - Programa, objetivos e avaliação de 2026/27 por confirmar na ficha dessa edição.
     - Materiais de Moodle de 2026/27 por confirmar.
     - Páginas protegidas do projeto, exame e algumas soluções práticas indisponíveis.
 ---
@@ -40,7 +42,7 @@ Vamos usar um catálogo de livros e pequenas reservas como fio condutor. São ex
 
 Cada lição tem exemplos resolvidos e exercícios no fim. Prevê o resultado antes de correres o exemplo, porque é aí que descobres o que ainda não percebeste. Depois altera um dado, uma condição ou um seletor e explica a diferença. A [Cheat sheet](/cadeiras/ltw/folha-consulta/) serve para consultar regras depois de as estudares.
 
-O percurso segue o programa de 2025/26. O programa e a avaliação de 2026/27 não estão confirmados nestes apontamentos; consulta a [ficha dessa edição](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586997) e o Moodle para os tópicos e regras aplicáveis.
+O percurso segue o programa de 2025/26 e a sequência pública de aulas do docente. A ficha de 2026/27 confirma a UC (L.EIC019, 2.º ano, 2.º semestre, 6 ECTS, regência de André Restivo, 2 h teóricas e 2 h teórico-práticas semanais), mas não publica programa, objetivos nem avaliação. A página do docente mantém a edição 2025/26. Consulta a [ficha dessa edição](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586997) e o Moodle para os tópicos e regras aplicáveis.
 
 Para treinar em conjunto, implementa uma reserva que começa num formulário, valida no PHP, usa uma consulta preparada, identifica o utilizador pela sessão e devolve uma resposta. Confirma o pedido no separador Rede do navegador. Repete com quantidade zero, parâmetro ausente e utilizador sem permissão.
 

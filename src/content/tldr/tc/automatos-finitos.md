@@ -1,47 +1,40 @@
 ## DFA e aceitação
 
-Um **DFA** é $M=(Q,\Sigma,\delta,q_0,F)$: estados finitos $Q$, alfabeto $\Sigma$, transição $\delta$, início $q_0\in Q$ e finais $F\subseteq Q$.
+Um DFA é $M=(Q,\Sigma,\delta,q_0,F)$ com $\delta:Q\times\Sigma\to Q$ **total**: um destino por cada par estado/símbolo. Num DFA, um desenho incompleto abrevia um poço para as transições omitidas.
 
-- $\delta:Q\times\Sigma\to Q$ é **total**: exatamente um destino por estado e símbolo. Transições omitidas num desenho devem levar a um poço, que repete todos os símbolos.
-- Aceita se, **depois de consumir toda a entrada**, o estado é final. Passar por um final antes do fim não basta.
-- A palavra vazia é aceite se e só se $q_0\in F$.
+- O DFA aceita quando, **depois de consumir toda a entrada**, o estado atual é final. Passar por um final antes do fim não basta.
+- A palavra vazia $\varepsilon$ é aceite se e só se o início $q_0$ pertence a $F$.
 
 ## Estados com significado
 
-Para reconhecer palavras terminadas em $ab$, guarda o sufixo útil do prefixo lido:
+Para palavras terminadas em $ab$, guarda o sufixo útil do prefixo:
 
-| Estado             | Significado                  | $a$   | $b$   |
-| ------------------ | ---------------------------- | ----- | ----- |
-| $q_0$, inicial     | Nenhum dos sufixos seguintes | $q_1$ | $q_0$ |
-| $q_1$              | Termina em $a$               | $q_1$ | $q_2$ |
-| $q_2$, único final | Termina em $ab$              | $q_1$ | $q_0$ |
+| Estado         | Significado     | $a$   | $b$   |
+| -------------- | --------------- | ----- | ----- |
+| $q_0$, inicial | Sem sufixo útil | $q_1$ | $q_0$ |
+| $q_1$          | Termina em $a$  | $q_1$ | $q_2$ |
+| $q_2$, final   | Termina em $ab$ | $q_1$ | $q_0$ |
 
-$baab$ segue $q_0,q_0,q_1,q_1,q_2$ e aceita. $aba$ passa por $q_2$, mas termina em $q_1$ e rejeita.
+$baab$ segue $q_0,q_0,q_1,q_1,q_2$ e aceita. $aba$ passa por $q_2$ mas termina em $q_1$ e rejeita.
 
-Para provar a construção, mostra por **indução nos prefixos** que cada estado conserva o significado indicado e que o critério final equivale à condição da linguagem nas duas direções; testar palavras apenas ajuda a encontrar erros.
+A regra de recuperação pergunta, perante o estado $p$ e a letra $a$, qual é o sufixo útil do prefixo maior. Prova por indução nos prefixos que cada estado conserva o seu significado; só então o critério final equivale à condição nas duas direções.
 
 [Construção e editor do DFA](/cadeiras/tc/automatos-finitos/#construir-e-testar-o-dfa).
 
 ## Transição estendida
 
 $$
-\begin{aligned}
-\widehat\delta(q,\varepsilon)&=q,\\
-\widehat\delta(q,xa)&=\delta(\widehat\delta(q,x),a).
-\end{aligned}
+\widehat\delta(q,\varepsilon)=q,\qquad
+\widehat\delta(q,xa)=\delta(\widehat\delta(q,x),a).
 $$
 
-Assim, $w\in L(M)$ se e só se $\widehat\delta(q_0,w)\in F$. Podes dividir a leitura em qualquer posição:
-
-$$
-\widehat\delta(q,xy)=\widehat\delta(\widehat\delta(q,x),y).
-$$
+$w\in L(M)$ se e só se $\widehat\delta(q_0,w)\in F$. Podes dividir a leitura em qualquer posição: $\widehat\delta(q,xy)=\widehat\delta(\widehat\delta(q,x),y)$.
 
 ## Restos e produto
 
-- Para binário lido do bit **mais significativo** para o menos significativo, ler $b$ transforma $v$ em $2v+b$. Para múltiplos de $d$, guarda apenas o resto $i$ e atualiza para $(2i+b)\bmod d$. O resto zero é final.
-- Decide separadamente se permites $\varepsilon$ e zeros iniciais. Para exigir início em $1$, usa um início novo não final e um poço para o primeiro $0$.
-- Se leres no sentido inverso, guarda também o peso $t$ da próxima posição: $(r,t)$ passa a $((r+bt)\bmod d,2t\bmod d)$, começando em $(0,1)$.
-- Para combinar condições, usa estados-pares e atualiza ambas as componentes. Na interseção, ambas têm de ser finais; na união, basta uma. Por exemplo, a paridade de zeros e uns exige quatro pares de paridades.
+- Para um binário lido do bit **mais** significativo para o menos: ler o bit $b$ quando o valor acumulado é $v$ dá $2v+b$. Para múltiplos do divisor $d$, guarda o resto $r$ e atualiza por $(2r+b)\bmod d$; o resto zero é final.
+- Decide $\varepsilon$ e zeros iniciais à parte: usa um início novo não final e um poço para o primeiro $0$ quando a representação tem de começar em $1$.
+- No sentido inverso, do menos para o mais significativo, guarda o resto $r$ e o peso $t$ da posição seguinte, com $(r,t)\mapsto((r+bt)\bmod d,2t\bmod d)$ desde $(0,1)$, onde $d$ é o divisor.
+- O produto usa estados-pares com ambas as componentes atualizadas por cada letra. Os finais dependem da operação: a interseção exige ambas as componentes finais e a união exige pelo menos uma componente final.
 
 [Contagens e convenções completas](/cadeiras/tc/automatos-finitos/#contar-por-restos).

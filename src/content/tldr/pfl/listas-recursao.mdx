@@ -1,15 +1,9 @@
-import permutacoes from '../../pfl/examples/permutacoes.hs?raw';
-import CodeSnippet from '../../../components/CodeSnippet.astro';
+## Construir, aceder e gerar
 
-import Dot from '../../../components/Dot.astro';
-import divisao from '../../pfl/mergesort.dot?raw';
-
-## Construção, índices e compreensões
-
-- `x:xs` acrescenta uma cabeça em tempo constante. `xs ++ ys` percorre `xs`, com custo linear no seu comprimento.
-- `head` e `tail` exigem lista não vazia. `xs !! i` exige índice válido a partir de zero. `take n` e `drop n`, para `n <= 0`, dão `[]` e a lista original.
-- `zip` para na lista mais curta; `length` e `reverse` precisam de listas finitas para produzir o resultado completo.
-- Numa compreensão, o primeiro gerador é o exterior. `[(x,y) | x <- [1,2], y <- [4,5]]` dá `[(1,4),(1,5),(2,4),(2,5)]`. Um gerador dependente só pode usar nomes já ligados.
+- `x:xs` acrescenta uma cabeça em tempo constante; `xs ++ ys` percorre `xs`. `3:5` nem sequer tem tipo: o lado direito de `:` tem de ser uma lista.
+- `head` e `tail` exigem lista não vazia. `xs !! i` exige `0 <= i < length xs`, a contar de zero. `take n` e `drop n` aceitam a lista vazia; para `n <= 0` dão `[]` e a lista original.
+- `zip` para na lista mais curta; `length` e `reverse` precisam de listas finitas.
+- Numa compreensão, o primeiro gerador é o exterior: `[(x,y) | x <- [1,2], y <- [4,5]]` dá `[(1,4),(1,5),(2,4),(2,5)]`. Um gerador dependente só usa nomes de geradores anteriores; trocar a ordem pode deixar `x` por definir.
 
 ```haskell
 indices :: Eq a => a -> [a] -> [Int]
@@ -17,11 +11,40 @@ indices valor xs = [i | (x,i) <- zip xs [0..], x == valor]
 -- indices 'a' "casa" = [1,3]
 ```
 
-A enumeração `[0..]` não impede a terminação para `xs` finita, porque `zip` para ao acabar `xs`.
+A enumeração `[0..]` é infinita, mas `zip` para ao acabar `xs`: só a lista finita é percorrida.
 
-## Domínio e progresso da recursão
+## Terminar a recursão
 
-Identifica casos base e uma medida que diminui. Uma cauda é menor numa lista finita; um contador positivo aproxima-se de zero. Para tratar negativos, `replicar n x` pode devolver `[]` quando `n <= 0`.
+Identifica o caso base e uma medida que diminui: numa lista finita, o comprimento restante; num contador, a distância até zero. Se o tipo admite valores fora do domínio (negativos em `replicar`), trata-os ou declara a pré-condição.
+
+| Decisão                     | Condição                                                     |
+| --------------------------- | ------------------------------------------------------------ |
+| `curta` com três padrões    | Termina em listas infinitas depois de três células.          |
+| `perfeito n`                | Exige `n > 0`; a soma vazia de `0` passaria sem essa guarda. |
+| Primalidade com `d*d > n`   | O teste de paragem usa `>`, para não saltar a raiz exata.    |
+| `toBits` com `Int -> [Int]` | Domínio não negativo; escolhe `[0]` para zero e trata `< 0`. |
+| `(-1) div 2 == -1`          | Impede o progresso da mesma recursão para negativos.         |
+
+- Em Pascal, a linha seguinte é `zipWith (+) (0:linha) (linha ++ [0])`: `[1,3,3,1]` produz `[1,4,6,4,1]`.
+- `myindex` segue índice e lista em conjunto. O domínio exclui negativos e índices além do fim; cada chamada recebe uma cauda estritamente menor.
+
+## Ordenar sem perder dados
+
+| Método     | Ideia e custo para $n$ elementos finitos                  |
+| ---------- | --------------------------------------------------------- |
+| Inserção   | Insere a cabeça na cauda já ordenada. Pior caso $O(n^2)$. |
+| Merge sort | Divide em metades menores, ordena e junta. $O(n \log n)$. |
+
+<Dot
+  source={divisao}
+  alt="Merge sort divide 4,1,3,1 em duas metades, ordena-as para 1,4 e 1,3 e junta em 1,1,3,4."
+/>
+
+- Ao juntar, retira só a cabeça escolhida e conserva a outra para a chamada seguinte.
+- Ao dividir, trata zero e um elemento antes da recursão, garantindo partes estritamente menores.
+- Ambos os métodos conservam todas as ocorrências, incluindo repetidos.
+
+## Intercalar, permutar e converter
 
 ```haskell
 intercalar :: a -> [a] -> [a]
@@ -31,45 +54,18 @@ intercalar s (x:xs) = x:s:intercalar s xs
 -- intercalar '-' "rt" = "r-t"
 ```
 
-O caso de um elemento impede o separador final. Eliminar repetidos conservando a primeira ocorrência difere de agrupar iguais consecutivos: `"AABBBAA"` forma `["AA","BBB","AA"]`, conservando os dois grupos de `A`.
-
-- Um número perfeito é **positivo** e igual à soma dos divisores próprios positivos. `6` tem `[1,2,3]`; `12` tem `[1,2,3,4,6]` e não é perfeito.
-- Para testar primalidade com `Integer`, exige `n > 1` e procura divisores `d` enquanto `d*d <= n`. Só termina com sucesso quando `d*d > n`, para não saltar a raiz de um quadrado perfeito. São $O(\sqrt n)$ candidatos, sem contar o custo da aritmética de inteiros grandes.
-- Em Pascal, a linha seguinte é `zipWith (+) (0:linha) (linha ++ [0])`. A linha `[1,3,3,1]` produz `[1,4,6,4,1]`.
-
-## Ordenação
-
-| Método     | Condição e custo para uma lista finita de $n$ elementos                  |
-| ---------- | ------------------------------------------------------------------------ |
-| Inserção   | Insere a cabeça na cauda já ordenada. Pior caso $O(n^2)$.                |
-| Merge sort | Divide em partes menores, ordena e junta listas ordenadas. $O(n\log n)$. |
-
-<Dot
-  source={divisao}
-  alt="Merge sort divide 4,1,3,1 em duas metades, ordena-as para 1,4 e 1,3 e junta em 1,1,3,4."
-/>
-
-Ao juntar, retira apenas a cabeça escolhida e conserva a outra. Ao dividir, trata zero e um elemento antes da recursão, garantindo partes estritamente menores. Ambos os métodos devem conservar todas as ocorrências.
-
-## Posições e permutações
+Os casos de zero e um elemento impedem o separador final.
 
 <CodeSnippet language="haskell" code={permutacoes} />
 
-`permutar [] = [[]]` representa uma possibilidade vazia onde inserir. Há $n!$ resultados para $n$ ocorrências, mesmo com valores repetidos: `permutar "aa"` devolve `"aa"` duas vezes. Imprimir todos exige $O(n\,n!)$ operações de visita aos elementos.
+- `permutar [] = [[]]`: existe uma ordenação da lista vazia onde inserir. Há $n!$ resultados para $n$ ocorrências, mesmo com repetidos (`permutar "aa"` dá `"aa"` duas vezes); visitar cada resultado custa $O(n\,n!)$.
+- Bits para inteiro: `foldl (\n b -> 2*n+b) 0` sobre bits `0` ou `1` pela ordem. `[1,0,1,1]` passa por `0,1,2,5,11`.
+- Inteiro para bits: divide por dois até zero, recolhe os restos e inverte. `10` dá restos `[0,1,0,1]`, logo bits `[1,0,1,0]`.
 
-## Conversão binária
+## Agrupar pela relação com o primeiro
 
-- Para bits do mais para o menos significativo, usa `foldl (\n b -> 2*n+b) 0`. `[1,0,1,1]` dá acumuladores `0,1,2,5,11`. Exige bits `0` ou `1`.
-- Para um inteiro positivo, divide por dois até zero, recolhe restos e inverte-os. `10` produz restos `[0,1,0,1]`, logo bits `[1,0,1,0]`.
-- Define a representação de zero, aqui `[0]`, e rejeita negativos ou escolhe outra codificação. `(-1) div 2 == -1` impede o progresso desta recursão.
-- A ficha pede `Int -> [Int]` com domínio não negativo. O contrato alternativo `Integer -> Maybe [Integer]` devolve `Nothing` nos negativos, sem impor limites de `Int`.
+`agruparPor rel (x:xs)` fixa `x`, usa `span (rel x) xs` para separar o prefixo e continua no resto. O caso vazio dá `[]`. Não exige `Eq`: recebe a comparação.
 
-[Conversão e contratos completos](/cadeiras/pfl/listas-recursao/#converter-inteiro-para-bits).
+Se a relação não for transitiva, comparar com o primeiro difere de comparar vizinhos. Com proximidade até 1 em `[0,1,2]`, o contrato do primeiro dá `[[0,1],[2]]`; vizinhos dariam `[[0,1,2]]`. A recursão retira pelo menos a cabeça; para terminar, a entrada tem de ser finita.
 
-## Grupos por uma relação
-
-`agruparPor rel (x:xs)` fixa x, usa `span (rel x) xs` para separar o prefixo e continua no resto. O caso vazio dá `[]`. Não precisa de Eq, pois recebe a comparação.
-
-Se a relação não for transitiva, comparar com o primeiro difere de comparar vizinhos. Com proximidade até 1 em `[0,1,2]`, o contrato do primeiro dá `[[0,1],[2]]`; vizinhos dariam `[[0,1,2]]`. Não ordena nem procura valores depois da primeira falha. A recursão retira pelo menos a cabeça.
-
-[Contrato de agrupamento](/cadeiras/pfl/listas-recursao/#agrupar-comparando-com-o-início-do-grupo).
+[Recursão, ordenação e contratos](/cadeiras/pfl/listas-recursao/#recursão-que-termina).

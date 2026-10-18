@@ -1,49 +1,27 @@
-## Controlador e serviço
+## Serviço
 
-- Registos de comando iniciam ações; estado indica pronto/ocupado/erro; dados transportam informação.
-- Memory-mapped I/O usa endereços de memória; I/O isolado usa portas/instruções próprias. Leituras podem ter efeitos. Ordenação, permissões e cacheabilidade seguem a plataforma.
+| Método       | Trabalho do CPU                        |
+| ------------ | -------------------------------------- |
+| Polling      | Consulta e transfere quando necessário |
+| Interrupções | Conserva estado, serve, retoma         |
+| DMA          | Configura, trata a conclusão           |
 
-| Método       | Trabalho do CPU                                               |
-| ------------ | ------------------------------------------------------------- |
-| Polling      | Consulta estado e transfere quando necessário                 |
-| Interrupções | Conserva estado, serve a notificação e retoma a tarefa        |
-| DMA          | Configura transferência dispositivo/memória e trata conclusão |
+Polling periódico com consulta de $C$ ciclos a cada $P$ ciclos custa $C/P$ do CPU. Em DMA não coerente, a saída exige clean das linhas dirty relevantes; a entrada invalida cópias antigas. Invalidar não substitui clean.
 
-Polling em espera ativa e consultas periódicas têm custos diferentes; em interrupções, prioridades, máscaras e aninhamento determinam o serviço.
+## Mensagens
 
-## Polling e interrupções
-
-- Consulta de C ciclos a cada P ciclos ocupa fração $C/P$ do CPU, mesmo sem dados.
-- Chegada R bytes/s, bloco B bytes: $q=R/B$ blocos/s. Com um bloco de armazenamento, intervalo máximo ideal $B/R$; serviço, atrasos e jitter exigem margem.
-- 16000 bits/s e bloco 400 bits dão 40 blocos/s e 25 ms. A 300 ciclos/consulta e CPU 2 GHz, consultas ocupam $40\times300/(2\times10^9)=0{,}000006$, ou **0,0006%**. Acrescenta transferência se ainda não contada.
-- Polling $q_pc_p$ ciclos/s e interrupções $u q_{\max}c_i$ igualam custos em:
-
-$$u=\frac{q_pc_p}{q_{\max}c_i}.$$
-
-Com frequências iguais, consulta 400 ciclos e interrupção 600, igualdade em $u=2/3$. Custo menor não garante latência ou capacidade suficiente.
-
-## Latência de uma mensagem
-
-Modelo **sem sobreposição**, B bytes e R bytes/s:
+Sem sobreposição, mensagem de $B$ bytes com custo fixo $t_{\rm fixo}$ de preparação e conclusão e taxa $R$:
 
 $$t(B)=t_{\rm fixo}+B/R.$$
 
-O custo fixo inclui envio, ligação e receção. A rede de maior taxa pode perder em mensagens curtas. Para custos fixos 462/623 μs e taxas 1,125/10 MB/s decimais, igualar os tempos dá B≈204,085 bytes: A ganha até 204 bytes inteiros, B a partir de 205. Só soma parcelas sucessivas; com sobreposição, segue o caminho crítico.
+A rede de maior taxa pode perder em mensagens curtas; compara curvas por tamanho, não só taxas.
 
-[Limiar e unidades da comunicação](/cadeiras/ac/entrada-saida/#latência-de-comunicação-e-tamanho-da-mensagem).
+## Dimensionar DMA
 
-## Custo de DMA
+$R$ taxa em bytes/s, $B$ bytes por bloco, $c$ ciclos de preparação e conclusão por transferência, $f$ frequência do CPU, $u$ fração do CPU:
 
-Para taxa agregada R bytes/s, B bytes/bloco, c ciclos de preparação/conclusão e frequência f:
+$$u=\frac{Rc}{Bf},\qquad B\ge\frac{Rc}{u_{\max}f}.$$
 
-$$u_{\rm CPU}=\frac{Rc}{Bf},\qquad B\ge\frac{Rc}{u_{\max}f}.$$
+$R$ é taxa agregada em unidades decimais. Blocos pequenos multiplicam transferências.
 
-Dois discos de 100 MB/s, c=2000, f=2 GHz e limite 1% exigem B≥20000 bytes, com unidades decimais. Blocos menores aumentam transferências/s. DMA reduz trabalho por palavra, mas disputa memória/interligador e paga preparação.
-
-## Cache e posse de buffers
-
-- DMA de **saída** deve ler dados recentes: descarrega linhas WB dirty e aplica ordenação antes de arrancar. Invalidar não substitui clean.
-- DMA de **entrada** não pode ser sobrescrito depois por uma linha dirty antiga. Invalida cópias antigas no momento definido pela plataforma e respeita o protocolo de posse.
-- Hardware coerente pode realizar parte do trabalho. Não alteres buffers enquanto o dispositivo os usa fora do contrato.
-
-[Dimensionamento e sincronização de DMA](/cadeiras/ac/entrada-saida/).
+[Limiares e sincronização](/cadeiras/ac/entrada-saida/).

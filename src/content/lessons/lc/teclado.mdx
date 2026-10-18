@@ -12,6 +12,15 @@ import maquina from '../../lc/maquina-teclado.dot?raw';
 
 Premir a seta direita produz `E0 4D`; largá-la produz `E0 CD`, no set 1 usado aqui. O i8042 recebe e disponibiliza estes bytes um de cada vez. O programa só deve produzir um evento depois de reunir o scancode completo.
 
+A chegada segue sempre esta ordem, do teclado para o programa:
+
+1. O controlador do teclado envia o byte pela linha série para o KBC.
+2. O KBC guarda-o no output buffer e assinala OBF a 1 no registo de estado.
+3. Se as interrupções do teclado estiverem ativas no command byte, o KBC levanta IRQ1.
+4. O programa lê o estado em `0x64` e depois retira o byte de `0x60`.
+
+Em polling, o passo 3 não produz efeito no programa: é a leitura repetida do estado que encontra OBF. Em interrupções, o handler executa o passo 4. Trocar esta ordem, por exemplo assumir que a interrupção cria o byte em vez de apenas o anunciar, leva a ler o buffer antes de ele ter dados.
+
 ## Estado do i8042
 
 Consulta o registo de estado em `0x64`. Os bits usados nas leituras e escritas são:

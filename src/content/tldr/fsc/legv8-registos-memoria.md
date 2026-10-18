@@ -1,42 +1,24 @@
-## RV32 e programa
+## Programa e registos
 
-O **PC** guarda o endereço da instrução. Fetch lê-a, decode identifica operação e operandos, execute aplica-a. A ISA define efeitos observáveis; a ABI define acordos como argumentos e preservação de registos.
+- **PC** guarda o endereço da instrução. ISA define efeitos; ABI acorda argumentos e preservação.
+- RV32: 32 registos de 32 bits, x0…x31, mais PC separado. x0 lê 0 e descarta escritas.
 
-Compilador traduz alto nível; assembler produz código máquina; linker resolve símbolos entre módulos; loader prepara a execução. Uma etiqueta nomeia uma posição, não um registo.
+| Nome   | Uso         |
+| ------ | ----------- |
+| ra=x1  | Retorno     |
+| sp=x2  | Pilha       |
+| t0…t6  | Temporários |
+| a0…a7  | Argumentos  |
+| s0…s11 | Preservados |
 
-RV32 tem 32 registos inteiros de 32 bits, x0…x31, mais o PC separado. x0 lê sempre 0 e descarta escritas. Aliases não acrescentam registos:
+Load/store: aritmética nos registos, memória só por loads/stores.
 
-| Nome   | Uso                 |
-| ------ | ------------------- |
-| ra=x1  | Retorno             |
-| sp=x2  | Pilha               |
-| t0…t6  | Temporários         |
-| a0…a7  | Argumentos          |
-| s0…s11 | Valores preservados |
+## Endereços
 
-A organização **load/store** faz aritmética nos registos e transferências para memória por loads/stores.
+- Ao byte: word 4 bytes, halfword 2. 32 bits de endereço: 4 GiB de espaço.
+- RARS little endian: byte menos significativo no menor endereço. Bits no registo não se invertem; a ordem depende do ambiente.
+- $v[i]$ de words em **B+4i**. `lw t2,8(t1)` lê o índice 2. Alinha words a 4, halfwords a 2.
+- `la` obtém endereço; `lw` lê conteúdo. Diretivas (`.word`, `.asciz`, `.align n` a $2^n$ bytes) não executam.
+- `ecall`: a7=1 imprime inteiro, 11 carácter, 10 termina. Só RARS.
 
-## Endereços e bytes
-
-A memória é endereçada ao byte. Word=4 bytes; halfword=2. 32 bits de endereço permitem 4 GiB de espaço, sem exigir toda essa RAM instalada.
-
-No **RARS**, little endian põe o byte menos significativo no menor endereço:
-
-| Endereço | Byte de `0x12345678` |
-| -------- | -------------------- |
-| B        | 78                   |
-| B+1      | 56                   |
-| B+2      | 34                   |
-| B+3      | 12                   |
-
-A ordem dos bits no registo não se inverte. A ordem de bytes depende do ambiente RISC-V, não é universal. Usa alinhamento múltiplo de 4 para words e de 2 para halfwords; acessos desalinhados dependem do ambiente.
-
-Num vetor de words, $v[i]$ fica em **B+4i**. `lw t2,8(t1)` lê o índice 2, com t1=B. `la` obtém endereço; `lw` lê conteúdo; `sb` altera só um byte.
-
-## Diretivas RARS
-
-`.text` contém instruções; `.data`, dados estáticos. `.word`, `.half`, `.byte` emitem 32,16,8 bits; `.asciz` acrescenta zero final; `.space n` reserva n bytes; `.align n` alinha a $2^n$ bytes. Diretivas não são instruções executadas.
-
-Os serviços `ecall` do RARS usam a7=1 para imprimir o inteiro de a0, 11 para carácter e 10 para terminar. Não são serviços portáveis para qualquer sistema.
-
-[Registos e organização da memória](/cadeiras/fsc/legv8-registos-memoria/#endereços-e-little-endian).
+[Endereços e RARS](/cadeiras/fsc/legv8-registos-memoria/#endereços-e-little-endian).

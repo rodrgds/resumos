@@ -8,102 +8,93 @@ editorial:
   basedOn: 2026/27
   review:
     edition: 2026/27
-    reviewer: Codex
-    date: '2026-10-13'
-  coverage: Consulta compacta dos tópicos das onze lições. As derivações e resoluções estão nas lições.
+    reviewer: T3-RC
+    date: '2026-10-18'
+  coverage: Consulta esquemática dos tópicos das onze lições. Derivações e resoluções nas lições.
 ---
 
-Escolhe primeiro o modelo e a fronteira do sistema. As fórmulas abaixo servem para consulta; as lições ligadas mostram as contas e as condições de aplicação.
+Escolhe primeiro o modelo e a fronteira. Cada secção indica quando a fórmula vale e o erro que a troca provoca.
 
-## Unidades, canal e erros
+## Canal e erros
 
-$1\text{ byte}=8\text{ bit}$. kbit/s e Mbit/s decimais: $10^3$ e $10^6$. Converte ms, μs e km antes de calcular.
+| Conta | Expressão | Vale quando |
+| --- | --- | --- |
+| Bits por símbolo | $\log_2M$ | Alfabeto de $M$ símbolos |
+| Débito | $R_s\log_2M$ | Sem redundância |
+| Nyquist | $2B\log_2M$ | Ideal, sem ruído, banda $B$ |
+| Shannon | $B\log_2(1+SNR)$ | SNR **linear**, ruído gaussiano |
+| SNR de dB | $10^{SNR_{dB}/10}$ | Razão de potências |
+| Ganho/perda | $10\log_{10}(P_2/P_1)$ | dB é razão, não potência |
+| dBm/dBW | $P_{dBm}=P_{dBW}+30$ | Referências 1 mW e 1 W |
+| Espaço livre | $20\log_{10}(4\pi d/\lambda)$ | Isotrópico, campo distante |
+| Erro de trama | $F=1-(1-p)^L$ | Bits independentes |
+| Sucesso em $k$ tentativas | $1-F^k$ | Tentativas independentes |
 
-| Conta                   | Expressão                            | Condição                           |
-| ----------------------- | ------------------------------------ | ---------------------------------- |
-| Bits por símbolo        | $\log_2M$                            | Alfabeto de M símbolos codificados |
-| Débito                  | $R_s\log_2M$                         | Sem descontar redundância          |
-| Nyquist                 | $2B\log_2M$                          | Canal ideal sem ruído, banda B     |
-| Shannon                 | $B\log_2(1+SNR)$                     | SNR linear, modelo de ruído        |
-| SNR                     | $10^{SNR_{dB}/10}$                   | Razão de potências                 |
-| Ganho                   | $10\log_{10}(P_r/P_t)$               | dB é uma razão                     |
-| Potência                | $P_{dBm}=P_{dBW}+30$                 | Referências 1 mW e 1 W             |
-| Espaço livre            | $L_{dB}=20\log_{10}(4\pi d/\lambda)$ | Modelo isotrópico, campo distante  |
-| Erro de trama           | $F=1-(1-p)^L$                        | Erros de bit independentes         |
-| Sucesso em k tentativas | $1-F^k$                              | Tentativas independentes           |
+Com Nyquist e Shannon impostos, fica o menor. [Transmissão](/cadeiras/rc/transmissao-de-dados/#nyquist-e-shannon)
 
-4B/5B: dados ocupam 4/5 dos bits codificados. Manchester inclui transição no meio do bit. NRZ e Manchester precisam de uma convenção para níveis/transições. [Explicação](/cadeiras/rc/transmissao-de-dados/).
+## Atraso e débito
 
-## Atraso e utilização
+1. Converte bytes em bits, ms em s, km em m.
+2. Soma por salto: $t_f=L/R$, $t_p=D/v$, mais fila e processamento.
+3. $N$ pacotes, $H$ ligações iguais, só transmissão: $(H+N-1)L/R$. Débitos diferentes: desenha cada transmissão.
+4. Débito sustentado não passa o menor débito do percurso.
+5. Janela $W$ bytes, RTT $T$: $8W/T$ bit/s. [Atraso](/cadeiras/rc/desempenho-e-filas/#atraso-de-um-salto)
 
-Transmissão $t_f=L/R$; propagação $t_p=D/v$. Primeiro pacote store-and-forward: soma transmissão, propagação, processamento e fila em cada salto. N pacotes iguais, H ligações iguais, só transmissão: $(H+N-1)L/R$.
+## ARQ: escolher e calcular
 
-Stop-and-Wait sem perdas: $U=t_f/(t_f+2t_p+t_a)$. Com ACK desprezável e $a=t_p/t_f$: $U=1/(1+2a)$. Janela W sem perdas: $U=\min(1,W/(1+2a))$. Débito útil = R×U×fração útil.
+| | Stop-and-Wait | Go-Back-N | Selective Repeat |
+| --- | --- | --- | --- |
+| Fora de ordem | — | Descarta | Guarda na janela |
+| Retransmite | A trama | Em falta e seguintes | Só em falta |
+| Janela, $m$ bits | 1 | $\le2^m-1$ | $\le2^{m-1}$ |
 
-Modelo com erro independente $p_e$: $U_{SW}=(1-p_e)/(1+2a)$; fração de entregas Selective Repeat $E_{SR}=(1-p_e)\min(1,W/(1+2a))$. Mede débito útil normalizado; a ocupação física pode continuar em 100% com retransmissões.
+- Sem perdas: $U=t_f/(t_f+2t_p+t_a)$; janela $W$: $\min(1,W/(1+2a))$, $a=t_p/t_f$.
+- Com $p_e$ independente: $U_{SW}=(1-p_e)/(1+2a)$; SR entrega $(1-p_e)\min(1,W/(1+2a))$.
+- RR(n) pede a trama $n$; REJ(n) repete desde $n$; SREJ(n) repete só $n$.
+- Bloco finito: segue transmissões e ACKs; último bit chega uma propagação após o fim, confirmação após duas. [Traços](/cadeiras/rc/ligacao-de-dados/#resolver-traços)
+- Lab 1 usa BCC por XOR, stuffing após o cálculo, API `llOpenTx`/`llOpenRx`/`llSend`/`llReceive`. [Lab](/cadeiras/rc/ligacao-de-dados/#do-crc-da-teoria-ao-bcc-do-laboratório)
 
-Go-Back-N com erros independentes e ACK desprezável: se $W\ge1+2a$, $U=(1-p_e)/(1+2ap_e)$; senão $U=W(1-p_e)/((1+2a)(1-p_e+Wp_e))$.
+## Filas: escolher o modelo
 
-Não apliques estas expressões fora do modelo. [Contas e traços](/cadeiras/rc/ligacao-de-dados/).
-
-Bloco finito ARQ: respeita a janela de pendentes e cada ACK. Depois de acabar a última transmissão, soma uma propagação para a chegada ou duas para a confirmação, com ACK desprezável. O débito prolongado pode não dar o tempo exato do bloco. [Calendário](/cadeiras/rc/ligacao-de-dados/#terminar-uma-transferência-finita).
-
-## CRC e ARQ
-
-Comparação de modelos de multiplexagem, m fluxos Poisson independentes e comprimentos exponenciais: fila comum $T=1/(\mu-\lambda)$; m parcelas iguais de capacidade $T=m/(\mu-\lambda)$. A mesma carga não fixa o mesmo atraso. [Explicação](/cadeiras/rc/desempenho-e-filas/#multiplexagem-estatística-e-capacidade-reservada).
-
-CRC: gerador de grau r, acrescentar r zeros, dividir por XOR, colocar resto. Resto zero significa **nenhum erro foi detetado**; não garante ausência de erro. Distância mínima d deteta até d−1 erros. Bit stuffing: zero depois de cinco uns entre flags, incluindo CRC.
-
-RR(n): próximo esperado n. REJ(n): repetir desde n em Go-Back-N; SREJ(n): repetir apenas n em Selective Repeat. GBN descarta fora de ordem; SR guarda dentro da janela. Com m bits: $W_{GBN}\le2^m-1$, $W_{SR}\le2^{m-1}$ para janelas iguais. ACK perdido não autoriza entregar duplicados. [Explicação](/cadeiras/rc/ligacao-de-dados/).
-
-## Filas
-
-Little: $N=\lambda T$, mesma fronteira e taxa efetiva. Carga $\rho=\lambda/\mu$. Serviço médio $1/\mu$, ou comprimento médio/R.
-
-| Modelo | Tempo médio em fila              | Condição                                        |
-| ------ | -------------------------------- | ----------------------------------------------- |
-| M/M/1  | $T_q=\rho/(\mu-\lambda)$         | $\rho<1$, serviço exponencial                   |
-| M/D/1  | $T_q=\rho/(2\mu(1-\rho))$        | $\rho<1$, serviço constante                     |
-| M/G/1  | $T_q=\lambda E[S^2]/(2(1-\rho))$ | $\rho<1$, Poisson, FIFO, segundo momento finito |
-
-Serviços independentes das chegadas e entre si, FIFO e sem preempção. $T=T_q+E[S]$. Em M/M/1: $N=\rho/(1-\rho)$, $N_q=\rho^2/(1-\rho)$. Poisson num intervalo t: $P(k)=e^{-\lambda t}(\lambda t)^k/k!$.
-
-Em M/M/1 estável, servidor ocioso dá $P(N=0)=1-\rho$; nenhum pacote em espera dá $P(N_q=0)=1-\rho^2$. Com chegadas agregadas periódicas e serviço constante mais curto que o intervalo, partindo vazio, não há espera nem perdas. Fontes periódicas alinhadas podem criar grupos e perdas à mesma taxa média.
-
-M/M/1 estável: tempo ocioso $p_0=1-\rho$, $P(N\ge k)=\rho^k$ no sistema; para k≥1, $P(N_q\ge k)=\rho^{k+1}$ na fila. Serviço constante, FIFO e capacidade total B: espera de um admitido limitada por $(B-1)/\mu$. [Exemplos](/cadeiras/rc/modelos-filas/#inferir-a-ligação-a-partir-do-tempo-ocioso).
-
-M/M/1/B, B capacidade total: $p_n=(1-\rho)\rho^n/(1-\rho^{B+1})$; se $\rho=1$, $p_n=1/(B+1)$. Bloqueio $p_B$, $\lambda_e=\lambda(1-p_B)$, $N=\sum n p_n$, $T=N/\lambda_e$.
-
-Um lugar de espera além do serviço dá B=2, não B=1. Define essa convenção antes de calcular perdas.
-
-Filas em série: a saída de uma M/D/1 não é Poisson; conservar comprimentos entre saltos pode correlacionar chegadas e serviços. Kleinrock aproxima a independência com mistura de tráfego. [Condições](/cadeiras/rc/modelos-filas/#filas-em-série-e-independência).
-
-Jackson aberto: $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$. Resolve taxas, confirma $\lambda_i/\mu_i<1$ em cada nó, soma N dos nós e divide pela taxa externa para o tempo global. [Filas básicas](/cadeiras/rc/desempenho-e-filas/) e [modelos adicionais](/cadeiras/rc/modelos-filas/).
+1. Confirma a fronteira: fila exclui serviço, sistema inclui. Com perdas, $\lambda$ é a taxa **admitida**.
+2. Poisson dá $P(k)=e^{-\lambda t}(\lambda t)^k/k!$. Agregado periódico não é Poisson.
+3. M/M/1 exige $\rho<1$: $T=1/(\mu-\lambda)$, $T_q=\rho/(\mu-\lambda)$, $N=\rho/(1-\rho)$.
+4. Serviço constante muda para M/D/1: $T_q=\rho/(2\mu(1-\rho))$. Variância geral: Pollaczek-Khinchine.
+5. B é capacidade **total**: $p_n=(1-\rho)\rho^n/(1-\rho^{B+1})$; bloqueio $p_B$.
+6. Jackson: resolve $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$, confirma cada nó, soma $N$ e divide pela taxa externa. [Filas](/cadeiras/rc/modelos-filas/)
 
 ## Acesso e LAN
 
-ALOHA: puro $S=Ge^{-2G}$, máximo $1/(2e)$ em G=0,5; com ranhuras $S=Ge^{-G}$, máximo $1/e$ em G=1. Tentativas Poisson, tramas iguais, colisões destrutivas e sem captura; ranhuras sincronizadas na receção.
-
-CSMA/CD ideal: $L_{min}/R\ge2t_p$. Ethernet full-duplex não tem colisões nem usa CD. Wi-Fi congela backoff durante canal ocupado e confirma depois da trama; RTS/CTS reduz alguns efeitos das estações escondidas, com sobrecarga.
-
-Comutador aprende MAC **de origem**. Destino desconhecido: inunda mesma VLAN, exceto entrada. Conhecido na entrada: filtra. VLAN separa broadcast; spanning tree evita ciclos lógicos. [Acesso](/cadeiras/rc/acesso-ao-meio/) e [LAN](/cadeiras/rc/redes-locais/).
+- ALOHA puro $Ge^{-2G}$ (máximo $1/2e$ em $0{,}5$); com ranhuras $Ge^{-G}$ (máximo $1/e$ em 1). Tentativas Poisson, tramas iguais.
+- CSMA/CD: $L_{min}/R\ge2t_p$. Comutada full-duplex não usa CD.
+- Wi-Fi: sem deteção de colisão; ACK após SIFS; backoff congela com meio ocupado. Escondidas não se ouvem; RTS/CTS reserva com sobrecarga.
+- Comutador aprende origem; desconhecido inunda a VLAN; mesma porta filtra. VLAN separa broadcast; STP evita ciclos. [Acesso](/cadeiras/rc/acesso-ao-meio/) e [LAN](/cadeiras/rc/redes-locais/)
 
 ## IP e rotas
 
-IPv4/p: $2^{32-p}$ endereços; hosts usuais menos 2, com exceções /31 ponto a ponto e /32. Rede = IP AND máscara. VLSM: maiores primeiro, blocos alinhados. Longest prefix match: maior prefixo que corresponda; /0 é a rota por omissão.
-
-Hosts utilizáveis contam interfaces: desconta gateway e gestão para obter computadores; desconta ainda os já presentes para obter terminais adicionais. Uma porta de comutador não consome automaticamente um IP.
-
-ARP resolve IP do próximo salto para MAC local. Router muda trama por salto; IP dos extremos normalmente mantém-se sem NAT. IPv4 fragmenta se permitido: dados de fragmentos não finais múltiplos de 8 bytes; offset em blocos de 8 da carga original; cada fragmento tem cabeçalho. IPv6 usa 128 bits, não tem checksum no cabeçalho base e routers não fragmentam.
-
-Dijkstra: fixa a menor distância provisória e relaxa vizinhos. Distance vector: $D_x(y)=\min_v(c(x,v)+D_v(y))$. Regista próximo salto e rondas; soma de custos não é bottleneck. [IP](/cadeiras/rc/camada-de-rede/) e [routing](/cadeiras/rc/algoritmos-encaminhamento/).
+1. Rede = IP AND máscara. Bloco alinhado a potência de dois.
+2. VLSM: maiores primeiro; desconta rede, broadcast, gateway e gestão.
+3. Vale o prefixo mais longo; `/0` é a rota por omissão.
+4. ARP resolve o próximo salto; remoto resolve o gateway.
+5. Fragmento IPv4: dados não finais múltiplos de 8; offset em blocos de 8; 4000 em MTU 1500 dá 1480/0, 1480/185, 1020/370.
+6. Dijkstra exige custos não negativos; prossimo salto é o primeiro após a origem. DV: $D_x(y)=\min_v(c+D_v)$. RIP: 16 é infinito. [IP](/cadeiras/rc/camada-de-rede/) e [routing](/cadeiras/rc/algoritmos-encaminhamento/)
 
 ## TCP e aplicações
 
-RTO: atualiza RTTVAR antes de SRTT e usa a margem de variação, com mínimo recomendado de 1 s na RFC6298. TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva em bytes $\min(rwnd,cwnd)$; bytes novos descontam pendentes. 8 MSS só são oito segmentos com segmentos de MSS bytes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Reno clássico com 12 MSS em voo: ssthresh=6 MSS; três ACKs duplicados dão cwnd temporária 9 MSS e retorno a 6 no ACK de recuperação; timeout dá cwnd=1 MSS, mantendo o limiar 6. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
+- Bytes, não segmentos: SYN/FIN consomem 1. ACK indica o próximo esperado.
+- Fluxo gere o recetor (`rwnd`); congestionamento gere a rede (`cwnd`). Novos: $\max(0,\min(rwnd,cwnd)-FlightSize)$.
+- Reno: 3 duplicados dão `ssthresh+3MSS` e volta a `ssthresh`; timeout dá `cwnd=1MSS` e slow start. Slow start duplica por RTT; avoidance soma ~1 MSS.
+- RTO: atualiza RTTVAR antes de SRTT; mínimo recomendado 1 s; Karn ignora amostras ambíguas.
+- DNS: A/AAAA, CNAME, MX, NS, PTR; recursão nos locais; porta 53.
+- HTTP/1.1: CRLF e linha vazia delimitam; persistente poupa aberturas; 304 reutiliza corpo.
+- FTP: controlo 21, dados à parte. SMTP `DATA` acaba em linha só com `.`. [TCP](/cadeiras/rc/transporte-e-aplicacoes/) e [aplicações](/cadeiras/rc/aplicacoes/)
 
-DNS: A/AAAA endereços, MX correio, CNAME alias, NS autoritativos, PTR inverso. UDP e TCP 53. HTTP/1.1 delimita cabeçalhos por CRLF; ligação persistente evita nova abertura; não confundir com HTTP/3. FTP: controlo TCP 21 e dados separados. SMTP envia correio; POP3/IMAP acedem à caixa. TCP não preserva fronteiras de chamadas send/recv.
+## Erros que custam pontos
 
-SMTP `DATA`: linha `.` com CRLF termina conteúdo; dot-stuffing duplica o ponto inicial de cada linha de conteúdo e o recetor remove-o. A ligação TCP pode continuar. [Delimitação](/cadeiras/rc/aplicacoes/#delimitar-os-dados-em-smtp).
-
-Distribuição: $D_{CS}\ge\max(NF/u_s,F/d_{min})$; $D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum u_i))$. Limites inferiores sob o modelo ideal. [TCP](/cadeiras/rc/transporte-e-aplicacoes/) e [aplicações](/cadeiras/rc/aplicacoes/).
+- Misturar bit/s com baud, ou SNR em dB dentro de Shannon.
+- Esquecer gateway e gestão na contagem de terminais.
+- Usar broadcast ou rede como endereço de host.
+- Confirmar RR como entrega; tratar duplicado confirmado como dados novos.
+- Aplicar M/M/1 a fila finita, serviço constante ou chegadas periódicas.
+- Anunciar agregados que incluem destinos indevidos.
+- Atribuir a perda apenas a congestionamento; ignorar ECN e erros de canal.

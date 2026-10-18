@@ -1,66 +1,36 @@
 ## Falta de página
 
-A paginação por procura prepara uma página quando é usada. **Localidade temporal** é reutilização recente; **espacial** é acesso a posições próximas.
+Procura adia a carga até ao uso. Passos: MMU deteta ausência, núcleo valida o acesso, arranja moldura, prepara dados, atualiza tabelas e repete a instrução.
 
-1. O núcleo verifica se o acesso é legal. Endereço inválido ou escrita proibida não se resolve carregando dados.
-2. Numa ausência recuperável, obtém uma moldura livre ou escolhe uma vítima.
-3. Prepara os dados, por leitura, página a zero ou cópia em memória.
-4. Atualiza tabelas e traduções e permite repetir a instrução.
+- Ilegal não se resolve com disco. COW pode copiar sem disco. Vítima **suja** pode exigir escrita; limpa reconstrói-se.
+- Processo em falta de I/O pode bloquear e largar a CPU.
 
-Uma vítima **suja** pode precisar de escrita; uma limpa pode ser reconstruída sem a guardar em swap. Nem toda a falta exige disco, como uma cópia por copy-on-write.
+## Políticas
 
-## Substituição de páginas
+| Política | Vítima                          | Nota                                |
+| -------- | ------------------------------- | ----------------------------------- |
+| FIFO     | entrada mais antiga             | acerto não reordena                 |
+| LRU      | acesso mais antigo              | **cada** acerto atualiza            |
+| OPT      | uso futuro mais distante        | referência mínima, futuro conhecido |
+| Relógio  | primeiro 0 a partir da ponteira | limpa 1s, acesso põe a 1            |
 
-| Política | Vítima e estado a manter                                                             |
-| -------- | ------------------------------------------------------------------------------------ |
-| FIFO     | Página que entrou há mais tempo; acertos não reordenam                               |
-| OPT      | Próximo uso mais distante, ou sem uso futuro; referência mínima com futuro conhecido |
-| LRU      | Último acesso mais antigo; **cada acerto** atualiza a recência                       |
-| Relógio  | A partir da ponteira, limpar bits 1 e avançar; substituir o primeiro 0 e avançar     |
+Para `1,2,3,1,4,2,1,3` com 3 molduras: FIFO `F,F,F,A,F,A,F,A` (5); LRU `F,F,F,A,F,F,A,F` (6); OPT `F,F,F,A,F,A,A,F` (5). Cargas iniciais contam. No pedido de 4: FIFO tira 1, LRU tira 2, OPT tira 3.
 
-Para três molduras vazias e `1,2,3,1,4,2,1,3`:
+- Mais molduras com FIFO pode dar mais faltas (**Belady**). LRU e OPT são de pilha: imunes no modelo.
+- NRU escolhe da primeira classe `(R,M)` não vazia: `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)`. Aqui $R$ é o bit de referência desde a última limpeza e $M$ o bit de modificação; $R$ não é idade exata.
 
-| Política | Falta ou acerto em cada referência | Total de faltas |
-| -------- | ---------------------------------- | --------------- |
-| FIFO     | F, F, F, A, F, A, F, A             | 5               |
-| LRU      | F, F, F, A, F, F, A, F             | 6               |
-| OPT      | F, F, F, A, F, A, A, F             | 5               |
-
-As primeiras cargas contam como faltas. Regista o estado após cada referência, mesmo num acerto. No passo que pede 4, FIFO retira 1, LRU retira 2 e OPT retira 3.
-
-- FIFO pode sofrer **anomalia de Belady**, com mais faltas ao aumentar molduras. LRU e OPT são algoritmos de pilha e não têm essa anomalia no modelo.
-- No relógio com ponteira em A e bits A=1, B=0, C=1, limpa A e escolhe B; a ponteira fica em C. Um acesso põe o bit a 1.
-- A segunda oportunidade melhorada também considera sujidade. LFU e MFU usam frequências, que podem descrever mal a localidade atual.
-
-## Informação e localidade
-
-NRU escolhe da primeira classe `(R,M)` não vazia: `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)`. `R` assinala referência desde a última limpeza; `M` assinala modificação. Não é uma ordenação por timestamp. LFU precisa de contagens e de desempate; LRU precisa de recência.
-
-Para `int a[4][4]`, inteiros de 4 bytes, páginas de 16 bytes, início alinhado e duas molduras vazias com LRU, cada linha ocupa uma página. Percorrer por linhas dá 4 faltas; por colunas dá 16. Com quatro molduras, ambos dariam 4. As hipóteses de página e residência determinam a conta.
-
-[Contagem numa matriz](/cadeiras/so/paginacao-procura/#contar-faltas-numa-matriz).
-
-## Custo e distribuição
-
-Com probabilidade de falta $p$, acesso normal $M$ e serviço completo $F$ **incluindo o acesso repetido**:
+## Custo e localidade
 
 $$
-EAT=(1-p)M+pF.
+EAT=(1-p)M+pF,
 $$
 
-Para $M=100$ ns, $F=5$ ms e $p=10^{-4}$, converte $F$ para 5000000 ns: o resultado é **599,99 ns**. Se o serviço excluir a repetição, adapta o custo.
+com acesso normal $M$, custo completo de falta $F$ incluindo o acesso repetido, e probabilidade de falta $p$. Usa a mesma unidade nos dois termos. Para $M=100$ ns, $F=5$ ms, $p=10^{-4}$: $599{,}99$ ns.
 
-- Alocação igual divide molduras igualmente; proporcional pode usar páginas do processo, com mínimos e arredondamentos definidos.
-- Substituição **local** só retira molduras do próprio processo. A **global** pode retirar de outros e espalhar a pressão.
+- Local divide molduras por processo; global retira de outros.
+- Working set: páginas distintas nas últimas $\Delta$ referências. `2,1,3,2,4` dá 4.
+- **Thrashing**: paginação contínua sem trabalho útil. Conjuntos maiores que a RAM sinalizam pressão; baixa CPU não pede mais processos.
+- Matriz C: linhas contíguas. Faltas exigem dimensões, percurso, página e molduras.
+- Núcleo: buddy (potências de dois, 21 KiB em 32 KiB deixa 11 de fragmento interno), slab (objetos do tipo).
 
-## Working set e thrashing
-
-O working set é o **conjunto de páginas distintas** usadas nas últimas $\Delta$ referências. A janela `2,1,3,2,4` tem tamanho 4; depois de entrar 5, a janela `1,3,2,4,5` tem tamanho 5.
-
-**Thrashing** é paginação repetida que ocupa muito tempo e impede trabalho útil. Working sets conjuntos maiores que a RAM sinalizam pressão, mas não provam, por si, thrashing. Reduzir processos ativos, aumentar molduras ou controlar a frequência de faltas pode recuperar progresso.
-
-- Matrizes C têm linhas contíguas. Contagens de faltas exigem dimensões, percurso, páginas e molduras definidos.
-- Prepaging antecipa cargas, com desperdício se a previsão falhar. Páginas em I/O podem precisar de ficar presas em memória.
-- Buddy usa blocos de potências de dois e junta pares livres; 21 KiB num bloco de 32 KiB deixam 11 KiB de fragmentação interna. Slab reutiliza objetos do mesmo tipo.
-
-[Tabela completa das referências](/cadeiras/so/paginacao-procura/#fazer-uma-tabela-de-referências).
+[Tabela passo a passo](/cadeiras/so/paginacao-procura/#fazer-uma-tabela-de-referências).

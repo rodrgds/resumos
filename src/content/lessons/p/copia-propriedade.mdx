@@ -12,7 +12,9 @@ import copiaSuperficial from '../../p/copia-superficial.dot?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Copiar o relógio duplica o seu inteiro, por isso as duas horas podem evoluir separadamente. Se o membro fosse um apontador dono, a cópia gerada duplicaria apenas o endereço. A classe precisa de escolher se uma cópia terá outro recurso, partilhará o recurso original ou será proibida.
+Copiar o relógio duplica o seu inteiro. As duas horas evoluem depois separadamente.
+
+Se o membro fosse um apontador dono, a cópia gerada duplicaria apenas o endereço. A classe precisa de decidir se uma cópia terá outro recurso, partilhará o original ou será proibida.
 
 ## Construção de cópia e atribuição
 
@@ -34,7 +36,9 @@ private:
 };
 ```
 
-A cópia implícita de um `DonoIncompleto` deixa os dois objetos com o mesmo endereço, por isso os dois destrutores tentam libertar o mesmo inteiro; a propriedade fica duplicada sem uma regra válida de destruição.
+A cópia implícita de um `DonoIncompleto` deixa os dois objetos com o mesmo
+endereço. Os dois destrutores tentam depois libertar o mesmo inteiro; a
+propriedade fica duplicada sem uma regra válida de destruição.
 
 Uma **cópia superficial** copia a representação, incluindo endereços. Uma **cópia profunda** cria recursos independentes e copia o seu conteúdo. Partilhar um recurso também pode ser correto, mas precisa de uma política explícita, como a de `shared_ptr`.
 
@@ -54,7 +58,9 @@ Para um buffer com os valores `4` e `6`, a cópia profunda cria outro array, por
 
 ## Construção de uma cópia independente
 
-O exemplo usa `unique_ptr<int[]>` para garantir a libertação, mas implementa a cópia para dar ao `Buffer` semântica de valor. O invariante é que existem `tamanho_` inteiros acessíveis; quando o tamanho é zero, não existe elemento válido. `at` verifica o índice.
+O exemplo usa `unique_ptr<int[]>` para garantir a libertação, mas implementa a cópia para dar ao `Buffer` semântica de valor.
+
+O invariante é que existem `tamanho_` inteiros acessíveis; quando o tamanho é zero, não existe elemento válido. `at` verifica o índice.
 
 Começa pela construção de cópia; a atribuição e o movimento vêm a seguir:
 
@@ -67,13 +73,9 @@ Buffer(const Buffer& outro) : Buffer(outro.tamanho_) {
 
 Com `Buffer a(2)` contendo `4` e `6`, `Buffer b = a` reserva dois inteiros novos e copia cada posição. Alterar `b.at(0)` para `9` não afeta `a`. A delegação `Buffer(outro.tamanho_)` constrói primeiro um destino válido; se a reserva falhar, a exceção sai antes de existir qualquer cópia parcial.
 
-## Preparação da atribuição
-
-Na cópia, o destino ainda não existe e a reserva pode falhar antes de haver um objeto parcial; na atribuição, o destino já tem um recurso, pois no exemplo abaixo `c` contém `2`, `3` e `5` e recebe `b` com dois inteiros. Prepara primeiro a cópia completa num objeto temporário e só depois troca com o destino, para que o destino continue intacto se a reserva falhar; a tabela a seguir à listagem mostra os três momentos: preparar, trocar e destruir o antigo.
-
 ## Um buffer com propriedade exclusiva
 
-O programa completo seguinte reúne cópia, atribuição e movimento pela ordem das secções anteriores.
+O programa completo seguinte reúne cópia, atribuição e movimento. Na atribuição, o destino já tem um recurso: no exemplo abaixo, `c` contém `2`, `3` e `5` e recebe `b` com dois inteiros. A técnica é preparar primeiro a cópia completa num objeto temporário e só depois trocar com o destino, para que o destino continue intacto se a reserva falhar. A tabela depois da listagem mostra os três momentos: preparar, trocar e destruir o antigo.
 
 Programa completo para compilar localmente:
 
@@ -183,7 +185,9 @@ A alternativa "libertar o destino e só depois copiar" perde o estado anterior s
 
 O movimento de `b` para `d` transfere o endereço sem copiar os inteiros e põe o tamanho de `b` a zero. Por isso, `b` fica vazio e pode ser destruído ou receber nova atribuição.
 
-O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio; a biblioteca garante um estado válido, mas não especificado, salvo garantias adicionais do tipo. Podes destruí-lo, atribuir-lhe outro valor e usar operações cujas pré-condições satisfaças. Por exemplo, `v.empty()` e `v.size()` são consultas válidas depois de mover um vetor; `v.front()` exige confirmar que não está vazio.
+O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio. A biblioteca garante um estado válido, mas não especificado, salvo garantias adicionais do tipo.
+
+Podes destruí-lo, atribuir-lhe outro valor e usar operações cujas pré-condições satisfaças. Por exemplo, `v.empty()` e `v.size()` são consultas válidas depois de mover um vetor. `v.front()` exige confirmar que não está vazio.
 
 Num movimento entre dois objetos distintos, o `Buffer` desta página deixa a origem com tamanho zero. A autoatribuição por movimento é detetada por `this == &outro` e conserva o objeto. `noexcept` indica que as operações de movimento apresentadas não lançam, o que também ajuda coleções a escolher movimento durante uma realocação.
 

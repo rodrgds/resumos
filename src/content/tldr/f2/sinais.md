@@ -4,13 +4,9 @@
 - Quantizar restringe valores. Para gama $[U_{\min},U_{\max})$ e $N$ bits, o passo uniforme típico é $\Delta=(U_{\max}-U_{\min})/2^N$; com arredondamento e sem saturação, o erro tem módulo até $\Delta/2$.
 - $x(t-t_0)$ atrasa se $t_0>0$; $x(-t)$ reflete; $x(at)$ comprime por $|a|$ quando $|a|>1$ e também reflete quando $a<0$.
 
-Localiza o suporte resolvendo desigualdades no argumento. Se $x$ ocupa $0\le t\le2$, $x(2t-2)$ ocupa $1\le t\le2$.
+- $x_p=(x(t)+x(-t))/2$ e $x_i=(x(t)-x(-t))/2$; a soma recupera $x$. Em discreto, o período é inteiro e $\cos(\Omega n)$ só é periódica se $\Omega/(2\pi)$ for racional.
 
-$$
-x_p(t)=\frac{x(t)+x(-t)}2,\qquad x_i(t)=\frac{x(t)-x(-t)}2.
-$$
-
-A soma das componentes par e ímpar recupera $x$. Periodicidade exige $x(t+T_0)=x(t)$; em tempo discreto, o período é inteiro. $\cos(\Omega n)$ é periódica apenas se $\Omega/(2\pi)$ for racional.
+Localiza o suporte resolvendo desigualdades no argumento. Se $x$ ocupa $0\le t\le2$, $x(2t-2)$ ocupa $1\le t\le2$. [Ver transformações no tempo](/cadeiras/f2/sinais/#transformações-no-tempo).
 
 ## Escalão, impulso, energia e potência
 

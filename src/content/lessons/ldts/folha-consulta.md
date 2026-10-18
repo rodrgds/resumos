@@ -6,75 +6,91 @@ studyKind: revision
 order: 0
 ---
 
-Cada linha resume uma decisão já explicada nas lições: o que verificar antes de escolher um comando, uma coleção ou um padrão, com ligações para a explicação completa.
+Cada linha resume uma decisão explicada nas lições. Escolhe pela condição, confirma na ligação.
 
 ## Git e Gradle
 
-| Decisão                          | Lembra                                                                                                                                                             |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Escolher o próximo commit        | `add` prepara o conteúdo daquele instante. Editar depois não atualiza o índice. Confere `diff --cached`.                                                           |
-| Integrar branches                | Fast-forward move a referência; histórias divergentes exigem combinar mudanças. Merge entra no branch atual.                                                       |
-| Obter ou publicar                | `fetch` obtém sem integrar; `pull` obtém e integra; `push` publica.                                                                                                |
-| Desfazer no histórico partilhado | `revert` acrescenta um commit inverso. `reset --hard` pode destruir mudanças locais.                                                                               |
-| Reproduzir o build               | Usa o wrapper, `options.release = 8` para o alvo e as versões declaradas. `testImplementation` não é uma dependência do programa. Cria `Main.java` antes de `run`. |
+| Decisão               | Condição e comando                                                                                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O que entra no commit | `add` congela o instante; sem novo `add`, o commit ignora a edição posterior. Confere `diff --cached`.                                                                 |
+| Integrar branches     | Antepassado permite fast-forward; divergência combina e pode criar merge com dois pais. Integra no branch atual.                                                       |
+| Obter ou publicar     | `fetch` sem integrar; `pull --ff-only` só sem divergência; `push` publica.                                                                                             |
+| Desfazer partilhado   | `revert` cria inversão. `reset --hard` destrói edição local.                                                                                                           |
+| Build reproduzível    | Wrapper no Git, `./gradlew`, `options.release = 8`.                                                                                                                    |
+| JUnit e execução      | `useJUnitPlatform()` seleciona a plataforma; Jupiter precisa das dependências e do motor no projeto. `run` executa a classe principal configurada (`Main` no exemplo). |
 
-[Áreas do Git](/cadeiras/ldts/controlo-versoes/#as-três-áreas-do-git) · [Integração](/cadeiras/ldts/controlo-versoes/#branches-e-merges) · [Gradle](/cadeiras/ldts/controlo-versoes/#dependências-com-gradle)
+[Áreas](/cadeiras/ldts/controlo-versoes/#as-três-áreas-do-git) · [Branches](/cadeiras/ldts/controlo-versoes/#branches-e-merges) · [Remoto](/cadeiras/ldts/controlo-versoes/#repositório-local-e-remoto) · [Gradle](/cadeiras/ldts/controlo-versoes/#dependências-com-gradle)
 
-## Java e estado
+## Java: valores e tipos
 
-- Java passa argumentos por valor, incluindo referências. Alterar o objeto pode afetar o chamador; reatribuir o parâmetro não muda a variável do chamador.
-- Em aritmética inteira, escolhe o tipo antes da operação: `(long) x + d` evita o overflow da soma em `int`; converter depois não o recupera. `byte++` converte de volta e pode passar de 127 a -128.
-- `final` impede reatribuição, não garante imutabilidade do objeto.
-- Para objetos, `==` compara identidade; `equals` representa igualdade lógica. Objetos iguais têm o mesmo hash; hashes iguais não provam igualdade.
-- `equals(Object)` redefine; `equals(TipoConcreto)` sobrecarrega e pode falhar através de `Object` ou coleções. Usa `@Override`.
-- `TreeSet` usa comparação zero para duplicados; mantém comparação coerente com `equals`. Ordenar por x e depois y preserva posições distintas; subtrair inteiros para comparar pode fazer overflow.
-- Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
-- `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
-- Uma vista não modificável acompanha alterações da coleção original. Uma cópia defensiva separa as coleções, mas pode partilhar elementos mutáveis.
-- Genéricos são invariantes. Declara `T` em `Caixa<T>` ou `<E>` antes do retorno de um método genérico. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
-- `start()` inicia a thread; `run()` direto é uma chamada normal; `join()` espera o fim. `sleep()` não é sincronização.
-- `synchronized` coordena acessos pelo mesmo monitor. `volatile` não torna `++` atómico. Usa `while` para testar a condição de `wait()`.
-- Bytes usam streams; texto usa readers/writers e uma codificação. `try-with-resources` fecha recursos. Swing atualiza a interface na EDT.
+| Decisão                | Condição                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Passagem de argumentos | Por valor, incluindo referências. Mutar partilha-se; reatribuir o parâmetro não.                                                                     |
+| Aritmética inteira     | Converte para `long` **antes** de somar. `byte++` converte de volta, 127 passa a -128.                                                               |
+| `final`                | Fixa a variável, não o objeto.                                                                                                                       |
+| Igualdade              | `==` em referências é identidade; em primitivos compara valores. `equals(Object)` é igualdade lógica, com `@Override`. Iguais partilham `hashCode`.  |
+| `TreeSet`              | Comparação zero é duplicado. Ordena por x e depois y, com `Integer.compare`. Não mudes campos de ordem ou hash no conjunto.                          |
+| Coleções               | `List` mantém sequência com posições e duplicados; `Set` unicidade; `Map` um valor por chave; implementações `Hash*` não garantem ordem de iteração. |
+| Exposição              | Vista acompanha a origem; cópia separa a coleção, não elementos mutáveis.                                                                            |
+| Genéricos              | Invariantes. Origem `? extends T`, destino `? super T`. `extends` não é imutabilidade.                                                               |
 
-[Referências](/cadeiras/ldts/java-orientado-objetos/#valores-e-referências) · [Hash](/cadeiras/ldts/java-orientado-objetos/#igualdade-e-hash) · [Genéricos](/cadeiras/ldts/java-orientado-objetos/#genéricos-e-wildcards) · [Sincronização](/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock)
+[Referências](/cadeiras/ldts/java-orientado-objetos/#valores-e-referências) · [Igualdade](/cadeiras/ldts/java-orientado-objetos/#igualdade-e-hash) · [Genéricos](/cadeiras/ldts/java-orientado-objetos/#genéricos-e-wildcards)
 
-## Desenho e testes
+## Concorrência, I/O e Swing
 
-| Ideia               | Condição decisiva                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------------- |
-| SRP                 | Separa razões independentes para mudar.                                                                  |
-| OCP                 | Protege o cliente estável; a montagem ainda pode mudar.                                                  |
-| LSP                 | O subtipo não exige mais nem promete menos.                                                              |
-| ISP                 | O cliente não depende de operações irrelevantes.                                                         |
-| DIP                 | Regras e detalhes dependem de contratos adequados. Injeção por si só não prova DIP.                      |
-| Teste útil          | Esperado derivado do contrato, casos normais, fronteiras e erros.                                        |
-| Stub / mock         | Stub fornece respostas; mock verifica interações exigidas.                                               |
-| Cobertura / mutação | Executar código não prova asserções; um mutante morto revela uma mudança detetada. Analisa equivalentes. |
-| Refatoração         | Preserva resultados, efeitos e erros observáveis. Faz passos pequenos e verifica cada um.                |
+| Decisão                 | Condição                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Arrancar e esperar      | `start()` inicia; `run()` direto é chamada normal; `join()` espera. `sleep()` não sincroniza.         |
+| Proteger estado         | Mesmo monitor em todos os acessos. `volatile` publica, sem tornar `++` atómico.                       |
+| Esperar condição        | `while`, não `if`: reacquire pode encontrar estado mudado; há despertares sem notificação.            |
+| Ler texto               | `InputStreamReader` com codificação explícita dentro de `BufferedReader`; `try-with-resources` fecha. |
+| Interface sem bloqueios | Listener na EDT cria worker e termina; `doInBackground` sem Swing; `done` atualiza na EDT.            |
 
-[SOLID](/cadeiras/ldts/principios-solid/#os-cinco-princípios) · [JUnit](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit) · [Mutação](/cadeiras/ldts/testes-unitarios/#cobertura-e-mutation-testing) · [Refatoração](/cadeiras/ldts/smells-refactoring/#como-refatorar-em-segurança)
+[Monitores](/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock) · [Espera](/cadeiras/ldts/java-concorrencia-io-swing/#esperar-por-uma-condição) · [I/O](/cadeiras/ldts/java-concorrencia-io-swing/#bytes-texto-e-buffers) · [Swing](/cadeiras/ldts/java-concorrencia-io-swing/#swing-e-eventos)
 
-## Escolher padrões
+## SOLID e testes
 
-| Problema                                          | Padrão                                               |
-| ------------------------------------------------- | ---------------------------------------------------- |
-| Trocar um algoritmo                               | Strategy                                             |
-| Reagir conforme o estado e transitar              | State                                                |
-| Guardar ou enfileirar um pedido                   | Command, undo exige estado e política próprios.      |
-| Notificar interessados                            | Observer, com ciclo de vida de subscrição.           |
-| Tratar folhas e grupos uniformemente              | Composite                                            |
-| Subclasses escolhem um produto                    | Factory Method                                       |
-| Escolher uma família de produtos                  | Abstract Factory                                     |
-| Traduzir uma interface                            | Adapter                                              |
-| Acrescentar comportamento conservando a interface | Decorator, a ordem pode importar.                    |
-| Restringir instâncias e dar acesso global         | Singleton, com custos de isolamento e estado global. |
+| Ideia               | Condição decisiva                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| SRP                 | Separa razões independentes para mudar.                                                                           |
+| OCP                 | Protege o cliente estável; a montagem regista alternativas.                                                       |
+| LSP                 | Sem pré-condições mais fortes nem pós-condições mais fracas.                                                      |
+| ISP                 | Cliente só depende das operações que usa.                                                                         |
+| DIP                 | Regra e detalhes dependem do contrato. Injeção sem contrato não é DIP.                                            |
+| Teste útil          | Esperado do contrato: normais, fronteiras, erros.                                                                 |
+| Stub / resposta     | Stub responde com valores; se o resultado já prova o comportamento, verificar a chamada é normalmente redundante. |
+| Mock / interação    | Mock verifica a interação quando o contrato pede o efeito, a quantidade ou a ordem que as asserções não observam. |
+| Cobertura / mutação | Executar não prova asserção. Morto é detetado; sobrevivente pode ser equivalente.                                 |
+| Refatoração         | Preserva observável em passos pequenos, cada um testado.                                                          |
 
-[Padrões explicados](/cadeiras/ldts/padroes-desenho/)
+[SOLID](/cadeiras/ldts/principios-solid/#os-cinco-princípios) · [JUnit](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit) · [Mockito](/cadeiras/ldts/testes-unitarios/#mocks-e-stubs-com-mockito) · [Mutação](/cadeiras/ldts/testes-unitarios/#cobertura-e-mutation-testing) · [Refatorar](/cadeiras/ldts/smells-refactoring/#como-refatorar-em-segurança)
+
+## Padrões: problema e custo
+
+| Problema               | Padrão e custo                                                |
+| ---------------------- | ------------------------------------------------------------- |
+| Trocar algoritmo       | Strategy; a escolha concreta vive na configuração.            |
+| Reagir por estado      | State; transições têm dono. Enumeração pode chegar.           |
+| Guardar pedido         | Command; undo pede estado anterior e política.                |
+| Notificar interessados | Observer; subscrição tem ciclo de vida e política de remoção. |
+| Árvore uniforme        | Composite; partilha conta repetido. Não é posse UML.          |
+| Criação por subclasses | Factory Method; sem redefiníveis no construtor.               |
+| Família de produtos    | Abstract Factory; produto novo muda contrato e fábricas.      |
+| Traduzir interface     | Adapter; fixa unidades, erros e perdas.                       |
+| Somar comportamento    | Decorator; ordem pode mudar o total. Delegar não é notificar. |
+| Instância global       | Singleton; protege a criação, não campos mutáveis nem testes. |
+
+[Padrões](/cadeiras/ldts/padroes-desenho/) · [Strategy e State](/cadeiras/ldts/padroes-desenho/#state-reagir-conforme-o-estado) · [Delegação](/cadeiras/ldts/padroes-desenho/#delegação-e-preço-atual)
 
 ## UML e arquitetura
 
-Classes mostram estrutura; sequência mostra ordem de mensagens com `alt` para alternativas; comunicação mostra ligações e ordem numerada com `1.1` para chamadas aninhadas; estados mostram eventos, guardas e transições. Operações `getX()` iguais no código e nos diagramas. A multiplicidade num extremo conta objetos desse extremo para um objeto do outro. O losango de composição fica no todo. Uma referência Java não prova posse forte.
+| Pergunta                 | Diagrama e leitura                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Como se relacionam?      | Classes. Losango cheio no todo é composição; campo não prova posse. Multiplicidade conta o próprio extremo.           |
+| Em que ordem?            | Sequência, tempo para baixo é ordem. `alt` separa por guardas; comum aos ramos fica depois.                           |
+| Por que ligações?        | Comunicação, ordem por numeração; interna durante `2` é `2.1`.                                                        |
+| Quando reage como?       | Estados, `evento [guarda] / efeito`. Regiões ortogonais evitam repetir combinações.                                   |
+| Onde vive a regra?       | MVC: modelo valida, vista apresenta o aceite, controlador coordena.                                                   |
+| Onde vive o caso de uso? | Service Layer coordena; Domain Model protege invariantes; Repository fala o domínio; `empty()` é ausência, não falha. |
 
-MVC separa regras no modelo, apresentação na vista e interpretação/coordenação no controlador. Mostra o estado aceite pelo modelo, incluindo operações recusadas. Service Layer coordena casos de uso; Domain Model protege regras; Data Mapper separa persistência; Repository oferece consultas em termos do domínio. `Optional.empty()` significa ausência após consulta válida, não falha de acesso. Identity Map conserva uma instância por identidade no âmbito decidido, sem garantir atomicidade. Testar uma chamada a `guardar` não prova que os dados ficaram persistidos.
-
-[UML](/cadeiras/ldts/diagramas-uml/) · [MVC](/cadeiras/ldts/mvc-projeto/) · [Arquitetura empresarial](/cadeiras/ldts/arquitetura-empresarial/)
+[Classes](/cadeiras/ldts/diagramas-uml/#diagrama-de-classes) · [Sequência](/cadeiras/ldts/diagramas-uml/#condições-e-repetição) · [Estados](/cadeiras/ldts/diagramas-uml/#diagrama-de-estados) · [MVC](/cadeiras/ldts/mvc-projeto/) · [Camadas](/cadeiras/ldts/arquitetura-empresarial/#camadas-e-dependências) · [Persistência](/cadeiras/ldts/arquitetura-empresarial/#repository)

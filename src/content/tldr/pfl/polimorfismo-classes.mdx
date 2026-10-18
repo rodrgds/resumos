@@ -1,10 +1,7 @@
-import Dot from '../../../components/Dot.astro';
-import classes from '../../pfl/classes.dot?raw';
-
 ## Polimorfismo e restrições
 
 - Uma variável de tipo representa qualquer tipo compatível. `trocar (x,y) = (y,x)` tem tipo `(a,b) -> (b,a)`; `duplicar x = (x,x)` tem tipo `a -> (a,a)`.
-- Uma lista exige elementos do mesmo tipo; um par pode combinar tipos. A assinatura `[a] -> a` não garante que uma função trate `[]`.
+- Uma lista exige elementos do mesmo tipo; um par pode combinar tipos. A assinatura `[a] -> a` não garante que a função trate `[]`: generalidade não é cobertura de casos.
 - Uma classe declara operações disponíveis num tipo. A restrição `Eq a =>` permite comparar valores de tipo `a`; não cria uma classe de objetos.
 
 | Operação                         | Restrição                                              |
@@ -17,20 +14,20 @@ import classes from '../../pfl/classes.dot?raw';
 | `/`, literais fracionários       | `Fractional`                                           |
 | `sqrt`, `sin`, `exp`             | `Floating`                                             |
 
+Nos GHC atuais, `Num` **não exige `Eq`**. Somar e eliminar repetidos pode exigir `(Num a, Eq a)`; retira restrições redundantes quando uma classe já implica a outra.
+
 <Dot
   source={classes}
   alt="Ord exige Eq; Real exige Ord e Num; Integral exige Real e Enum; Fractional exige Num; Floating exige Fractional. Show está separada."
 />
 
-Nos GHC atuais, `Num` **não exige `Eq`**. Somar e eliminar repetidos pode exigir `(Num a, Eq a)`, sem uma restrição redundante quando uma classe já implica a outra.
-
 ## Inferir o tipo mais geral
 
 1. Dá variáveis de tipo aos argumentos.
-2. Iguala tipos impostos por padrões, listas e aplicações.
-3. Acrescenta as classes pedidas pelas operações e retira restrições redundantes.
+2. Iguala os tipos impostos por padrões, listas e aplicações.
+3. Acrescenta as classes pedidas pelas operações e retira as redundantes.
 
-Em `duas f x = f (f x)`, se `x :: a`, `f x` tem de voltar a entrar em `f`. Logo `f :: a -> a` e `duas :: (a -> a) -> a -> a`.
+Em `duas f x = f (f x)`, com `x :: a`, o resultado de `f x` volta a entrar em `f`. Logo `f :: a -> a` e `duas :: (a -> a) -> a -> a`, sem restrições: nenhuma operação específica é usada.
 
 ```haskell
 contem :: Eq a => a -> [a] -> Bool
@@ -40,13 +37,13 @@ media :: Fractional a => a -> a -> a
 media x y = (x+y)/2
 ```
 
-Ordenar três valores por comparações e escolher o central exige apenas `Ord a`. A fórmula `x+y+z-minimum [x,y,z]-maximum [x,y,z]` exige também `Num a` e pode perder precisão em vírgula flutuante.
+Ordenar três valores por comparações e escolher o central exige apenas `Ord a`. A fórmula `x+y+z-minimum [x,y,z]-maximum [x,y,z]` exige também `Num a` e pode perder precisão em vírgula flutuante: o tipo regista as operações, não a equivalência matemática.
 
-## Setas e conversões
+## Setas, aplicação e conversões
 
-- `a -> b -> c` significa `a -> (b -> c)`. Já `(a -> b) -> a -> b` recebe uma função como argumento.
-- `(.) :: (b -> c) -> (a -> b) -> a -> c` exige que a saída da função à direita entre na função à esquerda.
-- `length xs :: Int`; para dividir por esse comprimento usa `fromIntegral (length xs)`. A conversão numérica não é automática.
-- Para divisor não nulo, `div/mod` arredondam para baixo e `quot/rem` truncam para zero. Com `-7` e `3`, dão `(-3,2)` e `(-2,-1)`. Não mistures o quociente de um par com o resto do outro.
+- `a -> b -> c` significa `a -> (b -> c)`: recebe `a` e devolve uma função. A aplicação associa ao contrário: `f x y` é `(f x) y`. Os parênteses em `(a -> b) -> a -> b` marcam uma função como argumento.
+- `(.) :: (b -> c) -> (a -> b) -> a -> c`. A saída da função da direita tem de entrar na função da esquerda.
+- `length xs :: Int` não divide com `/`. Usa `fromIntegral (length xs)`; a conversão nunca é automática.
+- Com divisor não nulo, `div`/`mod` arredondam para baixo e `quot`/`rem` truncam para zero. Para `-7` e `3` dão `(-3,2)` e `(-2,-1)`. Não mistures o quociente de um par com o resto do outro.
 
 [Dedução por restrições](/cadeiras/pfl/polimorfismo-classes/#deduzir-um-tipo-passo-a-passo).

@@ -19,7 +19,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Revisão editorial dos Resumos FEUP
-    date: '2026-10-13'
+    date: '2026-10-17'
 ---
 
 Uma linguagem especifica quais as entradas válidas. Para aceitar palavras terminadas em $ab$, basta guardar um sufixo curto. Para comparar $a^nb^n$, é preciso recordar uma quantidade sem limite fixado. O percurso constrói esses modelos, justifica as suas respostas e prova onde cada memória deixa de chegar.
@@ -48,7 +48,7 @@ A base é o [Moodle de TC de 2024/25](https://moodle2425.up.pt/course/view.php?i
 
 O [segundo teste resolvido](https://moodle2425.up.pt/mod/resource/view.php?id=194400) identifica 13 de junho de 2024, apesar de estar nesse Moodle. Serve para reconhecer tipos de perguntas, como classificar gramáticas, seguir PDA e interpretar tabelas de Turing. Os exercícios destas páginas têm resoluções próprias. Alguns enunciados adaptam tipos de perguntas desse teste e das folhas práticas; cada página de prática distingue exercícios originais de adaptações.
 
-A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada novamente em 13 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
+A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada novamente em 17 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS e regência de Nelma Resende Araújo Moreira, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
 
 O arquivo do Accio acrescenta o [primeiro teste de 24/3/2023](https://accio.pt/uploads/contributions/enLIDa50ayM.pdf), de 2022/23, que admite conversão por derivadas, e uma cópia do [segundo teste de 11/6/2025](https://accio.pt/uploads/contributions/jWmq9JAIMuQ.pdf), identificado por dentro como 2024/25. Este último motiva problemas de escolha de ramos em PDA, testemunhas para o lema de CFL e compactação de fita. As respostas assinaladas nessa cópia não substituem as provas e cálculos das resoluções. Estes enunciados não confirmam a avaliação de 2026/27.
 

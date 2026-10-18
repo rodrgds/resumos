@@ -3,29 +3,29 @@ import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-## CTEs
+## Nomear resultados intermédios
 
-`WITH` dá nome a um resultado dentro de uma instrução. Uma CTE pode usar outra definida antes; o nome deixa de existir no fim da instrução. Não garante materialização nem melhor desempenho.
+`WITH` dá nome a um resultado dentro de uma instrução; o nome morre no fim dela. Não promete materialização nem desempenho: serve para exprimir cada nível de agregação.
 
-Para médias ou somas em vários níveis, define primeiro o grão intermédio: totais por encomenda, depois totais por cliente. Somar diretamente linhas multiplicadas por outra junção pode duplicar valores.
+Para totais por cliente: primeiro totais por encomenda, depois por cliente. Juntar antes de agregar multiplica linhas e duplica valores.
 
-## Agregações e máximos por grupo
+- Contagens de níveis diferentes (freguesias por município, municípios por distrito) pedem CTEs separadas: cada uma com a sua chave.
+- Máximos por grupo correlacionam o `MAX` pelo grupo e conservam empates; `LIMIT 1` global escolhe uma linha para todos.
+- Ao reunir origens, a identidade é `(tipo, id)`: o mesmo número em origens diferentes não é o mesmo concorrente.
 
-- Compara contagens de níveis diferentes em CTEs separadas: freguesias por município e municípios por distrito. Uma junção anterior à contagem pode multiplicar o nível superior.
-- Para máximos por município, correlaciona a subconsulta `MAX` pelo município. Conserva empates; `LIMIT 1` global não escolhe uma vencedora por município.
-- Ao reunir origens diferentes, conserva `(tipo,id)` como identidade. O mesmo id num partido e numa lista independente não identifica o mesmo concorrente.
+## Escrever a recursão
 
-## Parte inicial e passo recursivo
-
-Uma CTE recursiva tem uma parte inicial e um passo que produz linhas a partir das anteriores. Ambos devolvem o mesmo número de colunas com significados compatíveis.
+Uma CTE recursiva junta **parte inicial** (primeiras linhas) e **passo** (novas linhas a partir das anteriores), com o mesmo número de colunas compatíveis.
 
 <CodeSnippet language="sql" code={numerosRecursivos} />
 
-Produz 1 a 5. O filtro testa o valor **anterior**: trocar `< 5` por `<= 5` produziria também 6. A terminação tem de resultar da consulta, não de um suposto limite fixo do motor.
+Produz 1 a 5. O filtro testa o valor **anterior**: `< 5` para em 5; `<= 5` produziria 6. A terminação tem de vir da consulta, não de um limite presumido do motor.
 
-## Hierarquias e grafos
+Numa hierarquia `Categoria(id, idMae)`, começa na raiz e junta filhos por `c.idMae = d.id`, com profundidade 0 na raiz. A estrangeira garante a mãe, mas **não proíbe ciclos**: isso é regra adicional.
 
-Numa hierarquia com `Categoria(id, idMae)`, começa na raiz e junta filhos por `c.idMae = d.id`. A raiz tem profundidade 0; cada filho recebe a profundidade anterior mais 1. A estrangeira verifica a existência da mãe, mas não proíbe ciclos.
+## Terminar com ciclos
+
+Com `Aresta(1,2),(2,3),(3,1),(2,4)`, os alcançáveis de 1 são 1, 2, 3, 4:
 
 <CodePlayground
   language="sqlite"
@@ -44,16 +44,12 @@ INSERT INTO Aresta VALUES (1,2), (2,3), (3,1), (2,4);`,
 SELECT id FROM Alcancavel ORDER BY id;`}
 />
 
-A resposta é 1, 2, 3, 4. `UNION` elimina o retorno a um id já obtido. `UNION ALL` seguiria o ciclo sem parar.
+`UNION` elimina tuplos já obtidos e trava o ciclo; `UNION ALL` seguiria sem parar. **A deduplicação compara o tuplo inteiro**: com profundidade, `(1,0)` e `(1,3)` são distintos e o ciclo reabre. Para caminhos, impede repetição de nós no caminho e limita a exploração.
 
-**A deduplicação compara o tuplo inteiro.** Se guardares profundidade, `(1,0)` e `(1,3)` são distintos: `UNION` deixa de garantir terminação nesse ciclo. Para caminhos, controla os nós já visitados no caminho e limita a exploração conforme a pergunta.
+## O caso D'Hondt
 
-## Divisores e D'Hondt
+Para $M$ mandatos: gera divisores 1 a $M$ (só isto é recursivo), cruza listas com divisores, calcula votos/divisor e fica com os $M$ maiores quocientes. Com A=100, B=60, C=40 e $M=4$: 100/A, 60/B, 50/A, 40/C. A leva 2, B e C 1 cada. Usa divisão real e desempate explícito; o desempate por nome do exercício é convenção, não lei eleitoral.
 
-Para $M$ mandatos, gera divisores 1 a $M$, cruza cada lista com esses divisores, calcula votos/divisor e seleciona os $M$ maiores quocientes. Só a geração dos divisores precisa de recursão.
-
-Com votos A=100, B=60, C=40 e quatro mandatos, os maiores quocientes são 100/A, 60/B, 50/A e 40/C. A recebe 2 lugares; B e C recebem 1. Usa divisão real e define desempates. O desempate por nome no exemplo da lição é uma convenção do exercício, não a regra eleitoral legal.
-
-Em SQLite, o passo recursivo tem restrições próprias e não aceita agregações ou funções de janela. Agrega no resultado exterior quando essa for a estrutura adequada.
+Em SQLite, o passo recursivo não aceita agregações nem janelas: agrega no `SELECT` exterior.
 
 [Hierarquia e passos da recursão](/cadeiras/bd/sql-recursao/#percorrer-uma-hierarquia).

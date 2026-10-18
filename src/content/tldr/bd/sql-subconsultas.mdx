@@ -3,37 +3,30 @@ import divisaoProdutos from '../../bd/examples/divisao-produtos.sql?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-## Existência, pertença e ausência
+## Testar existência
 
-- `EXISTS` é verdadeiro se a subconsulta tiver alguma linha. Os valores do `SELECT` interior não interessam; costuma usar-se `SELECT 1`.
-- Uma subconsulta **correlacionada** depende da linha exterior. Para compras de um cliente, conserva `e.idCliente = c.id`; omiti-lo transforma a condição numa existência global.
-- `NOT EXISTS` exprime ausência de correspondências. "Há uma compra de outro cliente" não significa "este cliente nunca comprou".
-- `IN` testa pertença a uma coluna de resultados, sem multiplicar a linha exterior pelas correspondências.
+- `EXISTS` é verdadeiro com pelo menos uma linha; o `SELECT` interior não interessa, usa `SELECT 1`.
+- Numa subconsulta **correlacionada**, conserva a ligação à linha exterior (`e.idCliente = c.id`); sem ela, uma compra qualquer torna a condição verdadeira para todos.
+- `NOT EXISTS` exprime ausência. "Há compra de outro cliente" não prova "este nunca comprou".
+- `IN` testa pertença sem multiplicar as linhas exteriores.
 
-Com candidatos 1, 2, 3 e registos 1, `NULL`, `NOT IN` não devolve nenhum candidato: para 2 e 3, a comparação com `NULL` deixa a não pertença desconhecida. `NOT EXISTS` correlacionado por igualdade devolve 2 e 3.
+Com candidatos 1, 2, 3 e registos 1, `NULL`: `NOT IN` devolve **vazio** (para 2 e 3, `2 <> NULL` é desconhecido e contamina a negação), enquanto `NOT EXISTS` correlacionado devolve 2 e 3. `NOT IN` só é seguro com interiores e exterior garantidamente não nulos; filtrar nulos interiores não resolve um exterior nulo. Evidência de dúvidas reais: programadores esperam linhas de `NOT IN` com `NULL` na lista e recebem vazio ([Stack Overflow 1406215](https://stackoverflow.com/questions/1406215/sql-select-where-not-in-subquery-returns-no-results)).
 
-`NOT IN` é adequado quando os valores interiores e exteriores relevantes são garantidamente não nulos. Filtrar só os nulos interiores não decide o significado de um nulo exterior.
+## Valores únicos e tabelas derivadas
 
-## Valores, tabelas e máximos
+Uma subconsulta **escalar** ocupa o lugar de um valor: uma coluna e no máximo uma linha. Zero linhas dão `NULL`; várias linhas dão erro em PostgreSQL e a primeira linha em SQLite, que pode esconder um erro. Agrega ou ordena explicitamente em vez de depender disso.
 
-Uma subconsulta **escalar** deve devolver uma coluna e até uma linha. Zero linhas produzem `NULL`; uma linha fornece o seu valor. Várias linhas dão erro em PostgreSQL; SQLite escolhe a primeira, o que pode esconder um erro. Uma tabela derivada em `FROM` permite agregar primeiro por encomenda e depois calcular a média dos totais.
-
-Para todos os máximos conhecidos, usa `precoCentimos = (SELECT MAX(precoCentimos) FROM Produto)`. Conserva empates e exclui nulos. A formulação "não existe preço maior" precisa também de excluir o preço nulo exterior.
+Para todos os máximos com empates: `precoCentimos = (SELECT MAX(precoCentimos) FROM Produto)`. A variante "não existe maior" também precisa de excluir o preço exterior `NULL`. Uma tabela derivada em `FROM` agrega primeiro por encomenda e só depois tira a média dos totais.
 
 ## Conjuntos e quantificadores
 
-`UNION`, `INTERSECT` e `EXCEPT` eliminam duplicados; `UNION ALL` conserva ocorrências. As consultas precisam do mesmo número de colunas, com significados e tipos compatíveis. SQLite não oferece `INTERSECT ALL` ou `EXCEPT ALL`.
+`UNION`, `INTERSECT` e `EXCEPT` eliminam duplicados; `UNION ALL` conserva. Mesmo número de colunas, com significados e tipos compatíveis; SQLite não tem `INTERSECT ALL` nem `EXCEPT ALL`.
 
-Para valores não nulos:
+Para valores não nulos: `x > ANY(S)` equivale a existir `s < x` (falso com $S$ vazio); `x > ALL(S)` equivale a não existir `s >= x` (verdadeiro com $S$ vazio). SQLite não implementa `ANY`/`ALL`; trocar `ALL` por `x > MAX(S)` perde o caso vazio, porque `MAX` dá `NULL`.
 
-- `x > ANY(S)` equivale a existir `s < x`. Com $S$ vazio, é falso.
-- `x > ALL(S)` equivale a não existir `s >= x`. Com $S$ vazio, é verdadeiro.
+## O padrão "para todos"
 
-SQLite não implementa `ANY` e `ALL`. As reescritas anteriores exigem valores não nulos; substituir `ALL` por uma comparação com `MAX` perde o caso vazio.
-
-## Perguntas com todos
-
-"Comprou todos os requisitos" significa **não existir um requisito sem compra**. Define também o universo dos candidatos.
+"Comprou todos os requisitos" traduz-se em **não existir requisito sem compra**, com universo de candidatos declarado:
 
 <CodePlayground
   language="sqlite"
@@ -42,14 +35,8 @@ SQLite não implementa `ANY` e `ALL`. As reescritas anteriores exigem valores n�
   code={divisaoProdutos}
 />
 
-Só Ana comprou os produtos 10 e 11. Compras repetidas não mudam a existência. Se Exigido estiver vazio, passam **todos os clientes, incluindo Mia**, porque não há faltas. Exigir alguma compra é uma condição adicional.
+Só Ana comprou 10 e 11; repetições não mudam existência. Com Exigido vazio, passam **todos, incluindo Mia**: verdade vacuamente satisfeita. Para exigir alguma compra, acrescenta outro `EXISTS`.
 
-Uma solução por contagem tem de contar requisitos distintos comprados, limitar-se ao conjunto exigido e conservar candidatos sem compras no caso vazio.
-
-## Todos os grupos depois de agregar
-
-Para A superar B em todos os municípios, agrega primeiro por município/lista e procura um município sem **comparação verdadeira**. Isso também reprova empates, desconhecidos e resultados em falta. Comparar cada freguesia muda a pergunta.
-
-`SUM` ignora nulos e pode dar um total parcial. Com todos os registos esperados presentes, `HAVING COUNT(votos) = COUNT(*)` conserva só grupos inteiramente conhecidos. Não deteta registos omitidos: nesse caso é preciso conferir o universo esperado.
+Por contagem, só vale contar **distintos** do conjunto exigido e conservar candidatos sem compras no caso vazio. Para totais por grupo (A supera B em todos os municípios), agrega primeiro por município/lista e procura um município sem comparação verdadeira: reprova empates, desconhecidos e resultados em falta. `SUM` ignora nulos e `HAVING COUNT(votos)=COUNT(*)` só valida registos presentes, não omissões.
 
 [Quantificação universal e casos limite](/cadeiras/bd/sql-subconsultas/#perguntas-com-todos).

@@ -10,23 +10,23 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import grafo from '../../da/mst.dot?raw';
 
-Queremos ligar os cinco locais $a,b,c,d,e$ do grafo abaixo pelo menor custo total. Num grafo não dirigido, conexo e ponderado, uma **árvore abrangente** contém todos os vértices, é conexa e não tem ciclos. Tem $n-1$ arestas. Uma árvore abrangente de custo mínimo, **MST**, minimiza a soma dos seus pesos.
+Queremos ligar os cinco locais $a,b,c,d,e$ do grafo abaixo pelo menor custo total de construção. Num grafo não dirigido, conexo e ponderado, uma **árvore abrangente** contém todos os vértices, é conexa e não tem ciclos. Tem sempre $n-1$ arestas. Uma árvore abrangente de custo mínimo, **MST**, minimiza a soma dos pesos.
 
-Pesos negativos são permitidos: a ausência de ciclos continua a limitar a solução a $n-1$ arestas. A MST minimiza o custo de construir a rede, enquanto os caminhos mínimos minimizam distâncias entre locais. Um atalho pode encurtar um caminho sem pertencer à MST.
+Pesos negativos são permitidos: a ausência de ciclos continua a limitar a solução a $n-1$ arestas, por isso a MST continua bem definida. A MST minimiza o custo de ligar todos os locais. Os caminhos mínimos minimizam distâncias a partir de uma origem. Um atalho pode encurtar um caminho sem pertencer à MST, como mostra a última secção.
 
 ## A propriedade do corte
 
 Um corte divide os vértices em $S$ e $V\setminus S$. Uma aresta atravessa o corte quando tem um extremo de cada lado. Um conjunto de arestas $A$ **respeita** o corte quando nenhuma das suas arestas o atravessa.
 
-Suponhamos que $A$ está contido em alguma MST. Se $e$ é uma aresta de peso mínimo entre as que atravessam um corte respeitado por $A$, então $A\cup\{e\}$ continua contido em alguma MST. Dizemos que $e$ é segura para $A$.
+Supõe que $A$ está contido em alguma MST. Se $e$ é uma aresta de peso mínimo entre as que atravessam um corte respeitado por $A$, então $A\cup\{e\}$ continua contido em alguma MST. Dizemos que $e$ é segura para $A$.
 
-A prova é uma troca. Escolhe uma MST $T$ que contém $A$. Se já contém $e$, terminámos. Caso contrário, acrescentar $e$ cria um ciclo. Esse ciclo tem outra aresta $f$ que atravessa o corte, porque precisa de voltar ao lado inicial. Como o corte respeita $A$, $f$ não pertence a $A$. Temos $w(e)\le w(f)$. Retirar $f$ deixa uma árvore abrangente de custo não superior que contém $A$ e $e$; por otimalidade de $T$, também é uma MST.
+A prova é uma troca. Escolhe uma MST $T$ que contém $A$. Se já contém $e$, terminámos. Caso contrário, acrescentar $e$ cria um ciclo. Esse ciclo tem outra aresta $f$ que atravessa o corte, porque precisa de voltar ao lado inicial. Como o corte respeita $A$, $f$ não pertence a $A$. Temos $w(e)\le w(f)$. Retirar $f$ deixa uma árvore abrangente de custo não superior que contém $A$ e $e$. Por otimalidade de $T$, também é uma MST.
 
 Não criar um ciclo é necessário, mas não prova que a aresta é segura. Num triângulo com $ab=1$, $bc=2$ e $ac=10$, escolher primeiro $ac$ mantém uma floresta acíclica. Porém, qualquer árvore que contenha $ac$ custa pelo menos 11, enquanto $\{ab,bc\}$ custa 3. Não existe uma MST que complete essa escolha.
 
-No grafo da lição, o corte $S=\{a,b\}$ é atravessado por $ac$ de peso 3, $bc$ de peso 1 e $bd$ de peso 4. A aresta $bc$ é a mais leve. Se o conjunto já escolhido respeita esse corte e pertence a alguma MST, a prova anterior garante que podemos acrescentá-la. É essa condição, além da ausência de ciclos, que precisamos de manter.
+No grafo da lição, o corte $S=\{a,b\}$ é atravessado por $ac$ de peso 3, $bc$ de peso 1 e $bd$ de peso 4. A aresta $bc$ é a mais leve. Se o conjunto já escolhido respeita esse corte e pertence a alguma MST, a prova anterior garante que podemos acrescentá-la. É essa condição, além da ausência de ciclos, que precisamos de manter em cada passo.
 
-Vídeo complementar em inglês: [Gulosos e árvores abrangentes, aula 16 de 6.046J, 2005](https://ocw.mit.edu/courses/6-046j-introduction-to-algorithms-sma-5503-fall-2005/resources/lecture-16-greedy-algorithms-minimum-spanning-trees/) (MIT OpenCourseWare). Para perceber por que uma escolha local pode ser segura, acompanha a troca de arestas na prova da MST e distingue a escolha do algoritmo da prova.
+Vídeo complementar em inglês: [Gulosos e árvores abrangentes, aula 16 de 6.046J, 2005](https://ocw.mit.edu/courses/6-046j-introduction-to-algorithms-sma-5503-fall-2005/resources/lecture-16-greedy-algorithms-minimum-spanning-trees/) (MIT OpenCourseWare). Para perceber por que uma escolha local pode ser segura, acompanha a troca de arestas na prova da MST e distingue a escolha do algoritmo da prova que a justifica.
 
 ## Um exemplo para os dois algoritmos
 
@@ -35,7 +35,7 @@ Vídeo complementar em inglês: [Gulosos e árvores abrangentes, aula 16 de 6.04
   alt="Grafo não dirigido com arestas a b de peso 2, a c de peso 3, b c de peso 1, b d de peso 4, c d de peso 2, c e de peso 5 e d e de peso 1."
 />
 
-Uma MST é $\{bc,de,ab,cd\}$, com custo $1+1+2+2=6$. Os algoritmos seguintes chegam a esse custo de maneiras diferentes.
+Uma MST é $\{bc,de,ab,cd\}$, com custo $1+1+2+2=6$. Kruskal e Prim chegam a esse custo por ordens diferentes: um escolhe arestas por peso global, o outro cresce a partir de uma raiz.
 
 ## Kruskal
 
@@ -48,15 +48,15 @@ Kruskal começa com cada vértice numa componente separada. Ordena todas as ares
 | $ab$, 2 | Aceitar | $\{a,b,c\},\{d,e\}$           |
 | $cd$, 2 | Aceitar | $\{a,b,c,d,e\}$               |
 
-Podemos parar após $n-1=4$ aceitações, porque as outras arestas fechariam ciclos. O invariante tem duas partes: $A$ é uma floresta e existe uma MST que o contém. Quando uma aresta liga componentes diferentes, é a mais leve disponível a atravessar o corte de uma dessas componentes; a propriedade do corte conserva a segunda parte.
+Podemos parar após $n-1=4$ aceitações, porque as outras arestas fechariam ciclos. O invariante tem duas partes: $A$ é uma floresta e existe uma MST que o contém. Quando uma aresta liga componentes diferentes, é a mais leve disponível a atravessar o corte de uma dessas componentes, pelo que a propriedade do corte conserva a segunda parte.
 
-Usa **union-find** para testar representantes e unir componentes. Com compressão de caminhos e união por rank/tamanho, as operações custam $O(\alpha(n))$ amortizado. A ordenação domina o custo: $O(m\log m+n)$ tempo e $O(n)$ memória auxiliar, além da lista de arestas. Num grafo simples conexo, costuma escrever-se $O(m\log n)$ porque $m\le n^2$ e $m\ge n-1$.
+Usa **union-find** para testar representantes e unir componentes. Com compressão de caminhos e união por rank ou tamanho, as operações custam $O(\alpha(n))$ amortizado. A ordenação domina o custo: $O(m\log m+n)$ tempo e $O(n)$ memória auxiliar, além da lista de arestas. Num grafo simples conexo, costuma escrever-se $O(m\log n)$ porque $m\le n^2$ e $m\ge n-1$.
 
 ## Prim
 
 Prim cresce uma árvore a partir de uma raiz. Seja $S$ o conjunto já incluído. Para cada vértice exterior $v$, mantém `key[v]`, o peso da aresta mais barata de $S$ para $v$, e o extremo interior dessa aresta em `pai[v]`.
 
-A cada passo retira o vértice exterior com menor chave e inclui a sua ligação. Depois atualiza as chaves com as arestas que saem do vértice novo. Esta aresta é a mais leve a atravessar $(S,V\setminus S)$, por isso é segura.
+A cada passo retira o vértice exterior com menor chave e inclui a sua ligação. Depois atualiza as chaves com as arestas que saem do vértice novo. Esta aresta é a mais leve a atravessar $(S,V\setminus S)$, por isso é segura pela propriedade do corte.
 
 Partindo de $a$ no exemplo:
 
@@ -68,20 +68,20 @@ Partindo de $a$ no exemplo:
 | $d$      | $e$ passa a 1                | $cd$             |
 | $e$      | Nada                         | $de$             |
 
-A chave é um **peso de aresta**, não uma distância à raiz. Em Dijkstra atualizaríamos com `dist[u] + peso`; em Prim comparamos apenas `peso`. Confundir estas atualizações resolve outro problema.
+A chave é um **peso de aresta**, não uma distância à raiz. Em Dijkstra atualizaríamos com `dist[u] + peso`. Em Prim comparamos apenas `peso`. Confundir estas atualizações resolve outro problema, como mostram as dúvidas sobre fixar vértices com pesos negativos.
 
-Com heap binário e `decreaseKey`, Prim custa $O((n+m)\log n)$. Com matriz e procura linear da menor chave, custa $O(n^2)$ e pode ser uma escolha adequada num grafo denso. A variante que coloca arestas numa heap e descarta as que já têm os dois extremos incluídos pode guardar $O(m)$ entradas e custa $O(m\log m+n)$.
+Com heap binário e `decreaseKey`, Prim custa $O((n+m)\log n)$. Com matriz e procura linear da menor chave, custa $O(n^2)$ e pode ser adequada num grafo denso. A variante que coloca arestas numa heap e descarta as que já têm os dois extremos incluídos pode guardar $O(m)$ entradas e custa $O(m\log m+n)$.
 
 ## Grafos desconexos e empates
 
-Se o grafo é desconexo, não existe uma árvore abrangente de todos os vértices. Kruskal termina com uma **floresta abrangente de custo mínimo**, uma árvore por componente. Prim a partir de uma única raiz cobre apenas essa componente; para produzir uma floresta, reinicia-o em cada vértice ainda por incluir. Uma componente isolada contribui zero arestas e custo zero.
+Se o grafo é desconexo, não existe uma árvore abrangente de todos os vértices. Kruskal termina com uma **floresta abrangente de custo mínimo**, uma árvore por componente. Prim a partir de uma única raiz cobre apenas essa componente. Para produzir uma floresta, reinicia-o em cada vértice ainda por incluir. Uma componente isolada contribui zero arestas e custo zero.
 
 Uma heap vazia ou uma chave infinita num grafo desconexo não deve tornar-se uma aresta fictícia. Guarda separadamente a condição "não existe ligação".
 
-Pesos iguais podem permitir várias MST. Num triângulo com os três pesos iguais a 1, qualquer par de arestas é uma MST de custo 2. Prim e Kruskal podem devolver árvores diferentes e ambos estar corretos. Uma regra de desempate torna o resultado determinístico, mas não é parte da definição do ótimo. Se todos os pesos de arestas forem distintos, a MST é única, como se demonstra aplicando a troca ao primeiro desacordo entre duas árvores.
+Pesos iguais podem permitir várias MST. Num triângulo com os três pesos iguais a 1, qualquer par de arestas é uma MST de custo 2. Prim e Kruskal podem devolver árvores diferentes e ambos estar corretos. Uma regra de desempate torna o resultado determinístico, mas não faz parte da definição do ótimo. Se todos os pesos forem distintos, a MST é única, como se demonstra aplicando a troca ao primeiro desacordo entre duas árvores.
 
 ## MST e caminhos mínimos são problemas distintos
 
 Num triângulo com $ab=2$, $bc=2$ e $ac=3$, a MST contém $ab$ e $bc$, custo total 4. O caminho de $a$ a $c$ nessa árvore custa 4, embora o caminho mínimo no grafo seja a aresta direta de custo 3.
 
-A MST minimiza a soma de **todas** as suas arestas. Uma árvore de caminhos mínimos a partir de $a$ minimiza cada distância a $a$. A primeira pode usar menos custo total; a segunda pode ter de incluir uma ligação mais cara para encurtar uma distância. Decide qual é o objetivo antes de escolher Prim ou Dijkstra.
+A MST minimiza a soma de **todas** as suas arestas. Uma árvore de caminhos mínimos a partir de $a$ minimiza cada distância a $a$. A primeira pode usar menos custo total. A segunda pode ter de incluir uma ligação mais cara para encurtar uma distância. Decide qual é o objetivo antes de escolher entre Prim e Dijkstra.

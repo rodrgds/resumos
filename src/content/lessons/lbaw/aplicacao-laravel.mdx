@@ -197,7 +197,7 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
-Quem não entrou é redirecionado para o login em vez de chegar ao controlador. O middleware auth verifica autenticação. A autorização sobre a operação e o recurso precisa de uma policy, gate ou verificação equivalente no servidor.
+Quem não entrou é redirecionado para o login em vez de chegar ao controlador. A autorização sobre a operação e o recurso precisa de uma policy, gate ou verificação equivalente no servidor.
 
 ## Ambiente e ferramentas
 
@@ -254,6 +254,8 @@ Este fragmento usa a facade `Gate` e mostra a separação; pressupõe uma policy
 ## ORM e o problema N+1
 
 Se carregares 100 sessões e, num ciclo, acederes a `$sessao->evento`, o carregamento preguiçoso pode fazer uma consulta inicial e mais 100 consultas. É o problema **N+1**. Carregamento antecipado, como `Sessao::with('evento')->get()`, pode carregar as relações em consultas agrupadas. Mede as consultas e os dados transferidos; antecipar todas as relações sem necessidade também custa recursos.
+
+O mesmo cuidado aplica-se a verificações de autorização dentro de ciclos: um `@can` por linha numa lista pode reavaliar a policy para cada objeto e repetir consultas que a decisão usa. Quando a decisão é igual para todas as linhas, avalia-a uma vez fora do ciclo; quando depende de cada objeto, confirma que as relações usadas pela policy já vêm carregadas. Uma verificação barata em isolamento pode dominar o tempo da página quando é repetida cem vezes.
 
 O modelo não é a página. Não coloques decisões de autorização só no template: um pedido direto pode contorná-lo. Não aceites campos privilegiados só porque estão no `$fillable`; esse atributo limita a atribuição em massa, não determina quem pode alterar cada valor.
 

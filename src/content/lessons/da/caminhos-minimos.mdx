@@ -13,9 +13,9 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import grafo from '../../da/caminhos.dot?raw';
 import programa from '../../da/dijkstra.cpp?raw';
 
-No grafo abaixo, a ligação direta de $s$ a $a$ custa 4, mas passar por $b$ custa $1+2=3$. O custo de um caminho é a soma dos pesos das suas arestas. Para encontrar o mínimo, mantemos distâncias provisórias e melhoramo-las quando descobrimos uma alternativa.
+No grafo abaixo, a ligação direta de $s$ a $a$ custa 4, mas passar por $b$ custa $1+2=3$. O custo de um caminho é a soma dos pesos das suas arestas. Para encontrar o mínimo, mantemos distâncias provisórias e melhoramo-las quando descobrimos uma alternativa mais curta.
 
-A possibilidade de fixar uma distância depende das hipóteses: Dijkstra exige pesos não negativos; num DAG, a ordem topológica permite também pesos negativos.
+A possibilidade de fixar uma distância depende das hipóteses sobre os pesos. Dijkstra exige pesos não negativos e fixa cada vértice uma vez. Num DAG, a ordem topológica permite também pesos negativos, porque todos os antecessores já foram processados. A secção sobre Bellman-Ford mostra por que a ausência de ciclo negativo não chega para salvar Dijkstra.
 
 ## Relaxação e predecessores
 
@@ -29,9 +29,11 @@ Para reconstruir $s\to t$, seguimos os pais a partir de $t$ e invertemos a sequ�
 
 ## Dijkstra
 
-Dijkstra exige **pesos não negativos**. Mantém vértices definitivos e escolhe o não definitivo com menor distância provisória. Quando escolhe $u$, a sua distância passa a definitiva; relaxa depois as arestas que saem de $u$.
+Dijkstra exige **pesos não negativos**. Mantém vértices definitivos e escolhe sempre o não definitivo com menor distância provisória. Quando escolhe $u$, a sua distância passa a definitiva. Depois relaxa as arestas que saem de $u$.
 
-Por que pode fixá-la? Considera um caminho mínimo para $u$ e o primeiro vértice $y$ desse caminho que ainda não é definitivo. O predecessor de $y$ já foi processado e relaxou a entrada em $y$. O restante caminho até $u$ tem custo não negativo. Como Dijkstra escolheu $u$ antes de $y$, temos $d[u]\le d[y]\le\delta(s,u)$; como $d[u]$ é o custo de um caminho, a desigualdade oposta também vale. Logo $d[u]=\delta(s,u)$.
+Por que pode fixá-la? Considera um caminho mínimo para $u$ e o primeiro vértice $y$ desse caminho que ainda não é definitivo. O predecessor de $y$ já foi processado e relaxou a entrada em $y$. Como todos os pesos são não negativos, o restante caminho até $u$ tem custo não negativo. Como Dijkstra escolheu $u$ antes de $y$, temos $d[u]\le d[y]\le\delta(s,u)$. Como $d[u]$ é o custo de um caminho concreto, a desigualdade oposta também vale. Logo $d[u]=\delta(s,u)$.
+
+O ponto onde a prova usa a hipótese é o passo "o restante caminho tem custo não negativo". Com uma aresta negativa, esse restante pode reduzir o custo e $d[y]$ pode ainda descer abaixo de $d[u]$ depois de $u$ estar fixado. É esse o erro que as dúvidas sobre Dijkstra com pesos negativos costumam revelar.
 
 <Dot
   source={grafo}
@@ -73,7 +75,7 @@ No grafo $s\to a$ de peso 2, $s\to b$ de peso 5 e $b\to a$ de peso $-4$, Dijkstr
   description="Dijkstra fixa a com custo 2 antes de processar b. A aresta de peso −4 revela depois o caminho de custo 1; Bellman-Ford permite rever essa distância."
 />
 
-Bellman-Ford aceita pesos negativos. Relaxa todas as arestas repetidamente, no máximo $n-1$ passagens. Depois da passagem $k$, já obteve caminhos tão bons como os melhores caminhos com até $k$ arestas. Se não há ciclos negativos alcançáveis, um caminho mínimo pode ser simples e ter no máximo $n-1$ arestas. Esta é a razão do limite de passagens.
+Bellman-Ford aceita pesos negativos. Relaxa todas as arestas repetidamente, no máximo $n-1$ passagens. Após a passagem $k$, todos os caminhos com até $k$ arestas já foram contemplados, embora a implementação in-place possa já ter usado mais do que $k$ arestas dentro da mesma passagem quando processa as arestas por uma ordem favorável. Com arestas $s\to a$ de peso 1 e $a\to b$ de peso 1 nessa ordem, uma só passagem já põe $d[b]=2$, que não é a distância mínima com no máximo uma aresta. A garantia correta é por camadas: se leres apenas a camada anterior em cada passagem, a passagem $k$ dá exatamente os melhores caminhos com até $k$ arestas. Se não há ciclos negativos alcançáveis, um caminho mínimo pode ser simples e ter no máximo $n-1$ arestas. Esta é a razão do limite de passagens.
 
 Para o grafo anterior, se a ordem das arestas for $s\to a$, $b\to a$, $s\to b$, a primeira passagem produz $(d[a],d[b])=(2,5)$ e a segunda produz $(1,5)$. Uma terceira não muda nada, por isso podemos terminar mais cedo quando uma passagem não faz alterações.
 

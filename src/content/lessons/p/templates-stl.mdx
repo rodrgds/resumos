@@ -80,9 +80,12 @@ Depois das inserções, a pilha contém `primeira, segunda`; a primeira retirada
 
 ## vector: o array que cresce
 
-`std::vector<T>` tem armazenamento contíguo, tamanho variável e acesso por índice. `size()` conta elementos vivos; `capacity()` conta quantos podem caber sem nova reserva. `reserve(n)` pode aumentar capacidade, mas não cria elementos. `resize(n)` muda o tamanho, construindo ou destruindo elementos.
+`std::vector<T>` tem armazenamento contíguo, tamanho variável e acesso por
+índice. `size()` conta os elementos existentes; `capacity()` conta a capacidade em elementos. `reserve(n)` só aumenta a reserva quando `n` excede a capacidade atual; nunca a diminui nem cria elementos. `resize(n)` muda o tamanho, construindo ou destruindo elementos.
 
-`v[i]` exige `i < v.size()` e não verifica o limite, enquanto `v.at(i)` verifica e lança `std::out_of_range`; `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero. Depois de `reserve(3)`, o tamanho continua `0` e a capacidade passa a pelo menos `3`; depois de `resize(3)`, existem os índices `0`, `1` e `2`.
+`v[i]` exige `i < v.size()` e não verifica o limite. `v.at(i)` verifica e lança `std::out_of_range`. `front`, `back` e `pop_back` exigem um vetor não vazio.
+
+Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero. Depois de `reserve(3)`, o tamanho continua `0` e a capacidade passa a pelo menos `3`. Depois de `resize(3)`, existem os índices `0`, `1` e `2`.
 
 `push_back` tem custo amortizado constante: algumas inserções são mais caras porque realocam e transferem os elementos. Inserir ou remover no meio desloca elementos e custa linear no número deslocado. A gestão automática de memória não elimina os custos das operações.
 
@@ -163,7 +166,9 @@ Saída:
 9
 ```
 
-Depois de ordenar, `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico sem mudar o tamanho. O primeiro `erase` destrói o resto e o segundo remove os pares filtrados por `remove_if`. O fim lógico fica antes do sexto elemento enquanto `end()` continua depois do sétimo; os `?` são valores válidos não especificados, não posições vazias, e só `erase` reduz o tamanho de `7` para `5`.
+Depois de ordenar, `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico sem mudar o tamanho. No exemplo, o tamanho continua `7` até ao `erase`. O resultado lógico termina no iterador devolvido. As posições depois dele continuam desreferenciáveis, com estado válido mas não especificado, por isso o programa não conta com esses valores.
+
+O primeiro `erase` apaga esse resto e reduz o tamanho para `5`. O segundo remove os pares filtrados por `remove_if`.
 
 <Typst
   source={uniqueErase}
@@ -177,7 +182,7 @@ Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem
 
 ## Comparadores e pesquisa ordenada
 
-Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. `a <= b` não serve como comparador de `sort`, porque dá verdadeiro para valores iguais. Para desempatar objetos, compara primeiro o critério principal e depois o secundário:
+Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. Por isso `a <= b` não serve como comparador de `sort`: dá verdadeiro para valores iguais e quebra a exigência. Para desempatar objetos, compara primeiro o critério principal e depois o secundário:
 
 ```cpp
 // Excerto: ordena por nota e desempata por identificador.
@@ -188,9 +193,11 @@ bool antes(const Registo& a, const Registo& b) {
 }
 ```
 
-Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. Num vetor `{1, 3, 5, 7}`, `lower_bound` de `5` devolve a posição `2`, e procurar `4` devolve a mesma posição, que contém `5`; encontrar uma posição de inserção não prova que o valor existe, por isso confirma `it != v.end()` antes de ler `*it` e compara o valor encontrado com o procurado.
+Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Verificar apenas `comp(x, x) == false` não prova transitividade; prova só o caso mais simples. Um comparador que ordena por média e desempata por nome usa a mesma estrutura: primeiro o valor, depois a chave estável.
 
-`sort` não garante a ordem anterior entre elementos equivalentes. `stable_sort` conserva-a. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado de acordo com esse critério, normalmente ordenado pelo mesmo comparador. Procurar por pesquisa binária num vetor arbitrário não satisfaz essa condição.
+Para pesquisar, `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado por esse critério, normalmente ordenado pelo mesmo comparador. Num vetor `{1, 3, 5, 7}`, procurar `5` devolve a posição `2`; procurar `4` devolve a mesma posição, que contém `5`. Encontrar uma posição de inserção não prova que o valor existe: confirma `it != v.end()` antes de ler `*it` e compara o valor encontrado com o procurado.
+
+`sort` não garante a ordem anterior entre elementos equivalentes; `stable_sort` conserva-a. Procurar por pesquisa binária num vetor arbitrário não satisfaz a condição de partição.
 
 ## Agregar por chave e ordenar pelo resultado
 

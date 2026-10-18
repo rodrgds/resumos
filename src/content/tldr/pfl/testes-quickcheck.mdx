@@ -1,45 +1,68 @@
-import Dot from '../../../components/Dot.astro';
-import ciclo from '../../pfl/quickcheck.dot?raw';
+## Propriedades em vez de exemplos
 
-## Propriedades e contraexemplos
-
-Uma propriedade descreve uma família de entradas. QuickCheck gera casos e procura uma violação. Passar os casos gerados **não prova a afirmação universal**.
+Um exemplo verifica uma entrada; uma propriedade afirma algo sobre uma família de entradas. O QuickCheck gera casos e procura uma violação. Passar os casos gerados **não prova a afirmação universal**.
 
 ```haskell
 import Test.QuickCheck
 
 prop_revRev :: [Int] -> Bool
 prop_revRev xs = reverse (reverse xs) == xs
--- No GHCi: quickCheck prop_revRev
 ```
 
-Os tipos concretos indicam o que gerar. A omissão é 100 testes; a distribuição depende da instância `Arbitrary` e do parâmetro de tamanho.
+```text
+ghci> quickCheck prop_revRev
++++ OK, passed 100 tests.
+```
+
+- Os casos podem incluir listas vazias, negativos e repetidos. Só os casos gerados foram observados.
+- Os 100 casos são a omissão da ferramenta; podes pedir mais com argumentos de configuração.
+
+## O contrato antes da propriedade
+
+Uma função de ordenação deve produzir uma lista **ordenada** com os **mesmos elementos e multiplicidades**. Em `[2,1,2]`, devolver `[1,2]` perde uma ocorrência; devolver `[2,1,2]` não ordena.
+
+- A idempotência `f (f xs) == f xs` verifica outra lei. `f xs = []` satisfaz essa igualdade e perde os dados: caracteriza a ordenação pela ordem **e** pela conservação das multiplicidades.
+- Com uma implementação de referência independente, compara os resultados.
+
+## Contraexemplos e shrinking
+
+```haskell
+prop_sortId :: [Int] -> Bool
+prop_sortId xs = sort xs == xs
+```
+
+```text
+ghci> quickCheck prop_sortId
+*** Failed! Falsifiable (after 3 tests):
+[1,0]
+```
+
+- A testemunha `[1,0]` mostra que a propriedade é que está errada, não a ordenação: compara o contraexemplo com o contrato antes de mudar a implementação.
+- O **shrinking** tenta reduzir a entrada conservando a falha; as reduções disponíveis não garantem o mínimo global.
 
 <Dot
   source={ciclo}
-  alt="QuickCheck gera uma entrada e testa-a. Se falhar, tenta reduzir o contraexemplo e permite compará-lo com o contrato antes de corrigir a propriedade ou o programa."
+  alt="QuickCheck gera e testa uma entrada. Um sucesso acrescenta evidência à amostra. Uma falha permite reduzir, quando há um redutor, e comparar o contraexemplo com o contrato antes de rever a propriedade ou o programa."
 />
 
-O shrinking conserva a falha enquanto tenta reduzir a entrada; não garante o menor contraexemplo global. Confere primeiro se a propriedade corresponde ao contrato: `sort xs == xs` falha em `[1,0]`, embora `sort` esteja correta.
-
-## Caracterizar o resultado
-
-- Ordenação exige saída ordenada **e os mesmos elementos com as mesmas multiplicidades**. `[2,1,2]` não pode tornar-se `[1,2]`.
-- Idempotência, `f (f xs) == f xs`, não basta: `f xs = []` também a satisfaz.
-- Inversas e modelos de referência independentes ajudam a formular leis. Para listas finitas, `reverse (xs ++ ys) == reverse ys ++ reverse xs` troca a ordem das partes; `[1]` e `[2]` refutam a versão sem troca.
-
-## Condições e geradores
+## Geradores e pré-condições
 
 ```haskell
 prop_divMod :: Integer -> Integer -> Property
-prop_divMod x y = y /= 0 ==> (x `div` y)*y + x `mod` y == x
+prop_divMod x y = y /= 0 ==> (x `div` y) * y + (x `mod` y) == x
 ```
 
-`==>` descarta entradas que não satisfazem a pré-condição. Esses descartes não contam como sucessos; uma condição rara pode fazer a ferramenta desistir sem a amostra pedida.
+- Com `==>`, os casos com `y == 0` são descartados e não contam como testes. Se a pré-condição for rara, a ferramenta pode desistir sem a amostra pedida.
+- Um gerador à medida constrói entradas válidas em vez de descartar: gera pares já ordenados para testar o máximo do par.
+- `suchThat` repete tentativas até satisfazer a condição; uma condição rara pode impedir a geração. `forAll` não reduz entradas próprias: usa `forAllShrink` com redutor que preserve a condição.
+- Para `insert x xs` com `xs` ordenada por contrato, ordena a lista gerada antes de testar.
 
-- Um gerador que constrói entradas válidas evita descartes. Para uma inserção que exige lista ordenada, ordena a lista gerada antes de a testar.
-- `suchThat` repete tentativas; uma condição impossível ou rara pode impedir a geração de terminar.
-- `forAll` não reduz automaticamente entradas de um gerador próprio. Usa `forAllShrink` com um redutor que conserve a pré-condição.
-- Declara o domínio: `length` exige listas finitas; propriedades de aritmética exata podem usar `Integer` para evitar overflow de `Int`.
+:::tip[De onde vêm as propriedades]
+Leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == sort xs`), inversas (`reverse (reverse xs) == reverse xs`) e modelos de referência. Começa pelo que a função deve conservar ou produzir, incluindo os casos limite.
+:::
 
-[Contrato da ordenação](/cadeiras/pfl/testes-quickcheck/#contrato-da-ordenação).
+## Um contraexemplo no papel
+
+A lei `reverse (xs ++ ys) == reverse xs ++ reverse ys` é falsa: com `xs=[1]` e `ys=[2]`, dá `[2,1]` contra `[1,2]`. A lei correta troca a ordem: `reverse (xs ++ ys) == reverse ys ++ reverse xs`.
+
+Para justificar uma propriedade, identifica ainda o domínio. A igualdade com `length` pressupõe listas finitas; leis em `Int` podem sofrer overflow. Usa `Integer` na aritmética exata para não confundir matemática com representação.

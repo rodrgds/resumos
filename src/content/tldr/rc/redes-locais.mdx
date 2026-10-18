@@ -1,50 +1,22 @@
-import Typst from '../../../components/Typst.astro';
-import vlans from '../../rc/vlan.typ?raw';
+## Comutador
 
-## Aprendizagem MAC
+- Aprende MAC de **origem** por porta e VLAN. Destino conhecido noutra porta: envia só por ela. Na mesma porta de entrada: filtra. Desconhecido: inunda as outras portas da VLAN. Broadcast: difunde na VLAN.
+- Inundação não altera endereços. Tabela com envelhecimento; mudança de porta reaprende pela origem.
+- FCS é CRC no fim: descarta a trama; a recuperação fica noutro protocolo.
 
-O comutador aprende o MAC de **origem**, porta de entrada e VLAN, e consulta o MAC de **destino** para encaminhar.
+## Domínios e VLANs
 
-| Destino                       | Decisão                         |
-| ----------------------------- | ------------------------------- |
-| Conhecido noutra porta        | Reenvia apenas nessa porta      |
-| Conhecido na porta de entrada | Filtra                          |
-| Unicast desconhecido          | Inunda restantes portas da VLAN |
-| Broadcast                     | Difunde na VLAN                 |
+- Domínio de colisão partilha meio half-duplex. Cada porta de comutador separa o seu; full-duplex não tem colisões.
+- Domínio de broadcast: alcance de um broadcast. Comutador sem VLANs não o divide; router não reenvia broadcast Ethernet.
+- Trunk transporta várias VLANs com etiquetas 802.1Q. Entre VLANs é preciso encaminhamento.
 
-A tabela envelhece e reaprende uma origem que muda de porta. Não altera MAC ao reenviar. Com A na porta 1 e B na 2, tabela vazia: A→B ensina A:1 e inunda; B→A ensina B:2 e sai só por 1.
+## Spanning tree
 
-Ethernet inclui MAC destino e origem, tipo/comprimento, dados e FCS. O FCS deteta erros; não torna Ethernet um serviço de retransmissão fiável. Para tempos, verifica se entram preâmbulo, delimitador e intervalo entre tramas.
+- Ciclos físicos multiplicam broadcasts; Ethernet não tem TTL.
+- Elege raiz pelo menor identificador, portas raiz pelo menor custo, desempata por identificadores.
+- Triângulo A=1, B=2, C=3, custos 1: raiz A, B–C bloqueia do lado de C. B chega a C por A. STP evita o ciclo, sem minimizar cada par.
 
-## Domínios, VLANs e ciclos
+## IP e MAC no caminho
 
-- Um concentrador reúne um domínio de colisão half-duplex. Cada porta de comutador separa-o; em full-duplex não há colisões nesse enlace.
-- Uma VLAN define um domínio de broadcast lógico. Portas de acesso ligam habitualmente terminais numa VLAN; trunks transportam várias, identificadas por 802.1Q conforme configuração.
-- Comunicar entre VLANs exige encaminhamento, que pode ocorrer num comutador multicamada. A configuração e as políticas determinam os fluxos permitidos.
-
-<Typst
-  source={vlans}
-  format="svg"
-  alt="A e B pertencem à VLAN 10; C e D à VLAN 20, no mesmo equipamento. As duas VLANs formam domínios de ligação separados."
-/>
-
-Ciclos físicos podem multiplicar broadcasts, pois Ethernet não tem TTL, e fazer oscilar aprendizagem. **Spanning Tree** elege raiz pelo menor identificador, escolhe menores custos até ela e desempata por identificadores de ponte e porta. Portas redundantes deixam de encaminhar, criando uma topologia lógica sem ciclos.
-
-Num triângulo de custos 1 e IDs A=1, B=2, C=3, A é raiz. B e C usam ligações diretas a A; em B–C, B vence o empate e a porta de C é bloqueada para dados. B→C passa por A, mesmo havendo ligação física direta. STP não minimiza caminhos entre todos os pares. [Papéis das portas](/cadeiras/rc/redes-locais/#escolher-portas-num-triângulo).
-
-## Wi-Fi
-
-Um BSS é uma célula; na infraestrutura usa ponto de acesso. SSID identifica a rede apresentada, BSSID o conjunto concreto. Um ESS interliga células e pode permitir mobilidade. Associação e autenticação são operações diferentes. O ponto de acesso não é necessariamente router IP; 802.11 distingue transmissor, recetor e extremos em vários campos de endereço.
-
-## IP e MAC por salto
-
-Sem NAT ou túneis, A envia para B noutra rede:
-
-| Ligação  | IP origem/destino | MAC origem/destino                 |
-| -------- | ----------------- | ---------------------------------- |
-| A→router | A / B             | A / interface de entrada do router |
-| Router→B | A / B             | Interface de saída do router / B   |
-
-A resolve por ARP o MAC do gateway. O router cria nova trama; um comutador intermédio apenas a encaminha. Cada router diminui TTL. Para mais saltos, repete a decisão sobre o próximo salto local.
-
-[Percurso dos endereços](/cadeiras/rc/redes-locais/#seguir-ip-e-mac-ao-longo-do-caminho).
+- Host remoto: trama leva o MAC do gateway, obtido por ARP. IP de origem e destino mantêm-se sem NAT.
+- Comutador intermédio não substitui o MAC de origem.

@@ -34,17 +34,45 @@ Gestalt: proximidade, semelhança, continuidade, região comum e figura-fundo. R
 
 [Explicação e contas](/cadeiras/ipc/percepcao-cognicao/).
 
-## Investigar e desenhar
+## Investigar utilizadores
 
-Investigar pergunta, método e síntese: entrevista para motivos, observação para comportamento, questionário para contar. Perguntas sobre acontecimentos concretos; sem perguntas duplas nem indução. Consentimento, dados mínimos e piloto do protocolo. [Explicação](/cadeiras/ipc/investigacao-utilizadores/).
+| Pergunta                  | Método                     | Registo                                       |
+| ------------------------- | -------------------------- | --------------------------------------------- |
+| Motivos da última reserva | Entrevista semiestruturada | Episódios concretos, aprofundar só o relatado |
+| Onde interrompe a tarefa  | Observação contextual      | Ações e ferramentas, não juízos               |
+| Quantos usam cada canal   | Questionário               | Perfil, situação atual, exploração            |
 
-Journey Map: etapas, ações, motivos, experiência e pontos de contacto, com evidência para relatos e hipóteses explícitas. Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário as-is descreve o atual; to-be explora proposta. Tarefa de teste dá resultado sem ensinar cliques; wireframe mostra estrutura, wireflow liga estados e transições. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
+Sem perguntas duplas, termos internos ou soluções antecipadas. Vinte respostas são ponto de partida, não garantia. Piloto testa procedimento. Pseudonimizar não anonimiza. [Explicação](/cadeiras/ipc/investigacao-utilizadores/).
 
-Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação. Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
+## Desenhar a partir da evidência
 
-Ideação: esboçar individualmente e em paralelo antes de discutir e selecionar; Crazy 8 gera oito ideias distintas em oito minutos. Selecionar exige necessidades e hipóteses, não só votos.
+Ciclo: investigar, requisitos, alternativas, protótipo, avaliação, revisão. PACT: pessoas, atividades, contextos, tecnologias. Problema descreve situação e consequência sem escolher solução.
 
-Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é outro eixo. Wizard of Oz simula comportamento; não prova o algoritmo real. [Explicação](/cadeiras/ipc/prototipagem/).
+| Formato                  | Regra                                                    |
+| ------------------------ | -------------------------------------------------------- |
+| Persona                  | Padrões rastreáveis; proto-persona declara hipóteses     |
+| Cenário as-is / to-be    | Atual observado vs proposta futura                       |
+| Journey Map              | Etapas e pontos de contacto com evidência por célula     |
+| Requisito de usabilidade | Público, contexto, medida e limiar; exemplo 8/10 em 60 s |
+| Tarefa de teste          | Resultado sem ensinar cliques                            |
+| Wireframe / wireflow     | Estrutura vs estados e transições                        |
+
+[Explicação](/cadeiras/ipc/design-centrado-utilizador/).
+
+## Princípios e inspeção
+
+Affordance é possibilidade; significante comunica; mapping liga controlo a efeito; feedback responde. Heurísticas: estado, mundo real, controlo, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação, ajuda. Cada falha: localização, comportamento, princípio, consequência e gravidade. [Explicação](/cadeiras/ipc/principios-usabilidade/).
+
+Ideação em paralelo antes de discutir; Crazy 8 dá oito ideias distintas em oito minutos. Escolhe por necessidade e hipótese, não por votos.
+
+## Prototipagem
+
+| Eixo       | Opções                                                              |
+| ---------- | ------------------------------------------------------------------- |
+| Cobertura  | Horizontal ampla e superficial; vertical restrita e profunda        |
+| Fidelidade | Aspeto, conteúdo, interação e comportamento, separados da cobertura |
+
+Wizard of Oz simula função por regras; não prova algoritmo nem latência. "A enviar" não é sucesso. [Explicação](/cadeiras/ipc/prototipagem/).
 
 ## Escolher e analisar uma avaliação
 
@@ -56,14 +84,15 @@ Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é
 | Como funciona no contexto?             | Estudo de campo      |
 | Que tempo prevê um percurso conhecido? | Modelo preditivo     |
 
-Protocolo mínimo: tarefa verificável, critério de sucesso, ajuda permitida, limite de tempo e registo. Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e progresso depois da ação. Formativa melhora desenho; sumativa avalia resultados. Definir sucesso, ajuda e limite de tempo antes do teste. Não contar interrupção como tempo de conclusão. [Explicação](/cadeiras/ipc/avaliacao-usabilidade/).
+Protocolo mínimo: tarefa verificável, critério de sucesso, ajuda permitida, limite de tempo e registo. Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e progresso depois da ação. Formativa melhora desenho; sumativa avalia resultados. Não contar interrupção como tempo de conclusão. [Explicação](/cadeiras/ipc/avaliacao-usabilidade/).
 
 - Atitudinal: o que dizem/sentem. Comportamental: o que fazem. Qualitativo/quantitativo é outro eixo.
 - No projeto de 2026/27: comparar redesenho com funcionalidade original, ou duas alternativas para uma função nova. Manter objetivo e condições comparáveis.
 - Entre participantes: pessoas diferentes por condição. Intra: as mesmas; controlar aprendizagem/ordem. Independente é condição; dependente é medida.
 - Média e mediana não são iguais; declarar falhas e dispersão. Correlação não prova causalidade.
 - Ética: consentimento informado, saída sem penalização, proteção dos dados e riscos proporcionados; pseudonimização não garante anonimato.
-- SUS padrão: ímpares $r_i-1$, pares $5-r_i$; somar e multiplicar por 2,5. Índice de 0 a 100, não percentagem de sucesso.
+- SUS padrão: ímpares $r_i-1$, pares $5-r_i$; somar e multiplicar por 2,5. Índice de 0 a 100, não percentagem de sucesso. Média publicada ronda 68; 70 fica perto da média.
+- Cinco utilizadores: modelo $1-(1-p)^n$ com $p\approx0{,}31$ estimado; cerca de 85% esperados com cinco comparáveis, mas cada grupo variou entre 55% e 100% numa simulação, e lojas com descoberta baixa só revelaram ~35%. Grupos distintos pedem participantes por grupo. Parar, corrigir e voltar a testar.
 - IC face a requisito: usar intervalo do parâmetro pedido. Para média inferior a 60 s, intervalo todo abaixo sustenta cumprimento; todo acima, incumprimento; atravessar ou tocar o limiar não sustenta a desigualdade estrita.
 - Valor-p não é probabilidade de a hipótese nula ser verdadeira; ausência de significância não prova igualdade. Emparelhado: analisar diferenças por pessoa; IC da diferença média com $t$ e $s_d$. [Explicação](/cadeiras/ipc/estudos-utilizadores/).
 

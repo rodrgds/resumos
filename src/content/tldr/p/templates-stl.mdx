@@ -1,62 +1,54 @@
 import Typst from '../../../components/Typst.astro';
 import uniqueErase from '../../p/unique-erase.typ?raw';
 
-## Templates
+## Declarar um modelo de função
 
 ```cpp
 template <typename T>
 T maior(T a, T b) { return a < b ? b : a; }
-// maior(3, 8) dá 8; maior(2.5, 1.5) dá 2.5.
 ```
 
-O compilador deduz `T` dos argumentos. `maior(3, 2.5)` não deduz um tipo único; `maior<double>(3, 2.5)` escolhe-o explicitamente. O tipo tem de oferecer as operações usadas, aqui comparação e cópia. As definições ficam habitualmente no cabeçalho para estarem disponíveis na instanciação.
+- `maior(3, 8)` deduz `int`. `maior(3, 2.5)` não deduz um só tipo. Usa `maior<double>(3, 2.5)`.
+- O tipo tem de oferecer as operações usadas.
+- Definições ficam no cabeçalho para a instanciação as ver.
 
-`Pilha<int>` e `Pilha<string>` são tipos distintos. Uma pilha retira o último valor inserido; consultar ou remover o topo exige verificar o vazio. Uma retirada que copia `back()` antes de `pop_back()` exige elementos copiáveis.
+`Pilha<int>` e `Pilha<string>` são tipos distintos. Retirar do topo exige confirmar não vazio.
 
-## Contentores e custos
+## Que contentor escolho?
 
-Seja `n` o número de elementos; os custos por chave pressupõem comparação ou dispersão de custo constante.
+| Preciso de                       | Escolhe                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Índice constante, tamanho fixo   | `array<T, N>`                                                                                                       |
+| Índice constante, crescer no fim | `vector<T>`                                                                                                         |
+| Inserir nos dois extremos        | `deque<T>`                                                                                                          |
+| Inserir com posição conhecida    | `list<T>` constante; localizar o elemento custa `O(n)`                                                              |
+| Chave ordenada única             | `set`, `map`; procura, inserção e remoção em `O(log n)` comparações                                                 |
+| Chave sem ordem, média constante | `unordered_map`; média `O(1)` com boa distribuição das chaves e hash/igualdade de custo constante; pior caso linear |
 
-| Contentor             | Operações e limites                                               |
-| --------------------- | ----------------------------------------------------------------- |
-| `array<T, N>`         | Tamanho fixo, contíguo; índice constante                          |
-| `vector<T>`           | Contíguo; índice constante; inserção no fim amortizada constante  |
-| `deque<T>`            | Blocos; índice e inserção nos extremos constantes                 |
-| `list<T>`             | Nós; procura linear, remoção com iterador conhecido constante     |
-| `set<T>`, `map<K, V>` | Chaves únicas ordenadas; procura, inserção e remoção logarítmicas |
-| `unordered_map<K, V>` | Procura média constante, pior caso linear; sem ordem fixa         |
+- `size()` conta os elementos existentes. `capacity()` conta a capacidade em elementos. `reserve(n)` só aumenta a reserva quando `n` excede a capacidade atual, sem criar elementos, e nunca a diminui.
+- `v[i]` não verifica. `at(i)` verifica. `front`, `back`, `pop_back` exigem não vazio.
+- `m[chave]` insere um valor construído por omissão quando a chave falta:
+  `int` fica `0`, `string` fica vazia. `find` consulta sem inserir.
 
-`stack` e `queue` expõem operações de pilha e fila sobre outro contentor. Escolhe pelas operações necessárias, incluindo o custo de encontrar a posição.
+## Iteradores sem sustos
 
-Num `vector`, `size()` conta elementos vivos e `capacity()` conta capacidade sem nova reserva. **`reserve` não cria elementos; `resize` altera o tamanho.** `v[i]` exige índice inferior ao tamanho; `at(i)` verifica-o. `front`, `back` e `pop_back` exigem não vazio. Inserir ou remover no meio custa linear nos elementos deslocados.
-
-Em `map`, `m[chave]` insere um valor inicial se a chave faltar; `find` consulta sem inserir. O percurso segue a ordem do comparador. `set` guarda só chaves e ignora repetições equivalentes.
-
-## Iteradores e invalidação
-
-`[begin(), end())` inclui o início e exclui a posição depois do fim. No vazio, ambos são iguais. Nunca desreferencies `end()`.
-
-- Iteradores de `vector` permitem acesso aleatório; os de `list` avançam e recuam, sem `it + 3`. `sort` exige acesso aleatório; `list` tem `sort()` próprio.
-- Realocar um vetor invalida todos os iteradores, apontadores e referências aos elementos.
-- Inserir sem realocar invalida os acessos desde a posição inserida, incluindo o antigo `end()`. `erase` invalida a posição removida e posteriores.
-- Em `list`, `set` e `map`, remover invalida o elemento removido; inserir conserva os acessos anteriores. Não generalizes estas regras a `deque` ou contentores de dispersão.
+- `[begin(), end())` inclui o início e exclui o fim. Nunca leias `end()`.
+- `vector` tem acesso aleatório. `list` avança e recua. `sort` exige aleatório.
+- Realocar `vector` invalida todos os acessos aos elementos.
+- No `vector`, `erase` invalida os acessos da posição removida em diante.
+  Continua com o iterador devolvido. Na `list`, só o elemento removido
+  perde validade.
 
 ```cpp
 for (auto it = v.begin(); it != v.end(); ) {
     if (*it < 0) it = v.erase(it);
     else ++it;
 }
-// {-1, -2, 3} passa a {3}; não avança duas vezes após erase.
 ```
 
-## Algoritmos e fim lógico
+## unique não apaga sozinho
 
-`unique` compacta iguais **adjacentes**; `remove_if` compacta os que não satisfazem o predicado. Ambos devolvem um fim lógico sem reduzir o tamanho. A cauda conserva valores válidos não especificados. Usa `erase` para a eliminar:
-
-```cpp
-std::sort(v.begin(), v.end());
-v.erase(std::unique(v.begin(), v.end()), v.end());
-```
+`unique` junta iguais adjacentes e devolve o fim do prefixo útil. O tamanho continua igual.
 
 <Typst
   source={uniqueErase}
@@ -64,22 +56,18 @@ v.erase(std::unique(v.begin(), v.end()), v.end());
   alt="sort ordena sete valores; unique deixa cinco distintos no início sem alterar tamanho; erase elimina a cauda e reduz o tamanho para cinco."
 />
 
-`find` procura até ao fim; `count_if` conta por predicado. `accumulate` usa o valor inicial também para determinar o tipo acumulador: usa `0.0` para somar em `double`.
+```cpp
+std::sort(v.begin(), v.end());
+v.erase(std::unique(v.begin(), v.end()), v.end());
+```
 
-Uma lambda `[](int x) { return x % 2 == 0; }` testa pares. `[limite]` captura por cópia; `[&limite]` por referência, sem prolongar a vida do objeto.
+- A cauda continua desreferenciável, com estado válido mas não especificado. O resultado lógico termina no iterador devolvido. Usa `erase` e não contes com esses valores.
+- Só junta adjacentes. Para todos os repetidos, ordena antes.
+- `lower_bound` devolve a primeira posição que não vem antes do alvo, mas
+  exige intervalo particionado pelo mesmo comparador, normalmente ordenado.
+  Confirma `it != end()` e a igualdade antes de concluir que o valor existe.
+- Comparador estrito exige `comp(x, x) == false`. `<=` não serve. Só esse teste não prova transitividade.
 
-## Ordenação e pesquisa
+Agregação: resume cada chave num vetor e ordena os resumos. Média das médias pesa igual cada grupo. `map<double, string>` perde empatados.
 
-O comparador tem de definir uma ordem estrita consistente, incluindo `comp(x, x) == false`; `a <= b` não serve. Este teste isolado não garante transitividade. `stable_sort` conserva a ordem anterior dos equivalentes; `sort` não a garante.
-
-`lower_bound` encontra a primeira posição que não vem antes do alvo. Exige intervalo particionado pelo critério, normalmente ordenado pelo mesmo comparador. Em `{1, 3, 5, 7}`, procurar `4` devolve a posição de `5`: confirma `it != end()` e igualdade antes de concluir que o alvo existe.
-
-[Ordenação, filtragem e saída](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).
-
-## Agregar e ordenar resumos
-
-Um `map<string, list<int>>` percorre nomes, não médias. Calcula um resumo por estudante num vetor e ordena por média decrescente, com desempate explícito por nome. Não uses a média como chave única, pois dois estudantes podem ter o mesmo valor.
-
-A média das médias dá peso igual aos estudantes. Para médias `15,12,15`, dá `14`; juntar todas as cinco notas do exemplo daria `14,4`. Calcula antes de formatar com `fixed` e `setprecision(2)`. O exemplo exige listas com 1 a 1000 notas inteiras de 0 a 20 e define `Sem estudantes` para o mapa vazio, evitando divisões por zero. Agregar percorre as notas; ordenar `m` resumos custa `O(m log m)` comparações.
-
-[Agregação e desempate completos](/cadeiras/p/templates-stl/#agregar-por-chave-e-ordenar-pelo-resultado).
+[Ordenação e agregação](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).

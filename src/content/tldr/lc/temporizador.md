@@ -31,7 +31,7 @@ Se só alteras a frequência, conserva modo e base com `status & 0x0F`, juntando
 - Bits 3, 2 e 1 a 1 selecionam contadores 2, 1 e 0. Bit 0 fica a 0.
 - Só estado do contador 0: escreve `0xE2` em `0x43` e lê `0x40` uma vez.
 - No estado devolvido, bits 7 e 6 são OUT e Null Count; bits 5:0 são acesso, modo e base.
-- Extrai modo com `(status >> 1) & 7`; códigos 6 e 7 equivalem a 2 e 3. O latch evita misturar bytes de contagens diferentes; respeita a ordem quando capturas estado e contagem.
+- Extrai modo com `(status >> 1) & 7`; códigos 6 e 7 equivalem a 2 e 3. Se capturas estado e contagem, a porta devolve primeiro o estado e depois a contagem. O latch evita misturar bytes de contagens diferentes.
 
 ## Ticks e intervalos
 

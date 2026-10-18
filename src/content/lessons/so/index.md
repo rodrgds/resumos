@@ -20,6 +20,8 @@ Este percurso liga a programação em C à gestão desses recursos. Precisas de 
 
 ## Percurso de estudo
 
+A ordem das apresentações oficiais é `part1` a `part6`, a começar em C avançado. O percurso abaixo mantém os tópicos, mas começa na utilização (introdução e shell) antes da programação, porque as fichas TP `f0`–`f7` seguem essa progressão e os exemplos de processos usam `fork`/`exec` com programas C. Consulta o mapa curricular no arquivo privado para a correspondência exata entre cada `part` e cada lição.
+
 1. [Introdução aos sistemas operativos](/cadeiras/so/introducao-sistemas-operativos/) e [shell UNIX](/cadeiras/so/shell-unix/) explicam os recursos, as chamadas de sistema e os comandos que vais usar no terminal.
 2. [C avançado](/cadeiras/so/c-avancado/) e [programar ficheiros e diretórios](/cadeiras/so/ficheiros-api/) ligam a memória do programa às duas interfaces de I/O, a biblioteca C e os descritores do núcleo.
 3. [Processos](/cadeiras/so/processos/) e [escalonamento](/cadeiras/so/escalonamento/) mostram como criar fluxos de execução e decidir qual usa o processador.

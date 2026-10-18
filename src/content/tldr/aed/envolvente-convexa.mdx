@@ -1,45 +1,33 @@
 import ConvexHull from '../../aed/ConvexHull.astro';
 
-## Convexidade e orientação
+## Orientação decide tudo
 
-A **envolvente convexa** é o menor conjunto convexo que contém os pontos. Convexo significa que contém o segmento entre quaisquer dois dos seus pontos. Aqui guardamos apenas os vértices extremos da fronteira.
+Envolvente é o menor convexo com todos os pontos. Guarda só vértices extremos.
 
 $$\operatorname{cross}(p,q,r)=(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x).$$
 
-- Positivo indica curva à esquerda; negativo, à direita; zero, colinearidade. O módulo dá duas vezes a área do triângulo.
-- Para `(0,0),(2,0),(2,2)`, vale 4. Trocar os dois últimos muda o sinal.
-- Com coordenadas inteiras de módulo até $10^6$, os produtos cabem em `long long`. Alarga os operandos **antes** de multiplicar. Reais precisam de política de erro numérico.
+Positivo vira à esquerda, negativo à direita, zero é colinear. Para `(0,0),(2,0),(2,2)` dá 4. Com coordenadas inteiras de módulo até $10^6$, as diferenças cabem em `int`, mas promove para `long long` antes de subtrair: com coordenadas maiores, a subtração em `int` transborda antes de chegares à multiplicação.
 
-## Graham
+## Graham em três linhas
 
-1. Remove duplicados. Escolhe pivô de menor `y`, desempate por menor `x`.
-2. Ordena os restantes por ângulo polar, usando `cross`; na mesma direção, do mais próximo ao mais distante. O pivô garante uma meia-volta de direções.
-3. Mantém uma pilha. Antes de inserir `q`, enquanto os dois últimos pontos e `q` tiverem `cross<=0`, retira o último. Insere `q`.
+1. Tira duplicados. Pivô é o menor `y`, desempate pelo menor `x`.
+2. Ordena por ângulo com `cross`; mesma direção do mais próximo ao mais distante.
+3. Empilha e, antes de pôr `q`, retira enquanto `cross<=0` nos dois últimos com `q`.
 
-A pilha mantém a cadeia convexa dos pontos processados, com curvas estritas à esquerda. Retirar na igualdade elimina pontos interiores de uma aresta; a ordenação impede precisar novamente de um ponto retirado.
+A pilha conserva curvas estritas à esquerda. Colinearidade elimina interiores. Cada ponto entra uma vez e sai no máximo uma vez: ordenação $O(n\log n)$ e varrimento $O(n)$.
 
 <ConvexHull />
 
-No quadrado com cantos `(0,0),(2,0),(2,2),(0,2)` e pontos `(1,0),(1,1)`, `(1,0)` sai por colinearidade e `(1,1)` por ficar interior. Permanecem os quatro cantos, em sentido anti-horário, sem repetir o primeiro no fim.
+No quadrado `(0,0),(2,0),(2,2),(0,2)` com `(1,0)` na fronteira e `(1,1)` no interior, o primeiro sai por colinearidade e o segundo por ficar interior. Ficam os quatro cantos em ordem anti-horária.
 
-- Ordenação $O(n\log n)$; construção $O(n)$, pois cada ponto entra e sai no máximo uma vez; espaço $O(n)$.
-- Zero, um e dois pontos são casos degenerados. Todos colineares deixam os dois extremos. Conservar todos os pontos da fronteira exige rever empates e teste de remoção.
+## Ponto dentro do convexo
 
-## Construção incremental
+Assume um polígono convexo com `h>=3` vértices extremos distintos em ordem anti-horária. Com menos de três pontos, testa igualdade ou pertença ao segmento.
 
-Uma lista dupla circular permite ligar um ponto exterior às duas tangentes e retirar a cadeia visível; um ponto interior não altera a envolvente. Localizar tangentes por percurso em cada inserção pode dar pior caso quadrático.
+1. Fora se `cross(v[0],v[1],p)<0` ou `cross(v[0],v[h-1],p)>0`.
+2. Zero pede teste ao segmento, não só à reta.
+3. Pesquisa o setor com bisseção nos raios e testa a aresta exterior com `cross>=0`.
 
-Na versão de Edelsbrunner, pontos **distintos, sem três colineares**, ordenados por `x` crescente e `y` decrescente no empate, permitem começar a pesquisa no último extremo direito. Os avanços são cobrados aos vértices eliminados: construção linear depois de ordenar. Não generalizes esta garantia a pesquisas iniciadas arbitrariamente.
+Custa $O(\log h)$.
 
-## Ponto num polígono convexo
-
-Assume `h>=3` vértices extremos distintos `v[0],…,v[h-1]`, anti-horários. Para incluir também a fronteira:
-
-1. Rejeita se `cross(v[0],v[1],p)<0` ou `cross(v[0],v[h-1],p)>0`.
-2. Se algum for zero, testa pertença ao **segmento**, não apenas à reta.
-3. Nos restantes casos, começa `l=1,r=h-1`. Enquanto `r-l>1`, usa `m=(l+r)/2`; se `cross(v[0],v[m],p)>=0`, faz `l=m`, senão `r=m`.
-4. Aceita se `cross(v[l],v[r],p)>=0`, o teste da aresta exterior do triângulo candidato.
-
-No quadrado, `(1,1)` está dentro; `(3,1)` está fora; `(3,0)` está na reta da primeira aresta mas fora do segmento. Pesquisa $O(\log h)$, espaço $O(1)$ com orientação constante. Com zero pontos rejeita; com um testa igualdade; com dois testa o segmento.
-
-[Traço de Graham e pesquisa por triângulos](/cadeiras/aed/envolvente-convexa/).
+[Traço completo](/cadeiras/aed/envolvente-convexa/).

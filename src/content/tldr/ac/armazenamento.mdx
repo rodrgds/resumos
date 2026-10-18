@@ -1,46 +1,18 @@
 import Typst from '../../../components/Typst.astro';
 import dma from '../../ac/dma-tempos.typ?raw';
 
-## Latência de disco
+## Pedidos de disco
 
 $$t_{\rm pedido}=t_{\rm fila}+t_{\rm procura}+t_{\text{rotação}}+t_{\text{transferência}}+t_{\rm controlador}.$$
 
-- A RPM rotações/minuto, volta completa demora $60/RPM$ s. Com posição angular uniforme, rotação média é **meia volta**, $30/RPM$ s.
-- Transferir B bytes à taxa R bytes/s demora $B/R$. Pequenos pedidos aleatórios pagam posicionamento por pedido; sequenciais amortizam esse custo.
-- 8 KiB, 160 MB/s, 7200 RPM, procura 4 ms e controlador 0,2 ms, sem fila: $4+4{,}1667+0{,}0512+0{,}2\approx8{,}418$ ms. A taxa anunciada só cobre transferência.
-- Pistas de mesmo raio em superfícies distintas formam um cilindro. Ficheiro que ocupa três cilindros paga duas mudanças adicionais no modelo favorável da lição. Não repitas custos já incluídos numa média fornecida.
+Rotação média: meia volta, $30/RPM$ s. Transferência: $B/R$. Pequenos aleatórios pagam posicionamento; sequenciais amortizam.
 
-## Flash e unidades
+## Flash e escolha
 
-- Flash conserva dados sem alimentação. NOR permite leitura aleatória fina; NAND lê/escreve páginas e apaga blocos maiores.
-- Controlador remapeia páginas, distribui desgaste e recupera blocos. SSD remove procura/rotação mecânicas, mas conserva custos de gestão, controlador e transferência.
-- MB=$10^6$ B; MiB=$2^{20}$ B; KiB=1024 B. Converte bloco e taxa para bytes antes de dividir.
+- NOR leitura fina; NAND páginas e blocos, com desgaste gerido pelo controlador.
+- MB $10^6$, KiB 1024. Igualdade HDD/SSD no modelo da lição a **1 MB decimal**; taxas dadas decidem, sem generalizar.
 
-## Tamanho e escolha do disco
-
-Modelo de exercício: HDD a 20 MB/s com 50 ms fixos; SSD a 10 MB/s sem atraso fixo. Leituras contíguas sucessivas, sem fila ou posicionamento adicional.
-
-$$t_H=0,050+B/(20\times10^6).$$
-
-$$t_S=B/(10\times10^6).$$
-
-B mede bytes; tempos em segundos. Igualdade a **1 MB decimal**, ambos com 100 ms. Abaixo, ganha SSD; acima, HDD. Para 40 KiB=40960 B, tempos 52,048/4,096 ms. São as taxas e hipóteses dadas que determinam a escolha, sem generalizar para dispositivos reais.
-
-[Escolha pelo tamanho do pedido](/cadeiras/ac/armazenamento/#escolher-o-dispositivo-pelo-tamanho-do-pedido).
-
-## Limite de taxa
-
-Converte todos os recursos para pedidos/s e toma o **mínimo**: CPU $f/c$, barramento $R/B$, discos e controladores. Soma capacidades apenas quando caminhos e distribuição permitem simultaneidade.
-
-CPU 2 GHz, 40000 ciclos/pedido, bus 640 MB/s, quatro discos de 1000 pedidos/s e blocos de 64 KiB:
-
-$$q\le\min(50000,9765{,}625,4000)=4000\ \text{pedidos/s}.$$
-
-Taxa útil máxima $4000\times65536=262{,}144$ MB/s. Acrescentar discos não elimina limites de bus/controlador.
-
-## Sobreposição finita
-
-Dois buffers, $n\ge1$ blocos, durações constantes de transferência $t_D$ e cálculo $t_C$, recursos independentes e preparação incluída:
+## Limites e sobreposição
 
 $$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$
 
@@ -50,8 +22,6 @@ $$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$
   alt="Três transferências de 4 ms sobrepõem cálculo de 3 ms. O primeiro cálculo começa aos 4 ms e o último termina aos 15 ms."
 />
 
-- Com 3 blocos, 4 ms de transferência e 3 de cálculo: 15 ms, contra 21 sem sobreposição. Não omitas enchimento e cálculo final.
-- CPU mais lento pode reter um buffer e obrigar DMA a esperar. Mais buffers não ultrapassam a taxa dos recursos; contenção de memória pode invalidar o modelo ideal.
-- CPU/I/O sequenciais: 40%/60%, acelerados 4/2 vezes, deixam tempo relativo $0{,}4/4+0{,}6/2=0{,}4$, rapidez 2,5. Com sobreposição, mede o caminho crítico, sem somar tempos simultâneos.
+Taxa máxima é o **mínimo** dos limites em pedidos/s. CPU mais lento retém buffers; contenção invalida o modelo ideal.
 
-[Pedidos de disco e dois buffers](/cadeiras/ac/armazenamento/).
+[Pedidos e dois buffers](/cadeiras/ac/armazenamento/#sobreposição-com-dois-buffers).

@@ -1,9 +1,3 @@
-import alterarCampoRegisto from '../../lc/examples/alterar-campo-registo.c?raw';
-import CodeSnippet from '../../../components/CodeSnippet.astro';
-
-import Typst from '../../../components/Typst.astro';
-import registo from '../../lc/registo-byte.typ?raw';
-
 ## Registos e acesso
 
 Registos de dados, estado e controlo podem partilhar endereço, com funções diferentes na leitura e na escrita. Um acesso pode alterar o dispositivo.
@@ -15,42 +9,25 @@ Registos de dados, estado e controlo podem partilhar endereço, com funções di
 
 No i8042, ler `0x64` consulta estado e escrever envia um comando. Ler `0x60` retira dados do output buffer; escrever envia um byte pelo input buffer. Input/output referem-se ao controlador.
 
-Os drivers Minix correm em espaço de utilizador com permissões próprias. `sys_inb` escreve num objeto de **32 bits**, mesmo para uma leitura de byte:
-
-```c
-uint32_t raw;
-int result = sys_inb(port, &raw);
-if (result != OK) return result;
-*value = (uint8_t)raw; /* value aponta para um uint8_t válido */
-```
-
-Este excerto exige Minix/LCF. Fazer cast ao endereço de um `uint8_t` não cria espaço para a escrita de 32 bits. Um cast ao endereço físico da VRAM também não cria o mapeamento virtual nem as permissões.
+`sys_inb` escreve num objeto de **32 bits**, mesmo para uma leitura de byte. Passa `&raw` de um `uint32_t` e converte depois para `uint8_t`; fazer cast ao endereço de um `uint8_t` não cria esse espaço. [Adaptação segura](/cadeiras/lc/falar-com-hardware/#privilégios-e-minix).
 
 ## Máscaras e campos
-
-<Typst
-  source={registo}
-  format="svg"
-  alt="0x20 isola o bit 5 e 0x01 isola o bit 0 de um byte."
-/>
 
 | Operação sobre registo `r` e máscara `m` | Expressão                   |
 | ---------------------------------------- | --------------------------- |
 | Algum bit ativo                          | `(r & m) != 0`              |
 | Todos ativos                             | `(r & m) == m`              |
 | Ligar, limpar ou inverter                | `r \| m`, `r & ~m`, `r ^ m` |
+| Nomear o bit `n`                         | `BIT(n)`, ou `(1u << (n))`  |
 
-`&` opera bit a bit; `&&` devolve a verdade lógica. Para substituir o campo 4:2 por 5, limpa `0x1C` antes de inserir:
+`BIT(7)` vale `0x80`: é a máscara, não a posição. Onde a API pede o número do bit, como em `hook`, passa-se 7.
 
-<CodeSnippet language="c" code={alterarCampoRegisto} />
-
-Com `r = 0xA7`, obténs `0xB7`. Usa máscaras sem sinal, valida a largura do campo e deslocamentos menores do que a largura do operando. A sequência leitura/alteração/escrita exige um registo legível de escrita normal; bits que se limpam ao escrever 1 exigem outra regra.
+`&` opera bit a bit; `&&` devolve a verdade lógica. Para substituir o campo 4:2 por 5, limpa `0x1C` antes de inserir: `(r & ~0x1C) | (5 << 2)`. Com `r = 0xA7`, obténs `0xB7`. Só OR deixaria bits antigos ligados. [Passos e exemplo](/cadeiras/lc/falar-com-hardware/#testar-e-alterar-campos).
 
 ## Construir pela especificação
 
-Ler e escrever a mesma porta pode aceder a registos diferentes. No dispositivo fictício L3223 do PP1 de 2020, ler 0x23 devolve estado; escrever configura. Não preserves esse estado como se fosse a configuração anterior.
-
-Timer 2, alarme e milissegundos dão controlo 0x91, com bits reservados zero. Contagem 1000 escreve 0xE8 e depois 0x03 na mesma porta 0x22. A unidade é parte da configuração; a contagem não é um divisor do relógio i8254. O plano C da lição não executa hardware.
+- No dispositivo fictício L3223 do PP1 de 2020, ler `0x23` devolve estado e escrever configura. Não preserves esse estado como se fosse a configuração anterior.
+- Timer 2, alarme e milissegundos dão controlo `0x91`, com bits reservados zero. Contagem 1000 escreve `0xE8` e depois `0x03` na mesma porta `0x22`. A unidade é parte da configuração; a contagem não é um divisor do relógio i8254. O plano C da lição não executa hardware.
 
 ## Polling e limites
 
@@ -58,7 +35,6 @@ Timer 2, alarme e milissegundos dão controlo 0x91, com bits reservados zero. Co
 - Se OBF estiver ativo e houver erro de paridade/timeout, consome o byte de `0x60` e descarta-o. Deixá-lo no buffer pode bloquear novas entregas.
 - Define limite de tentativas, atraso e resultado de falha. Cinco observações separadas por 20 ms têm quatro atrasos, cerca de 80 ms, além das chamadas e arredondamento a ticks.
 - Com consultas a cada período $P$, um evento que permanece disponível espera aproximadamente entre 0 e $P$. Se a chegada for uniforme, a média é $P/2$.
-
-Polling pode servir para uma resposta curta esperada; interrupções permitem bloquear à espera de eventos. Decide pela carga, latência admissível e capacidade do buffer.
+- Polling serve uma resposta curta esperada; interrupções permitem bloquear à espera de eventos. Decide pela carga, latência admissível e capacidade do buffer.
 
 [Polling com timeout](/cadeiras/lc/falar-com-hardware/#polling-e-timeout).

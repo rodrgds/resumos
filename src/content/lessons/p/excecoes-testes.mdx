@@ -9,7 +9,9 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-O leitor de notas rejeita uma linha inválida e continua na seguinte. Já `dividir(12.0, 0.0)` não pode cumprir um contrato que exige um denominador diferente de zero; o exemplo propaga essa falha ao chamador com uma exceção e segue a limpeza dos objetos pelo caminho. Testes e sanitizers ajudam depois a verificar resultados e acessos à memória.
+O leitor de notas rejeita uma linha inválida e continua na seguinte. Já `dividir(12.0, 0.0)` não pode cumprir um contrato que exige denominador diferente de zero.
+
+O exemplo propaga essa falha ao chamador com uma exceção e segue a limpeza dos objetos pelo caminho. Testes e sanitizers ajudam depois a verificar resultados e acessos à memória.
 
 ## Lançar e apanhar
 
@@ -57,17 +59,26 @@ Erro: Divisao por zero
 Continuar
 ```
 
-Na cadeia, `main` chama `calcular` e `calcular` chama `dividir`; a divisão lança antes de produzir resultado, por isso a execução abandona `dividir` e depois `calcular`, até ao `catch` de `main`. Pelo caminho, o objeto `recurso` é destruído, logo `Libertar` aparece antes de `Erro`; depois do tratador, a execução continua após o `try`/`catch`, em `Continuar`, e nunca retoma na linha seguinte ao `throw`.
+Na cadeia, `main` chama `calcular` e `calcular` chama `dividir`. A divisão lança antes de produzir resultado, por isso a execução abandona `dividir` e depois `calcular`, até ao `catch` de `main`.
+
+Pelo caminho, o objeto `recurso` é destruído. Logo `Libertar` aparece antes de `Erro`. Depois do tratador, a execução continua após o `try`/`catch`, em `Continuar`, e nunca retoma na linha seguinte ao `throw`.
 
 Apanha por `const std::exception&` ou pela referência constante ao tipo específico. Apanhar por valor pode copiar e cortar informação de uma exceção derivada. Coloca tratadores mais específicos antes dos gerais. Dentro de um `catch`, `throw;` relança a exceção atual.
 
 ## Exceções e RAII: a memória continua segura
 
-Quando uma exceção atravessa um âmbito, os objetos automáticos já construídos são destruídos em ordem inversa. Este **desenrolamento da pilha** mantém recursos seguros quando têm donos RAII. Um apontador cru local é destruído, mas isso não liberta o que foi criado com `new`.
+Quando uma exceção atravessa um âmbito, os objetos automáticos já
+construídos são destruídos em ordem inversa. Este **desenrolamento da
+pilha** mantém recursos seguros quando têm donos RAII. Um apontador cru
+local é destruído, mas isso não liberta o que foi criado com `new`.
 
-Se um construtor lança antes de delegar ou completar a construção, o objeto completo não chega a ser construído e o seu destrutor não corre, mas as bases e os membros já construídos são destruídos. Há uma exceção a esta regra: se um construtor delegante já entregou a construção ao construtor de destino e esse destino terminou, a falha posterior no corpo destrói o objeto completo. Guardar o recurso num membro RAII permite essa limpeza, enquanto reservá-lo num apontador cru e lançar antes de completar a construção pode causar fuga.
+Se um construtor lança antes de delegar ou completar a construção, o objeto completo não chega a ser construído e o seu destrutor não corre. As bases e os membros já construídos são destruídos na mesma. Há uma exceção a esta regra: quando um construtor delegante já entregou a construção ao construtor de destino e esse destino terminou, a falha posterior no corpo destrói o objeto completo.
 
-Destrutores devem libertar recursos sem deixar sair exceções. Se uma segunda exceção sai de um destrutor durante o desenrolamento, o programa termina. `noexcept` declara que uma operação não deixa propagar exceções; violar essa promessa também termina o programa.
+Guardar o recurso num membro RAII permite essa limpeza. Reservar num apontador cru e lançar antes de completar a construção pode causar fuga, porque ainda não existe um dono que liberte esse recurso.
+
+Os destrutores devem libertar recursos sem deixar sair exceções. Se uma exceção escapa de um destrutor chamado durante o desenrolamento, o programa termina com `std::terminate`.
+
+`noexcept` declara que uma operação não deixa propagar exceções; violar essa promessa também termina o programa.
 
 ## Garantias perante falhas
 

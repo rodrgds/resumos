@@ -5,99 +5,69 @@ section: recursos
 studyKind: revision
 ---
 
-Consulta as condições e os procedimentos abaixo depois de trabalhar os exemplos das lições. As ligações levam às construções e provas completas.
+Decide primeiro o que precisas: reconhecer, converter, provar ou calcular custos. Cada linha dá a condição exata e o erro que a quebra. As ligações levam às construções completas.
 
-## Palavras e expressões
+## Reconhecer uma palavra
 
-| Conceito           | Conferir                                                                        |
-| ------------------ | ------------------------------------------------------------------------------- |
-| Palavra vazia      | $\lvert\varepsilon\rvert=0$; não é símbolo de entrada.                          |
-| Linguagem vazia    | $\emptyset\ne\{\varepsilon\}$; $L\emptyset=\emptyset$, $L\{\varepsilon\}=L$.    |
-| Potência e estrela | $L^0=\{\varepsilon\}$; $L^*=\bigcup_{k\ge0}L^k$; $\emptyset^*=\{\varepsilon\}$. |
-| Complemento        | Relativo ao alfabeto: $\overline L=\Sigma^*\setminus L$.                        |
-| Reverso            | $(xy)^R=y^Rx^R$.                                                                |
-| Precedência de RE  | Estrela, concatenação, união. $01^*\ne(01)^*$.                                  |
+| Modelo          | Condição de aceitação                                                                        | Erro que quebra                                 |
+| --------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| DFA             | Estado final **depois de consumir toda a entrada**                                           | Parar a meio num final                          |
+| NFA             | **Existe** ramo que consome tudo até um final                                                | Exigir que todos os ramos terminem em final     |
+| ε-NFA           | Simula com fecho-ε antes e depois de cada letra; no fim aceita se o conjunto contém um final | Esquecer o fecho inicial ou aceitar a meio      |
+| PDA final       | Entrada consumida e estado em $F$                                                            | Chegar a final com entrada restante             |
+| PDA pilha vazia | Entrada consumida e pilha vazia                                                              | Esvaziar antes de consumir tudo                 |
+| TM              | Parar num final aceita, mesmo sem consumir o resto; parar fora de final rejeita              | Confundir o limite do simulador com não paragem |
 
-União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em geral. [Explicação e contraexemplos](/cadeiras/tc/linguagens-expressoes/).
+Só a linha TM dispensa consumo total. Uma máquina que entra logo num final aceita, mesmo sem ler o resto da fita.
 
-## Construções regulares
+Um DFA incompleto no desenho abrevia um poço para as transições omitidas; isto não vale para PDA ou TM em geral. Para determinizar, com o conjunto atual $S$ já fechado, $\delta_D(S,a)=E(\bigcup_{q\in S}\delta_N(q,a))$, com fecho-ε aplicado depois de cada letra e conjunto inicial $E(\{q_0\})$. Um subconjunto é final quando intersecta $F$. Para complementar, determiniza, completa e troca finais num DFA. [DFA](/cadeiras/tc/automatos-finitos/), [NFA](/cadeiras/tc/automatos-nao-deterministas/).
 
-| Tarefa              | Procedimento                                                                                    |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| DFA                 | Define o significado dos estados; uma transição por símbolo; aceita só depois de ler tudo.      |
-| NFA                 | Mantém todos os destinos; aceita se algum percurso completo terminar em final.                  |
-| Fecho-$\varepsilon$ | Inclui os estados do conjunto e segue zero ou mais arestas vazias.                              |
-| NFA para DFA        | Início $E(\{q_0\})$; saída $E(\bigcup_{q\in S}\delta(q,a))$; final se $S\cap F\ne\emptyset$.    |
-| Complemento         | Determiniza e completa antes de trocar finais.                                                  |
-| Thompson            | Fragmentos com entrada/saída; união escolhe, concatenação liga, estrela permite saltar/repetir. |
-| Eliminar $k$        | $R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}$.                                                        |
+## Descrever e converter
 
-O DFA de um NFA com $n$ estados tem no máximo $2^n$ estados, contando o conjunto vazio quando alcançável. Não precisa de usar todos. [DFA](/cadeiras/tc/automatos-finitos/), [NFA](/cadeiras/tc/automatos-nao-deterministas/), [conversões](/cadeiras/tc/expressoes-automatos/).
+| Tarefa                 | Procedimento mínimo                                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ler expressão          | Precedência: estrela, depois concatenação, depois união; $01^*\ne(01)^*$                                                                                            |
+| Thompson               | Fragmentos com entrada e saída; a união escolhe por ε, a concatenação liga a saída de $E$ à entrada de $F$ e a estrela salta ou repete; só a saída final fica final |
+| Eliminar estado $k$    | Para estados sobreviventes $i\ne k$ e $j\ne k$, $R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}$, sempre com os rótulos anteriores à ronda                                   |
+| Derivada $D_a$         | $L(D_a(E))=\{w\mid aw\in L(E)\}$; $D_a(EF)\equiv D_a(E)F+D_a(F)$ se $E$ aceita $\varepsilon$, senão $D_a(E)F$                                                       |
+| Equivalência           | Converte para DFA, constrói o produto e procura um par com exatamente uma componente final; exemplos não provam igualdade                                           |
+| Complementar expressão | Converte para autómato, determiniza, completa, troca finais e converte de novo; nunca basta trocar operadores                                                       |
 
-## Fecho, decisão e minimização
+$\emptyset\ne\{\varepsilon\}$; $L\emptyset=\emptyset$; $L\{\varepsilon\}=L$; $\emptyset^*=\{\varepsilon\}$. A igualdade $(E+F)^*=E^*+F^*$ não vale em geral: com $E=a$ e $F=b$, a palavra $ab$ pertence a $(E+F)^*$ mas não a $E^*+F^*$. Quando $E=F$, os dois lados coincidem, por isso esse caso não serve como contraexemplo. [Conversões](/cadeiras/tc/expressoes-automatos/).
 
-Toda a linguagem finita é regular: une uma expressão por palavra.
+## Provar e decidir
 
-Regulares são fechadas para união, interseção, complemento, diferença, concatenação, estrela, reverso e quocientes. No produto, as transições são iguais para várias operações; muda o critério dos finais.
+| Pergunta                    | Resposta, sempre num DFA completo para decisão e minimização                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Finitas                     | Toda a linguagem finita é regular: une uma expressão por palavra                                                                                                                     |
+| Fecho por produto           | União (pelo menos uma componente final), interseção (ambas finais) e diferença de dois DFA; a construção do produto só muda o critério dos finais                                    |
+| Outras operações regulares  | Complemento por troca de finais; concatenação, estrela, reverso, quocientes e intercalação por construções próprias, não por troca de finais no produto                              |
+| Vazio                       | Nenhum estado final é alcançável a partir do início                                                                                                                                  |
+| Infinito                    | No DFA, existe um ciclo alcançável do início do qual se alcança um final; um ciclo só de ε num NFA não chega                                                                         |
+| Inclusão $L_1\subseteq L_2$ | A diferença $L_1\setminus L_2$ é vazia                                                                                                                                               |
+| Minimizar                   | Parte de um DFA completo; retira inacessíveis, marca pares final/não final, propaga marcas pelos destinos e repete até nenhuma ronda produzir marcas novas; junta os pares sem marca |
+| Fecho CFL                   | União, concatenação, estrela, reverso e interseção **com uma regular**; sem interseção geral, complemento ou diferença                                                               |
+| Decidível em CFG            | Pertença por CYK e vazio pelo teste de início gerador; sem decisor para equivalência, universalidade ou ambiguidade                                                                  |
 
-- Vazio: nenhum final alcançável.
-- Infinito: num DFA, um ciclo alcançável do início e capaz de chegar a final.
-- Equivalência: nenhum estado alcançável no produto em que só uma componente seja final.
-- Minimização: remove inacessíveis, marca pares final/não final, propaga marcas pelos destinos e junta pares não distinguíveis.
+**Lema regular:** existe $p\ge1$ tal que toda $s\in L$ com $|s|\ge p$ admite $s=xyz$ com $|xy|\le p$, $|y|\ge1$ e $xy^iz\in L$ para todo $i\ge0$.
 
-Para provar que dois estados não podem fundir, dá uma continuação que um aceita e o outro rejeita. [Procedimentos e exemplo](/cadeiras/tc/limites-regulares/).
+**Lema CFL:** existe $p\ge1$ tal que toda $s\in L$ com $|s|\ge p$ admite $s=uvwxy$ com $|vwx|\le p$, $|vx|\ge1$ e $uv^iwx^iy\in L$ para todo $i\ge0$.
 
-**Lema regular:** se $L$ é regular, $\exists p\ge1$, $\forall s\in L$ com $|s|\ge p$, $\exists x,y,z$ tais que
+Em ambos: supõe a classe, recebe $p$, escolhe $s$ em função de $p$, cobre **todos** os cortes válidos e exibe um $i$ cuja palavra bombeada sai de $L$. Um corte que falha não prova nada e um corte que funciona numa palavra isolada não prova pertença. [Limites](/cadeiras/tc/limites-regulares/), [CFL](/cadeiras/tc/propriedades-livres/).
 
-$$
-s=xyz,\quad |xy|\le p,\quad |y|\ge1,
-\quad \forall i\ge0,\ xy^iz\in L.
-$$
+## Gramáticas e pilhas
 
-Para refutar: supõe regular, recebe $p$, escolhe $s$, considera qualquer corte válido e escolhe um $i$ que sai de $L$. Não uses o lema para provar regularidade.
+- Uma CFG é $G=(V,\Sigma,P,S)$ com $S$ inicial; cada produção tem a forma $A\to\alpha$ com uma variável à esquerda. A linguagem é $L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}$; prova sempre as duas inclusões.
+- Tipo 3: todas lineares à direita ou todas à esquerda. Tipo 2: uma variável à esquerda. Tipo 1: regras $u\to v$ com $|u|\le|v|$, admitindo $S\to\varepsilon$ só se $S$ não aparece em lados direitos. Classifica as regras dadas, não a menor classe da linguagem.
+- Uma gramática é ambígua quando uma palavra tem duas árvores distintas, ou seja, duas derivações mais à esquerda distintas. As ordens esquerda e direita da mesma árvore não contam.
+- No PDA, o topo fica à esquerda; $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$. A variável $[pXq]$ gera as palavras que levam de $p$ a $q$ removendo $X$ sem mexer na pilha abaixo.
+- Para simplificar: elimina produções vazias por combinações (preserva $\varepsilon$ só se pertencia à linguagem, com início novo), depois unitárias copiando produções, depois variáveis não geradoras e inacessíveis. CNF: $A\to BC$ ou $A\to a$, com $S_0\to\varepsilon$ isolado e $S_0$ fora dos lados direitos.
+- CYK com palavra não vazia: preenche intervalos por comprimento crescente com todos os cortes; numa produção $A\to BC$, $B$ gera o prefixo esquerdo e $C$ o sufixo direito. Aceita se o início está no intervalo total. Custo $O(n^3)$ tempo e $O(n^2)$ espaço para gramática fixa. [Gramáticas](/cadeiras/tc/gramaticas-livres/), [pilhas](/cadeiras/tc/automatos-pilha/).
 
-## CFG, PDA e CNF
+## Computabilidade e custo
 
-CFG: $G=(V,\Sigma,P,S)$; $A\to\alpha$ tem uma variável à esquerda. $L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}$. Prova ambas as inclusões quando descreves a linguagem.
-
-Tipo 3: regras lineares todas à direita ou todas à esquerda. Tipo 2: uma variável à esquerda. Tipo 1: regras sem diminuir comprimento, com a exceção inicial vazia quando permitida. Tipo 0: lado esquerdo contém uma variável. Classifica as regras dadas, não a menor classe da linguagem. [Hierarquia](/cadeiras/tc/gramaticas-livres/#classificar-gramáticas).
-
-Ambiguidade: uma palavra com duas árvores, ou duas derivações mais à esquerda distintas. Duas ordens de expansão da mesma árvore não bastam. [Gramáticas e ambiguidade](/cadeiras/tc/gramaticas-livres/).
-
-PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquerda. $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$.
-
-- Estado final: entrada vazia e estado em $F$, sem exigir pilha vazia; chegar a final com entrada restante não aceita.
-- Pilha vazia: entrada e pilha vazias, incluindo o marcador de fundo; esvaziar antes de consumir tudo não aceita.
-- CFG para PDA: expande a variável do topo por $\varepsilon$; lê e retira terminais iguais.
-- PDA para CFG: $[pXq]$ gera o que remove $X$ indo de $p$ a $q$.
-
-Os dois critérios de PDA são equivalentes por conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](/cadeiras/tc/automatos-pilha/).
-
-Simplificar por esta ordem: vazias (substituindo o efeito por combinações), unitárias (copiando produções não unitárias alcançadas), não geradores e depois inacessíveis. Produções vazias e unitárias podem ser essenciais e não se apagam sem substituição. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
-
-CNF: $A\to BC$ ou $A\to a$. Se $\varepsilon\in L$, permite $S_0\to\varepsilon$, com $S_0$ ausente dos corpos. CYK preenche intervalos por comprimento, tentando cada corte; aceita se o início aparece no intervalo total. Tempo $O(n^3)$ para gramática fixa. [Conversão e tabela](/cadeiras/tc/propriedades-livres/).
-
-## Limites das livres de contexto
-
-CFL são fechadas para união, concatenação, estrela, reverso e interseção com regular. Não são fechadas para interseção geral, complemento ou diferença geral.
-
-**Lema CFL:** $s=uvwxy$, $|vwx|\le p$, $|vx|\ge1$ e $uv^iwx^iy\in L$ para todo $i\ge0$. Bombeiam-se duas partes com o mesmo expoente, possivelmente uma vazia. A zona limitada pode estar em qualquer posição. [Prova e quantificadores](/cadeiras/tc/propriedades-livres/#lema-da-repetição-para-cfl).
-
-Pertença e vazio de CFG são decidíveis. Equivalência, universalidade e ambiguidade de CFG são indecidíveis em geral.
-
-## Turing e complexidade
-
-TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. A reconhecedora pode não parar fora da linguagem; o decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](/cadeiras/tc/turing-decidibilidade/).
-
-Redução $A\le_m B$: função total computável que preserva sim/não. Para provar $B$ indecidível, reduz a ele um $A$ já indecidível. Não confundas simular por um limite finito com decidir paragem sem limite.
-
-P: decidir em tempo polinomial. NP: certificado de tamanho polinomial verificável em tempo polinomial. $P\subseteq NP$; $P=NP$ continua em aberto. NP-completo significa estar em NP e ser NP-difícil. Para provar dificuldade de $B$, reduz $A\le_p B$ com $A$ já NP-completo. O tamanho de um inteiro em binário cresce como $\log N$, não como $N$. [Complexidade](/cadeiras/tc/complexidade/).
-
-## Continuações, fases e resultados
-
-- **Derivada:** $D_a(E)$ descreve o que pode seguir-se depois de a. Em EF, acrescenta $D_a(F)$ à parcela $D_a(E)F$ só quando E aceita ε. O estado-expressão é final se aceita ε.
-- **Fases de PDA:** escolher uma fase só de b ou só de c dá uma união de blocos homogéneos. Permitir ambas em cada passo dá misturas, mesmo com a mesma contagem.
-- **Testemunha CFL:** verifica o significado de blocos livres. Um corte que bombeia toda a candidata basta para impedir aquela contradição; não prova a linguagem CFL.
-- **Fita compacta:** conserva o número de X por ronda completa de deslocação; apagar Y durante o regresso pode impedir a escrita. Justifica também terminação, região do resultado e posição da cabeça.
-
-[Derivadas](/cadeiras/tc/expressoes-automatos/#derivadas-de-expressões), [escolha de fase](/cadeiras/tc/automatos-pilha/#escolher-uma-fase-e-conservar-a-escolha), [testemunha e cortes](/cadeiras/tc/propriedades-livres/#a-palavra-escolhida-pode-admitir-uma-repetição), [compactação](/cadeiras/tc/turing-decidibilidade/#compactar-a-fita-sem-deixar-intervalos-vazios).
+- Um reconhecedor aceita cada palavra de $L$ e, fora de $L$, rejeita ou corre para sempre. Um decisor termina sempre com a resposta certa. Se $L$ e $\overline L$ são reconhecíveis, então $L$ é decidível por simulação alternada.
+- $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. Uma redução $A\le_m B$ usa $f$ total computável com $x\in A\iff f(x)\in B$; para provar $B$ indecidível, reduz um $A$ já indecidível a $B$.
+- P decide por TM determinística em tempo polinomial. NP tem, para cada resposta sim, um certificado de comprimento polinomial verificado em tempo polinomial por um verificador determinístico; fora de $L$, nenhum certificado passa. A inclusão $P\subseteq NP$ está estabelecida; a igualdade $P=NP$ continua em aberto.
+- Um problema é **NP-difícil** quando todo o problema de NP se reduz a ele em tempo polinomial. É **NP-completo** quando é NP-difícil e pertence a NP. Para provar, descreve certificado, tamanho e verificador, depois reduz um NP-completo conhecido com as duas implicações e o custo.
+- Um inteiro $N\ge1$ em binário usa $\lfloor\log_2N\rfloor+1$ bits ($N=0$ à parte); $N$ iterações são exponenciais no comprimento $n$. [Turing](/cadeiras/tc/turing-decidibilidade/), [complexidade](/cadeiras/tc/complexidade/).

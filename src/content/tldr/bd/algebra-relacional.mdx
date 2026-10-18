@@ -1,60 +1,63 @@
 import Dot from '../../../components/Dot.astro';
 import arvoreConsulta from '../../bd/arvore-consulta.dot?raw';
 
-## Operações sobre relações
+## Regras de conjuntos
 
-A álgebra clássica usa **conjuntos**, sem duplicados nem ordem de tuplos. Cada operador devolve uma relação.
+A álgebra clássica usa **conjuntos**: sem duplicados e sem ordem de tuplos. Cada operador recebe relações e devolve uma relação.
 
-| Operação              | Resultado                                                                                |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| Seleção $\sigma_p(R)$ | Tuplos que satisfazem $p$, conservando os atributos.                                     |
-| Projeção $\pi_X(R)$   | Atributos $X$, eliminando tuplos repetidos.                                              |
-| Produto $R\times S$   | Todas as combinações de tuplos, com nomes desambiguados. Para $m$ e $n$ tuplos, dá $mn$. |
-| Renomeação $\rho$     | Novos nomes de relação ou atributos, sem mudar valores.                                  |
-| União $R\cup S$       | Tuplos presentes em pelo menos um lado.                                                  |
-| Interseção $R\cap S$  | Tuplos presentes em ambos.                                                               |
-| Diferença $R-S$       | Tuplos de $R$ ausentes de $S$. A ordem dos lados importa.                                |
+| Operador              | Condição e efeito                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| Seleção $\sigma_p(R)$ | Conserva os tuplos que satisfazem $p$. Não escolhe colunas.                         |
+| Projeção $\pi_X(R)$   | Conserva os atributos $X$. Elimina tuplos repetidos.                                |
+| Produto $R\times S$   | Combina todos os pares; $m$ e $n$ tuplos dão $mn$. Exige nomes desambiguados.       |
+| Renomeação $\rho$     | Muda nomes de relação ou atributos, sem mudar valores. Explicita a convenção usada. |
+| União $R\cup S$       | Tuplos de pelo menos um lado. Esquemas compatíveis.                                 |
+| Interseção $R\cap S$  | Tuplos dos dois lados. Vale $R-(R-S)$.                                              |
+| Diferença $R-S$       | Tuplos de $R$ ausentes de $S$. **Não é comutativa.**                                |
 
-União, interseção e diferença exigem esquemas compatíveis. $R\cap S=R-(R-S)$. A projeção generalizada admite expressões, como preço/100 para euros; a clássica só escolhe atributos existentes.
+A projeção generalizada admite expressões com nomes novos, como preço em euros a partir de cêntimos; a clássica só escolhe atributos existentes. Em SQL, reproduzir a semântica de conjuntos exige `DISTINCT`.
 
-## Junções e agregação
+## Que junção usar
 
-- A **teta-junção** $R\bowtie_p S$ é $\sigma_p(R\times S)$; uma equijunção usa igualdades.
-- A **natural** impõe igualdade em **todos os nomes comuns** e conserva uma cópia desses atributos. Sem nomes comuns, dá produto cartesiano.
-- A **semijunção** conserva apenas os tuplos do lado esquerdo com correspondência, sem acrescentar colunas da direita.
-- A agregação é uma extensão. A expressão seguinte conta encomendas por cliente, mas não cria grupos para clientes sem encomendas:
+- A **teta-junção** $R\bowtie_p S$ equivale a filtrar o produto: $\sigma_p(R\times S)$. A equijunção compara por igualdade.
+- A **natural** $R\bowtie S$ iguala **todos os nomes comuns** e conserva uma cópia de cada um. Sem nomes comuns, é o produto cartesiano.
+- A **semijunção** $R\ltimes S$ conserva os tuplos de $R$ com alguma correspondência, sem trazer colunas de $S$.
 
-  $$
-  \gamma_{idCliente;\operatorname{count}(*)\to n}(Encomenda)
-  $$
+`Cliente(id, ...)` com `Encomenda(id, ..., idCliente)` não se liga naturalmente pelo cliente: o nome comum `id` compara um cliente com uma encomenda. Liga por `Cliente.id = Encomenda.idCliente` ou renomeia antes da junção natural.
 
-`Cliente(id, nome)` e `Encomenda(id, idCliente)` não se ligam naturalmente pelo cliente: o nome comum `id` compara identidades diferentes. Usa `Cliente.id = Encomenda.idCliente` ou renomeia.
+A agregação $\gamma$ é uma extensão: $\gamma_{idCliente;\,\operatorname{count}(*)\to n}(Encomenda)$ conta encomendas por cliente, mas não cria grupo para Mia, sem encomendas. Para incluir zeros, parte do universo Cliente com junção externa.
 
 <Dot
   source={arvoreConsulta}
   alt="Encomenda filtrada pela data e Cliente com id renomeado para idCliente são as duas entradas da junção natural. A projeção do nome devolve Ana."
 />
 
-## Ausência e divisão
+## Ausências e universais
 
-Para clientes sem encomendas, parte de todos os ids e retira os compradores. Renomeia `idCliente` para `id` antes da diferença. Filtrar encomendas existentes não encontra quem nunca encomendou.
+Para quem nunca comprou, parte de todos os candidatos e retira os que aparecem:
 
-Para $R(X,Y)$ e requisitos $S(Y)$, a **divisão** devolve os $X$ ligados a todos os $Y$ exigidos:
+$$
+Todos=\pi_{id}(Cliente),\quad
+Compradores=\rho(\pi_{idCliente}(Encomenda)),\quad
+SemCompra=Todos-Compradores.
+$$
+
+Renomeia antes da diferença para compatibilizar esquemas. Filtrar só encomendas nunca encontra quem não existe nelas.
+
+Para $R(X,Y)$ e requisitos $S(Y)$, a **divisão** devolve os $X$ ligados a **todos** os $Y$:
 
 $$
 C=\pi_X(R),\qquad F=(C\times S)-R,\qquad R\div S=C-\pi_X(F).
 $$
 
-$F$ contém pares em falta. Com compras $(1,10),(1,11),(2,11)$ e requisitos $10,11$, falta $(2,10)$, logo só 1 passa.
+$F$ lista os pares em falta. Com compras $(1,10),(1,11),(2,11)$ e requisitos $10,11$, só falta $(2,10)$; a resposta é $\{1\}$. Se $S$ estiver vazio, devolve $\pi_X(R)$; para outro universo de candidatos, declara-o. "Comprou algo diferente de rato" aceita quem também comprou rato; "nunca comprou rato" exige a diferença.
 
-Se $S$ estiver vazio, devolve $\pi_X(R)$. Para incluir também candidatos que não aparecem em $R$, usa a relação de candidatos como universo. "Comprou algo diferente de rato" não significa "nunca comprou rato".
+## Reescrever sem partir
 
-## Equivalências
+$\sigma_{p\land q}(R)=\sigma_p(\sigma_q(R))$. Antecipa um filtro que só usa um lado antes da junção; ao antecipar projeções, conserva os atributos da condição e da resposta.
 
-$\sigma_{p\land q}(R)=\sigma_p(\sigma_q(R))$. Um filtro que só usa atributos de um lado pode ser antecipado antes da junção. Ao antecipar projeções, conserva os atributos da condição e da resposta.
+Contraexemplo: com $R(A,B)=\{(3,4)\}$ e $S(B,C)=\{(1,2)\}$, a junção por $B$ dá vazio, mas $\pi_{A,C}(\pi_A(R)\times\sigma_{B=1}(S))$ devolve $(3,2)$. A projeção apagou $B$ antes de exigir a condição.
 
-Eliminar uma coluna antes de testar uma condição perde essa condição. Com $R(A,B)=\{(3,4)\}$ e $S(B,C)=\{(1,2)\}$, juntar por B dá vazio; projetar primeiro só A de R e depois fazer produto com S dá $(3,2)$.
-
-Estas transformações não prometem uma ordem física de execução. `NULL` e junções externas não obedecem automaticamente às mesmas identidades.
+Estas equivalências orientam um otimizador, não fixam o plano físico. Com `NULL` ou junções externas, não apliques automaticamente as identidades da álgebra clássica.
 
 [Construção da divisão](/cadeiras/bd/algebra-relacional/#divisão-perguntas-com-todos).

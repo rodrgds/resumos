@@ -1,50 +1,43 @@
 import Dot from '../../../components/Dot.astro';
 import huffman from '../../da/huffman.dot?raw';
 
-## Escolha gulosa e prova por troca
+## Regra e prova
 
-Um algoritmo guloso fixa uma escolha sem a desfazer. Para provar a correção, mostra que alguma solução ótima admite essa escolha e que o problema restante tem a mesma estrutura. Uma execução correta não prova a regra geral.
+Fixa escolha sem desfazer. Prova que algum ótimo admite essa escolha e que o resto conserva a estrutura. Um exemplo correto não prova a regra; um contraexemplo refuta-a.
 
-## Atividades e ordem de serviço
+## Atividades e serviço
 
-- Para maximizar o **número de atividades** sem sobreposição, ordena por fim crescente e aceita cada atividade compatível. Com intervalos $[s_i,f_i)$, aceita se $s_i\ge f_{\text{última}}$.
-- Trocar a primeira atividade de uma solução ótima pela de fim mais cedo não impede nenhuma atividade seguinte. O argumento repete-se no resto.
-- Ordenar custa $O(n\log n)$; percorrer custa $O(n)$. Se já estão ordenadas por fim, basta $O(n)$.
-- Início mais cedo e duração mais curta não dão esta garantia. Com valores diferentes por atividade, maximizar a soma dos valores é outro problema.
+- **Atividades:** ordena por fim crescente; aceita se $s_i\ge f_{\text{última}}$. Custo $O(n\log n)$, ou $O(n)$ se ordenado.
+- Trocar primeira de ótimo pela de fim mais cedo conserva compatibilidade.
+- Início mais cedo e duração mais curta falham. Com valores por atividade, é outro problema.
+- **Servidor:** todos disponíveis, tempos $p_i>0$; serve por duração crescente. Trocar adjacentes $a,b$ com $p_a>p_b$ reduz soma em $p_a-p_b$. Total até terminar todos continua $\sum p_i$.
 
-Para um servidor, todos os clientes disponíveis desde o início e tempos positivos $p_i$, servir por **duração crescente** minimiza a soma das conclusões e a espera total. Trocar dois adjacentes $a,b$ com $p_a>p_b$ reduz a soma em $p_a-p_b$. A duração até terminar todos continua a ser $\sum p_i$.
+## Blocos contíguos
 
-## Blocos contíguos em ordem
+Caixas $0<p_i\le W$, sem reordenar nem dividir. Leva maior prefixo que cabe; abre outro quando próxima não cabe. Custo $\Theta(n)$.
 
-Caixas com $0<p_i\le W$, sem reordenação nem divisão, em camiões iguais: leva o maior prefixo que cabe e abre outro quando a próxima caixa não cabe. Custo $\Theta(n)$.
-
-Após cada número de camiões, a fronteira gulosa está pelo menos tão avançada como a de qualquer solução válida. Um sufixo do próximo bloco dessa solução também cabe, mantendo esse invariante. Logo o guloso usa o mínimo de camiões. Sem ordem fixa, esta prova já não serve.
+Fronteira gulosa $g_j\ge o_j$ após $j$ camiões, por indução com sufixo de peso positivo. Sem ordem fixa, a prova cai.
 
 ## Mochila e trocos
 
-Na mochila fracionária, $w_i>0$, $v_i\ge0$ e cada fração $x_i\in[0,1]$ pode ser escolhida. Ordena por $v_i/w_i$ decrescente e enche a capacidade $W$, usando uma fração do último objeto. Trocar uma quantidade de peso de menor para maior densidade nunca reduz o valor. Custo: $O(n\log n)$.
-
-Na mochila **0-1**, essa troca é proibida. Com capacidade 10 e objetos de peso/valor $(6,12),(5,9),(5,9)$, a densidade escolhe valor 12; os dois últimos dão 18.
-
-Na mochila 0-1 com **pesos positivos e valores não negativos**, com $k$ exceções e regulares de peso igual, enumera os $2^k$ subconjuntos excecionais e completa pelos maiores valores. Ordenação e somas de prefixos dão $O(n\log(n+1)+2^k(k+1))$. Se o **valor** regular for igual, escolhe os pesos mais leves e procura o maior prefixo admissível. Se peso e valor forem iguais, calcula a quantidade diretamente, incluindo sempre a leitura $\Omega(n)$. O custo é polinomial para $k$ fixo, sem tabela em capacidade binária.
-
-Nos trocos, escolher sempre a maior moeda só é ótimo para sistemas **canónicos**, com stock ilimitado. Com moedas 1, 3 e 4 e alvo 6, dá $4+1+1$ em vez de $3+3$. Stock limitado pode invalidar a regra mesmo num sistema canónico ilimitado.
+- **Fracionária:** $w_i>0$, $x_i\in[0,1]$; ordena por $v_i/w_i$ e enche, com fração do último. Troca de peso para maior densidade nunca reduz valor. $O(n\log n)$.
+- **0-1:** troca proibida. Com $(6,12),(5,9),(5,9)$ e $W=10$, densidade dá 12 e $B+C$ dá 18.
+- **$k$ exceções:** enumera $2^k$ subconjuntos excecionais; completa regulares por valor (peso igual) ou por peso (valor igual). Para $k$ fixo, polinomial sem tabela em $W$.
+- **Trocos:** maior que cabe só é ótimo em sistema **canónico** ilimitado. Com 1,3,4 e alvo 6, dá $4+1+1$ em vez de $3+3$. Stock finito pode invalidar regra mesmo em canónico.
 
 ## Huffman
 
-Um código **sem prefixos** põe símbolos nas folhas de uma árvore binária. Se $f_i$ é a frequência e $\ell_i$ a profundidade da folha, o custo é $\sum_i f_i\ell_i$ bits.
+Símbolos nas folhas; custo $\sum f_i\ell_i$.
 
-1. Coloca as frequências numa heap mínima.
-2. Retira os dois mínimos e cria um pai com a soma.
-3. Volta a inserir o pai, até ficar uma raiz. Os caminhos de bits até às folhas são os códigos.
+1. Heap com frequências.
+2. Retira dois mínimos, cria pai com soma, reinsere.
+3. Repete até uma raiz.
 
 <Dot
   source={huffman}
   alt="Árvore de Huffman: d a profundidade 1, c a profundidade 2 e a e b a profundidade 3; frequências 15, 10, 5 e 7."
 />
 
-As fusões $5+7=12$, $10+12=22$ e $15+22=37$ dão custo $12+22+37=71$ bits. Existe uma árvore ótima onde os dois mínimos são irmãos mais profundos; contraí-los reduz o problema sem perder otimalidade.
+Fusões $5+7=12$, $10+12=22$, $15+22=37$; custo $12+22+37=71$. Existe ótimo com dois mínimos como irmãos mais profundos; contrair reduz sem perder otimalidade. Heap dá $O(n\log n)$. Empates mudam códigos sem mudar custo. Um símbolo exige convenção explícita no formato.
 
-A heap dá $O(n\log n)$ tempo e $O(n)$ espaço. Empates podem mudar os códigos sem mudar o custo. Um único símbolo exige uma convenção explícita no formato de compressão.
-
-[Provas e variantes completas](/cadeiras/da/algoritmos-gulosos/).
+[Provas e variantes](/cadeiras/da/algoritmos-gulosos/).

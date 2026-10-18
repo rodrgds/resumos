@@ -70,7 +70,7 @@ cat copia.txt
 
 A saída são as duas linhas originais. Não acrescentámos `\0` ao buffer, porque trabalhamos com a quantidade lida, não com uma string. Um ficheiro vazio termina na primeira leitura com zero.
 
-Uma versão que recebe um nome precisa de validar `argc`, abrir com `O_RDONLY`, usar o descritor nas leituras e fechar os descritores que abriu. Para criar um destino novo ou substituir o conteúdo antigo, usa `O_WRONLY | O_CREAT | O_TRUNC` e fornece o argumento de permissões, por exemplo `0666`, modificado pela `umask`. Não abras o destino com truncamento antes de verificar que ele não é o próprio ficheiro de origem, inclusive através de outro hard link.
+Uma versão que recebe um nome precisa de validar `argc`, abrir com `O_RDONLY`, usar o descritor nas leituras e fechar os descritores que abriu. Para criar um destino novo ou substituir o conteúdo antigo, abre primeiro sem truncar, com `O_WRONLY | O_CREAT` e o argumento de permissões, por exemplo `0666`, modificado pela `umask`. Compara depois a identidade das duas aberturas com `fstat`, pelos pares `st_dev` e `st_ino`: dois nomes, incluindo hard links, podem identificar o mesmo ficheiro. Só trunca quando confirmares que são ficheiros distintos, para não destruires a origem antes de a ler.
 
 ## Posição e reabertura
 

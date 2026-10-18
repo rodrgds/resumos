@@ -1,62 +1,20 @@
-import Dot from '../../../components/Dot.astro';
-import passeio from '../../da/tsp-atalhos.dot?raw';
+## Fator e prova
 
-## Fator de aproximação
+Minimização com custos positivos: $C\le\rho OPT$. Maximização: $C\ge OPT/\rho$. Precisa de admissível sempre e tempo polinomial. Heurística sem limite não é aproximação.
 
-Uma aproximação devolve uma solução **admissível** em tempo polinomial e possui garantia para todas as entradas permitidas. Para custos positivos e fator $\rho\ge1$:
+| Problema              | Regra                                                             | Garantia      | Hipótese que decide                                                                             |
+| --------------------- | ----------------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------- |
+| Cobertura de vértices | Repetir até não haver aresta descoberta; incluir os dois extremos | $C\le2OPT$    | Arestas escolhidas formam emparelhamento maximal; cada aresta de $OPT$ cobre no máximo duas     |
+| Mochila               | Melhor entre prefixo por densidade e maior objeto isolado         | $C\ge OPT/2$  | Descarta cada objeto que não cabe; o limite fracionário ordenado por densidade sustenta a prova |
+| TSP                   | Duplicar MST e atalhar                                            | $C\le2OPT$    | Completo, simétrico, não negativos, triangular                                                  |
+| Conjuntos             | Maior ganho por passo                                             | $C\le H_dOPT$ | $d$ é o tamanho do maior conjunto; $H_d=1+1/2+\dots+1/d$                                        |
 
-- Minimização: $C\le\rho OPT$.
-- Maximização: $C\ge OPT/\rho$.
+## Erros que partem garantias
 
-Uma heurística sem prova não herda uma garantia por funcionar num exemplo.
+- Uma aresta isolada não garante cobertura: com duas arestas disjuntas, escolher só uma deixa a outra descoberta. O algoritmo repete a escolha até não restar aresta com os dois extremos fora da cobertura, e só então as arestas escolhidas formam um emparelhamento maximal.
+- Só o prefixo por densidade falha: com objetos (6,12), (5,9) e (5,9) e $W=10$, a densidade escolhe 12 mas o par seguinte dá 18. Comparar com o melhor objeto isolado repõe o fator 2.
+- TSP sem triangularidade ou com dirigidas assimétricas invalida atalhos.
+- Somar $M$ a cada aresta de TSP com $n$ cidades conserva ótimos mas muda razões: $C+nM\le2(OPT+nM)$ só dá $C\le2OPT+nM$.
+- PTAS é polinomial na entrada para $\varepsilon$ fixo; FPTAS também em $1/\varepsilon$.
 
-## Cobertura de vértices e mochila
-
-Para cobertura de vértices, escolhe uma aresta ainda não coberta, acrescenta **os dois extremos** e retira as arestas incidentes. As arestas escolhidas formam um emparelhamento $M$. Qualquer cobertura precisa de um extremo distinto para cada uma, logo
-
-$$C=2|M|\le2OPT.$$
-
-Uma passagem pelas arestas dá $O(n+m)$. Numa estrela, escolher o centro e uma folha dá 2, embora o centro sozinho dê 1. Escolher apenas o vértice de maior grau é outra regra, sem esta prova. No exemplo com um centro ligado a quatro vértices e duas folhas privadas por cada um, essa regra dá cinco em vez do ótimo quatro. A razão $5/4$ refuta otimalidade, não uma garantia de fator 2. Sem arestas, a cobertura vazia é ótima.
-
-Para a mochila 0-1, assume pesos positivos e valores não negativos:
-
-1. Descarta objetos que não cabem sozinhos e ordena por densidade decrescente.
-2. Forma o prefixo até ao **primeiro objeto que não cabe**, com valor $P$.
-3. Compara-o com o objeto individual de maior valor $M$ e devolve a melhor seleção, sem as juntar.
-
-A relaxação fracionária dá $OPT\le P+\alpha v_j\le P+M$, logo
-
-$$\max(P,M)\ge OPT/2.$$
-
-Custo $O(n\log n)$. Se todos cabem, o prefixo é ótimo; se nenhum cabe, o ótimo é zero. A prova do limite refere-se ao prefixo antes do primeiro omitido, não a uma seleção arbitrária que salta objetos.
-
-## TSP métrico
-
-Exige grafo **completo, não dirigido**, pesos não negativos e desigualdade triangular $c(u,w)\le c(u,v)+c(v,w)$.
-
-1. Constrói uma MST e duplica as suas arestas.
-2. Percorre o circuito euleriano.
-3. Salta visitas repetidas, conservando a primeira visita a cada vértice e o regresso ao início.
-
-<Dot
-  source={passeio}
-  alt="Quadrado A,B,C,D: MST AB,BC,CD de custo 3. O regresso D,C,B,A de custo 3 é substituído pela aresta DA de custo 1."
-/>
-
-Retirar uma aresta do circuito ótimo deixa uma árvore, por isso $c(MST)\le OPT$. Duplicar custa no máximo $2OPT$; a desigualdade triangular garante que os atalhos não aumentam o custo. A MST com matriz domina em $O(n^2)$, seguida de passeio $O(n)$.
-
-Outra ordem de visita pode dar outro custo dentro da garantia. No TSP geral, uma aproximação de fator constante implicaria $P=NP$: transforma arestas existentes em custo 1 e ausentes em $\rho n+1$. Um ciclo hamiltoniano original permite saída no máximo $\rho n$; sem ele, todo o circuito custa mais.
-
-Adicionar o maior peso $M$ a cada aresta não diagonal torna métrico um grafo completo não dirigido de pesos não negativos. Cada circuito ganha $nM$, preservando os ótimos. Mas $C+nM\le2(OPT+nM)$ só implica $C\le2OPT+nM$. A razão de aproximação original não fica preservada.
-
-## Cobertura de conjuntos
-
-Para universo $U$ coberto pela família, com custo 1 por conjunto, escolhe sempre o conjunto com mais elementos **ainda não cobertos**.
-
-Uma escolha que cobre $r$ novos cobra $1/r$ a cada um. Para um conjunto ótimo com $k$ elementos ainda por cobrir, o guloso cobre pelo menos $k$ novos nessa etapa. A cobrança total dos elementos de um conjunto de tamanho $d$ é no máximo
-
-$$H_d=1+\frac12+\cdots+\frac1d\le1+\ln d.$$
-
-Se $d$ é o maior tamanho, somar sobre uma cobertura ótima dá $C\le H_dOPT$. Recalcular ganhos diretamente custa $O(|U|(I+q))$, com $I$ pertenças e $q$ conjuntos. Se faltam elementos e nenhum ganho é positivo, a família não cobre $U$. Universo vazio tem solução vazia.
-
-[Provas e execuções completas](/cadeiras/da/aproximacao-garantias/).
+[Execução e provas](/cadeiras/da/aproximacao-garantias/).

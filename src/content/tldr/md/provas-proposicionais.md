@@ -1,41 +1,39 @@
-## Dedução natural e caixas
+## Caixas e âmbito
 
-$\Gamma\vdash\varphi$ significa que há uma dedução de $\varphi$ a partir de $\Gamma$. Uma hipótese temporária só deixa de ser uma dependência ao ser descarregada pela regra que fecha a caixa.
+- $\Gamma\vdash\varphi$ significa que há dedução de $\varphi$ a partir de $\Gamma$.
+- Cada hipótese temporária só sai através **da regra que fecha a sua caixa**. Fechar remove a dependência dessa hipótese.
+- Linhas exteriores acessíveis podem entrar numa caixa. Linhas de uma caixa fechada não saem diretamente. Caixas irmãs não partilham linhas internas.
 
-- Linhas exteriores acessíveis podem usar-se dentro de uma caixa.
-- Linhas de uma caixa fechada não podem usar-se diretamente fora dela.
-- Caixas irmãs não partilham linhas internas. Uma regra pode citar as subdeduções completas.
+## Regras
 
-## Regras de base
+| Regra     | Uso                                                                   |
+| --------- | --------------------------------------------------------------------- |
+| $\land I$ | de $\varphi,\psi$ obtém $\varphi\land\psi$                            |
+| $\land E$ | de $\varphi\land\psi$ obtém um membro                                 |
+| $\lor I$  | de $\varphi$ obtém $\varphi\lor\psi$ ou $\psi\lor\varphi$             |
+| $\lor E$  | de $\varphi\lor\psi$ e dois casos com a mesma $\theta$ obtém $\theta$ |
+| $\to E$   | de $\varphi\to\psi$ e $\varphi$ obtém $\psi$                          |
+| $\to I$   | assume $\varphi$, deduz $\psi$, fecha e obtém $\varphi\to\psi$        |
+| $FI$      | de $\varphi,\neg\varphi$ obtém $F$                                    |
+| $FE$      | de $F$ obtém qualquer fórmula                                         |
+| $\neg I$  | assume $\varphi$, deduz $F$, fecha e obtém $\neg\varphi$              |
+| $\neg E$  | de $\neg\neg\varphi$ obtém $\varphi$                                  |
+| $R$       | repete fórmula acessível                                              |
 
-| Regra     | Uso                                                                             |
-| --------- | ------------------------------------------------------------------------------- |
-| $\land I$ | De $\varphi,\psi$, obter $\varphi\land\psi$                                     |
-| $\land E$ | De $\varphi\land\psi$, obter um membro                                          |
-| $\lor I$  | De $\varphi$, obter $\varphi\lor\psi$ ou $\psi\lor\varphi$                      |
-| $\lor E$  | De $\varphi\lor\psi$ e dois casos que concluem a mesma $\theta$, obter $\theta$ |
-| $\to E$   | De $\varphi\to\psi$ e $\varphi$, obter $\psi$                                   |
-| $\to I$   | Assumir $\varphi$, deduzir $\psi$ e fechar para obter $\varphi\to\psi$          |
-| $FI$      | De $\varphi,\neg\varphi$, obter a contradição $F$                               |
-| $FE$      | De $F$, obter qualquer fórmula                                                  |
-| $\neg I$  | Assumir $\varphi$, deduzir $F$ e fechar para obter $\neg\varphi$                |
-| $\neg E$  | De $\neg\neg\varphi$, obter $\varphi$                                           |
-| $R$       | Repetir uma fórmula acessível                                                   |
+$\neg E$ aqui elimina dupla negação, na notação da cadeira. RA assume $\neg\varphi$, deriva $F$ e conclui $\varphi$; abrevia $\neg I$ mais $\neg E$ quando autorizada.
 
-Aqui $\neg E$ elimina **dupla negação**, conforme a notação da cadeira. A redução ao absurdo, RA, assume $\neg\varphi$, deriva $F$ e conclui $\varphi$; abrevia $\neg I$ seguido de $\neg E$ quando é autorizada.
+## Escolha do passo
 
-## Escolha da regra
+Olha primeiro para a conetiva principal da conclusão:
 
-A conetiva principal da conclusão orienta o fim da prova:
+- Conjunção: prova ambos os membros.
+- Implicação: assume o antecedente e procura o consequente.
+- Negação: assume a fórmula e procura $F$.
+- Disjunção: prova um dos membros.
 
-- Para uma conjunção, prova ambos os membros.
-- Para uma implicação, assume o antecedente e procura o consequente.
-- Para uma negação, assume a fórmula negada e procura $F$.
-- Para uma disjunção, provar um dos membros chega.
+Depois olha para as premissas: decompõe conjunções, fornece antecedentes e considera casos para disjunções. São orientações, não um algoritmo completo.
 
-Nas premissas, decompõe conjunções, fornece antecedentes às implicações e considera casos para disjunções. São orientações, não um algoritmo completo de procura.
-
-Exemplo de prova por casos:
+Exemplo por casos para $(p\land q)\lor(q\land r)\vdash q$:
 
 ```text
 1  (p ∧ q) ∨ (q ∧ r)    premissa
@@ -50,11 +48,11 @@ Ambas as caixas acabam em $q$. O $p$ do primeiro caso não fica disponível depo
 
 ## Correção e completude
 
-- Correção significa $\Gamma\vdash\varphi\Rightarrow\Gamma\models\varphi$.
-- Completude significa $\Gamma\models\varphi\Rightarrow\Gamma\vdash\varphi$.
+- Correção: $\Gamma\vdash\varphi$ implica $\Gamma\models\varphi$.
+- Completude: $\Gamma\models\varphi$ implica $\Gamma\vdash\varphi$.
 
-A DN clássica tem ambas. Um contraexemplo semântico impede uma dedução correta: $p=F,q=T$ refuta a tentativa de concluir $p$ de $p\to q,q$.
+A DN clássica tem ambas. Um contraexemplo semântico impede dedução correta: $p=F,q=T$ refuta concluir $p$ de $p\to q,q$.
 
-A equivalência dedutiva $\varphi\dashv\vdash\psi$ exige uma prova em cada direção.
+$\varphi\dashv\vdash\psi$ exige prova em cada direção.
 
 [Provas em Fitch e laboratório de deduções](/cadeiras/md/provas-proposicionais/).

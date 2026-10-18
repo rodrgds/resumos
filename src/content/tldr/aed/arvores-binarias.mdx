@@ -2,55 +2,40 @@ import arvoreBinaria from '../../aed/arvore-binaria.dot?raw';
 
 import Dot from '../../../components/Dot.astro';
 
-## Forma e altura
+## Vocabulário mínimo
 
-Uma **árvore binária** é vazia ou tem raiz e duas subárvores, esquerda e direita. Não exige valores ordenados.
+Uma árvore binária está vazia ou tem uma raiz com subárvore esquerda e direita. A posição de cada nó importa; a ordem dos valores não faz parte da definição.
 
-- A raiz não tem pai; uma folha não tem filhos. A **profundidade** conta arestas desde a raiz, cuja profundidade é zero.
-- A **altura** conta o maior caminho em arestas até uma folha: vazio `-1`, folha `0`.
-- Completa tem níveis preenchidos, salvo talvez o último, preenchido da esquerda para a direita. Perfeita preenche todos. Estrita tem zero ou dois filhos por nó.
-- Com altura `h`, há no máximo $2^d$ nós à profundidade `d` e $2^{h+1}-1$ no total. Para `n` nós, $\lceil\log_2(n+1)\rceil-1\le h\le n-1$; o máximo é uma cadeia.
+- A profundidade conta as arestas desde a raiz. A altura conta o maior caminho até uma folha: a árvore vazia tem altura `-1` e uma folha tem altura `0`.
+- Uma árvore completa tem todos os níveis cheios exceto possivelmente o último, que fica preenchido da esquerda para a direita. Uma árvore perfeita tem todos os níveis cheios. Uma árvore estrita dá zero ou dois filhos a cada nó.
+- Com `n` nós, a altura fica entre $\lceil\log_2(n+1)\rceil-1$ e $n-1$.
 
-## Recursão e percursos
+## Percursos que interessam
 
-$$\operatorname{tamanho}(p)=1+\operatorname{tamanho}(p_e)+\operatorname{tamanho}(p_d),$$
+Para um nó com alturas `h_e` e `h_d` e tamanhos `t_e` e `t_d` nas subárvores esquerda e direita:
 
-$$\operatorname{altura}(p)=1+\max(\operatorname{altura}(p_e),\operatorname{altura}(p_d)).$$
+$$\operatorname{altura}=1+\max(h_e,h_d),\qquad \operatorname{tamanho}=1+t_e+t_d.$$
 
-Os casos vazios devolvem 0 e -1, respetivamente. Visitar cada nó uma vez custa $\Theta(n)$, com pilha $O(h+1)$. Uma cadeia pode exigir espaço linear e exceder a pilha de chamadas.
+A árvore vazia tem tamanho 0. Cada percurso visita cada nó uma vez, logo custa $\Theta(n)$, com pilha $O(h+1)$.
 
 <Dot
   source={arvoreBinaria}
-  alt="Raiz 8, filhos 4 e 10; 4 tem filhos 2 e 6, e 10 tem filho esquerdo 9."
+  alt="Raiz 8 com filhos 4 e 10; 4 tem 2 e 6; 10 tem 9 à esquerda."
 />
 
-| Percurso   | Regra                   | Resultado na figura |
-| ---------- | ----------------------- | ------------------- |
-| Pré-ordem  | Raiz, esquerda, direita | `8 4 2 6 10 9`      |
-| Em-ordem   | Esquerda, raiz, direita | `2 4 6 8 9 10`      |
-| Pós-ordem  | Esquerda, direita, raiz | `2 6 4 9 10 8`      |
-| Por níveis | Fila, nível a nível     | `8 4 10 2 6 9`      |
+| Ordem  | Regra                             | Sequência na figura |
+| ------ | --------------------------------- | ------------------- |
+| Pré    | Raiz, esquerda, direita           | `8 4 2 6 10 9`      |
+| Em     | Esquerda, raiz, direita           | `2 4 6 8 9 10`      |
+| Pós    | Esquerda, direita, raiz           | `2 6 4 9 10 8`      |
+| Níveis | Por níveis, da esquerda à direita | `8 4 10 2 6 9`      |
 
-Em-ordem só garante chaves crescentes numa BST. Pós-ordem permite calcular resultados dos filhos antes do pai e libertar nós. A figura tem altura 2, três folhas e dois nós à profundidade 1.
+Pós-ordem calcula nos filhos antes do pai. Em-ordem só ordena numa BST.
 
-Para contar à profundidade `k`, devolve 0 no vazio ou com `k<0`; com `k=0`, devolve 1; caso contrário, soma as chamadas dos filhos com `k-1`.
+## Propriedades e reconstrução
 
-## Propriedades em pós-ordem
+- Dois filhos: soma recursiva mais um quando ambas as ligações existem.
+- Perfeita pede subárvores perfeitas de igual altura. Verifica altura e forma juntas para ficar linear.
+- Pré mais em com valores distintos dá a árvore: raiz é o primeiro da pré; a sua posição na em separa lados. Pré sozinha é ambígua.
 
-- Nós com **dois filhos**: contagens das subárvores mais um se ambas as ligações existirem. Na figura, contam 8 e 4: dois no total.
-- **Perfeita**: duas subárvores perfeitas e de alturas iguais. O vazio é perfeito, altura -1; uma folha é perfeita, altura 0. Igualdade de alturas só na raiz é insuficiente.
-- Devolve altura e propriedades juntas para visitar cada nó uma vez: $\Theta(n)$ de tempo, $O(h+1)$ de pilha. Recalcular alturas completas em cada nó pode dar custo quadrático.
-
-## Reconstrução
-
-Com **valores distintos**, pré-ordem e em-ordem determinam a árvore:
-
-1. O primeiro valor da pré-ordem é a raiz.
-2. A posição da raiz na em-ordem separa esquerda e direita.
-3. Os tamanhos dessas regiões separam a pré-ordem restante; repete recursivamente.
-
-Procurar cada raiz linearmente pode custar $O(n^2)$. Uma tabela hash de posições dá tempo esperado $O(n)$; mapa ordenado dá $O(n\log n)$.
-
-Pré-ordem sozinha é ambígua: `[1,2]` pode colocar 2 à esquerda ou à direita. Marcas explícitas de vazio resolvem isso. Com valores repetidos, as duas ordens podem continuar ambíguas.
-
-[Programas e reconstrução detalhada](/cadeiras/aed/arvores-binarias/).
+[Detalhes e programas](/cadeiras/aed/arvores-binarias/).

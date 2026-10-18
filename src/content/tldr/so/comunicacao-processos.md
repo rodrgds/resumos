@@ -1,62 +1,28 @@
-## Canais e protocolos
+## Escolher o canal
 
-O canal transporta dados; o **protocolo** define fronteiras, ordem e fim da troca.
+| Mecanismo          | Transporta          | Condição                                                            |
+| ------------------ | ------------------- | ------------------------------------------------------------------- |
+| Pipe               | bytes, um sentido   | EOF exige buffer vazio e **todas** as escritas fechadas             |
+| FIFO               | bytes com nome      | abertura bloqueante pode esperar pela outra ponta                   |
+| Socket             | fluxo ou datagramas | fluxo exige fronteiras (linhas, tamanho); meio-fecho com `shutdown` |
+| Sinal              | notificação         | tratador restrito; sinais padrão pendentes podem fundir-se          |
+| Memória partilhada | mesmos bytes        | sincronização entre processos                                       |
 
-| Mecanismo          | Uso e condição                                                                |
-| ------------------ | ----------------------------------------------------------------------------- |
-| Pipe               | Fluxo de bytes num sentido; EOF exige fechar todas as escritas                |
-| FIFO               | Fluxo com nome; a abertura bloqueante pode esperar pela outra ponta           |
-| Socket             | Fluxo ou datagramas; num fluxo, define fronteiras das mensagens               |
-| Sinal              | Notificação, com tratador restrito; não transporta uma estrutura C arbitrária |
-| Memória partilhada | Acesso aos mesmos bytes; exige sincronização e gestão do tempo de vida        |
+- `pipe(fd)`: lê em `fd[0]`, escreve em `fd[1]`. Fecha as pontas não usadas em cada processo; cópia esquecida adia EOF.
+- Fluxos não preservam mensagens: leitura curta não é EOF; usa ciclos. Escritas até `PIPE_BUF` não se entrelaçam, mas podem chegar partidas.
+- Cria o canal **antes** de `fork`. Depois, cada `pipe` é um objeto distinto, mesmo com números iguais. O filho só lê EOF vazio se fechou a escrita do seu pipe e o buffer está esgotado; o pai só recebe `SIGPIPE`/`EPIPE` se fechou a leitura do outro pipe e tenta escrever sem leitores.
+- Pipeline: `dup2(fd[1], STDOUT_FILENO)` no produtor, `dup2(fd[0], STDIN_FILENO)` no consumidor; o supervisor fecha ambas e recolhe depois. Não esperes pelo produtor antes de lançar o consumidor com dados grandes.
+- Pedido/resposta em fluxo socket: `shutdown(fd, SHUT_WR)` termina o pedido sem fechar a leitura da resposta. `close` fecharia ambos os sentidos. Em pipes, o fim usa fecho da escrita, não `shutdown`.
 
-## Pipes e redirecionamento
+## Sinais
 
-`pipe(fd)` cria `fd[0]` para leitura e `fd[1]` para escrita. Após `fork`, cada processo herdou ambas as pontas: fecha todas as cópias que não usa.
-
-- Buffer vazio com alguma escrita aberta faz uma leitura bloqueante esperar.
-- Buffer vazio com **todas as escritas fechadas** faz `read` devolver 0, EOF.
-- Sem leitores, escrever pode gerar `SIGPIPE`; se o sinal não terminar o processo, a escrita falha com `EPIPE`.
-- Uma leitura curta não prova EOF. Fluxos exigem ciclos para leituras e escritas parciais.
-- Escritas até `PIPE_BUF` não se entrelaçam com outras escritas no pipe, mas uma leitura pode entregar apenas parte ou juntar dados de escritas distintas.
-
-Numa pipeline, `dup2(origem, destino)` faz o destino referir a mesma descrição aberta. Antes de `exec`, liga a escrita do produtor a stdout e a leitura do consumidor a stdin. Os excertos seguintes assumem descritores distintos dos canais padrão e sucesso:
-
-```c
-/* produtor */
-dup2(fd[1], STDOUT_FILENO);
-/* consumidor */
-dup2(fd[0], STDIN_FILENO);
-```
-
-Cada filho fecha as pontas desnecessárias. O supervisor fecha ambas e só depois recolhe os filhos. Conservar uma escrita impede EOF; esperar pelo produtor antes de lançar o consumidor pode bloquear quando o buffer enche.
-
-Cria o pipe **antes de `fork`** para o filho herdar o mesmo canal. Se cada processo chamar `pipe` depois do fork, terá um canal próprio, mesmo que os números dos descritores coincidam. O filho que fecha a sua escrita pode ver EOF sem receber bytes; o pai que fecha a sua leitura pode obter `SIGPIPE` ou `EPIPE`.
-
-## FIFOs e sockets
-
-- `mkfifo` cria um nome, não um ficheiro regular onde os bytes persistem. Em modo bloqueante, abertura para leitura espera por escritor e abertura para escrita espera por leitor.
-- `socketpair(AF_UNIX, SOCK_STREAM, 0, fd)` dá duas pontas bidirecionais locais. Um fluxo pode delimitar mensagens por linhas, comprimento prefixado ou tamanho fixo.
-- Se o servidor responde só depois de EOF, o cliente acaba o pedido com **`shutdown(fd, SHUT_WR)`**. Conserva a leitura para receber a resposta; `close` fecharia ambos os sentidos.
-- Dois envios grandes sem leituras podem encher os buffers e bloquear ambos. Define uma ordem ou trata os dois sentidos em simultâneo.
-
-## Sinais e espera atómica
-
-Usa nomes simbólicos de sinais. `SIGKILL` e `SIGSTOP` não podem ser capturados nem ignorados. Num tratador, evita `printf` e `malloc`; uma flag `volatile sig_atomic_t` permite assinalar trabalho para o fluxo normal, mas não torna estruturas arbitrárias seguras.
-
-Para evitar a janela entre testar a flag e dormir:
-
-1. Bloqueia o sinal com `sigprocmask` e instala o tratador com `sigaction`.
-2. Testa a flag enquanto o sinal está bloqueado.
-3. Usa `sigsuspend` com máscara que o desbloqueie, mudando máscara e entrando em espera atomicamente.
-4. Repete o teste e restaura a máscara anterior no fim.
-
-Em `while (!recebido) pause()`, o sinal pode chegar depois do teste e antes de dormir. Sinais tradicionais pendentes também podem fundir-se; não são um contador fiável.
+- `SIGKILL` e `SIGSTOP` não se capturam. Usa nomes, não números.
+- No tratador, só funções async-signal-safe: assinala com `volatile sig_atomic_t` e trabalha no fluxo normal. `printf` e `malloc` no tratador não são seguros.
+- Sinais padrão repetidos enquanto pendentes podem fundir-se; não os uses como contador. Sinais de tempo real têm fila.
+- Contra a janela teste/dormir: bloqueia com `sigprocmask`, instala com `sigaction`, testa sob bloqueio e dorme com `sigsuspend`.
 
 ## Memória partilhada
 
-`mmap` falha com `MAP_FAILED`. `MAP_SHARED` permite partilhar alterações; `MAP_PRIVATE` dá alterações privadas com copy-on-write. `munmap` remove o mapeamento; fechar o descritor não o remove automaticamente.
+`mmap` falha com `MAP_FAILED`. `MAP_SHARED` partilha; `MAP_PRIVATE` isola com COW. `munmap` remove; fechar o descritor não remove. Pai que lê depois de `waitpid` está ordenado; filas vivas exigem sincronização de processos.
 
-Se o pai só lê depois de `waitpid` pelo filho que escreveu e terminou, essa leitura fica ordenada. Atualizações simultâneas de uma fila exigem sincronização adequada entre processos; `volatile` ou `MAP_SHARED` não bastam.
-
-[Programa de pipe com fechos e transferências completas](/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita).
+[Pipe completo](/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita).

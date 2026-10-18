@@ -3,17 +3,17 @@ import clientesEncomendas from '../../bd/examples/clientes-encomendas.sql?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-## SELECT, duplicados e ordem
+## Linhas, filtros e ordem
 
-- `FROM` e junções definem as linhas; `WHERE` filtra-as; `SELECT` escolhe ou calcula colunas.
-- SQL conserva duplicados por omissão. `DISTINCT` elimina repetições da **combinação completa** escolhida. Nomes iguais não identificam a mesma pessoa.
-- Só `ORDER BY` garante ordem. Para escolher exatamente uma linha entre empates, define desempate; para obter todos os máximos, não uses apenas `LIMIT 1`.
-- `BETWEEN` inclui limites; em `LIKE`, `%` aceita qualquer sequência e `_` um carácter. O tratamento de maiúsculas depende do motor e da collation.
-- `AND` tem precedência sobre `OR`. Usa parênteses para explicitar os grupos.
+`FROM` e junções definem as linhas; `WHERE` filtra-as; `SELECT` escolhe ou calcula colunas; `ORDER BY` ordena.
 
-## Junções e cardinalidade
+- SQL conserva duplicados por omissão; `DISTINCT` elimina repetições da **combinação completa**. Não uses `DISTINCT` para esconder uma junção errada: agrupa por chave, não por nome.
+- Só `ORDER BY` garante ordem. Com empates, define desempate para uma linha ou conserva todos os máximos em vez de `LIMIT 1` isolado.
+- `BETWEEN` inclui limites; em `LIKE`, `%` aceita qualquer sequência e `_` um carácter. Maiúsculas dependem do motor e da collation; `AND` precede `OR`, por isso explicita grupos com parênteses.
 
-`JOIN ... ON` conserva correspondências. `LEFT JOIN` conserva todas as linhas da esquerda, com `NULL` à direita quando não há correspondência. Uma condição no `ON` escolhe correspondências; no `WHERE`, filtra o resultado.
+## Junções sem multiplicar mal
+
+`JOIN ... ON` conserva correspondências; `LEFT JOIN` conserva a esquerda, com `NULL` à direita sem correspondência. Condição no `ON` escolhe correspondências; no `WHERE`, filtra o resultado.
 
 <CodePlayground
   language="sqlite"
@@ -22,36 +22,33 @@ import loja from '../../bd/loja.sql?raw';
   code={clientesEncomendas}
 />
 
-A resposta é Ana/2, Rui/1, Mia/0. `COUNT(*)` daria 1 para Mia, contando a linha artificial. Para contar numa data e preservar clientes sem compras, acrescenta o filtro da data ao `ON`, não ao `WHERE`.
+Ana/2, Rui/1, Mia/0: `COUNT(e.id)` ignora o `NULL` da linha artificial de Mia, `COUNT(*)` contá-la-ia. Para filtrar por data sem perder Mia, põe a data no `ON`, não no `WHERE`.
 
-- Uma junção a Item multiplica encomendas pelo número de produtos. Ana passa a ter três linhas de compra; contar encomendas nesse resultado exige `COUNT(DISTINCT e.id)`.
-- Agrupa por chave para não fundir pessoas com o mesmo nome.
-- Numa autojunção para pares sem repetição, usa aliases e `e1.id < e2.id`, além da condição de mesmo cliente. Exclui autorreferência e a ordem inversa.
-- `NATURAL JOIN` liga todos os nomes comuns, mesmo que tenham significados diferentes.
+- Juntar Item multiplica encomendas por produtos: Ana passa a três linhas de compra. Conta encomendas com `COUNT(DISTINCT e.id)` e soma totais já agregados sem voltar a juntar.
+- Numa autojunção de pares, usa aliases, exige o mesmo cliente e `e1.id < e2.id`: exclui autorreferência e a ordem inversa.
+- `NATURAL JOIN` iguala todos os nomes comuns, mesmo com significados diferentes.
 
-## NULL
+## NULL a três valores
 
-Comparações com `NULL`, incluindo `NULL = NULL`, dão normalmente **desconhecido**. `WHERE` só aceita verdadeiro. Usa `IS NULL` e `IS NOT NULL`.
+Comparar com `NULL` dá **desconhecido**; `WHERE` só aceita verdadeiro. Testa com `IS NULL` e `IS NOT NULL`.
 
-| Expressão                     | Resultado    |
-| ----------------------------- | ------------ |
-| `NOT desconhecido`            | desconhecido |
-| `falso AND desconhecido`      | falso        |
-| `verdadeiro AND desconhecido` | desconhecido |
-| `verdadeiro OR desconhecido`  | verdadeiro   |
-| `falso OR desconhecido`       | desconhecido |
+| Combinação                   | Resultado    |
+| ---------------------------- | ------------ |
+| `NOT desconhecido`           | desconhecido |
+| `falso AND desconhecido`     | falso        |
+| `verdadeiro OR desconhecido` | verdadeiro   |
+| restantes com `desconhecido` | desconhecido |
 
-`COALESCE(x, alternativa)` escolhe o primeiro não nulo. Um desconhecido só deve tornar-se zero quando essa interpretação for correta.
+`preco > 30 OR preco <= 30` não cobre preço `NULL`. `COALESCE(x, alt)` escolhe o primeiro não nulo; só o tornes zero quando essa for a interpretação certa.
 
-## Agregação
+## Agregar por grupos
 
-`WHERE` filtra antes dos grupos; `HAVING` filtra depois. Para encomendas acima de 100 euros, agrupa Item por `idEncomenda` e usa `HAVING SUM(qtd * precoUnitario) > 10000`, com preços em cêntimos.
+`WHERE` filtra linhas antes de agrupar; `HAVING` filtra grupos depois. Para encomendas acima de 100 euros: agrupa Item por `idEncomenda` e `HAVING SUM(qtd * precoUnitario) > 10000`.
 
-- `COUNT(*)` conta linhas; `COUNT(x)` conta valores não nulos; `COUNT(DISTINCT x)` conta distintos não nulos.
-- `SUM`, `AVG`, `MIN` e `MAX` ignoram nulos. A média de 10, `NULL`, 20 é 15.
-- Sem linhas e sem `GROUP BY`, a agregação dá uma linha: `COUNT` é 0 e as restantes são `NULL`. Com agrupamento, não há grupos nem linhas.
-- Colunas da resposta devem estar no agrupamento ou numa agregação apropriada. A permissividade de SQLite para colunas soltas não garante resultados estáveis ou portáveis.
+- `COUNT(*)` conta linhas; `COUNT(x)` e `COUNT(DISTINCT x)` ignoram nulos. `SUM`, `AVG`, `MIN`, `MAX` ignoram nulos: média de 10, `NULL`, 20 é 15.
+- Sem linhas e sem `GROUP BY`, uma linha com `COUNT` 0 e resto `NULL`; com `GROUP BY`, nenhuma linha.
+- Colunas da resposta vão no agrupamento ou em agregações; a tolerância de SQLite a colunas soltas não é portátil.
 
-`CASE` calcula por condições e dá `NULL` sem `ELSE` quando nenhuma corresponde. Datas textuais ISO válidas e uniformes podem ordenar-se lexicograficamente; durações exigem funções de data, não subtração de textos.
+`CASE` sem `ELSE` dá `NULL` quando nada corresponde. Datas ISO uniformes ordenam-se como texto; durações pedem funções de data, como `julianday`, não subtração de textos.
 
 [Exemplos de filtros e agregação](/cadeiras/bd/sql-consultas/#group-by-e-having).

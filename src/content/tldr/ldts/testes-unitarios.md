@@ -1,64 +1,47 @@
-## Casos derivados do contrato
+## Escolher casos do contrato
 
-Um teste unitário verifica comportamento de uma unidade pequena, que pode incluir vários objetos simples. Integração verifica uma fronteira real; sistema percorre a aplicação completa.
+Teste unitário verifica comportamento de uma unidade pequena; integração atravessa uma fronteira real; sistema percorre a aplicação. Arena de largura 5 aceita **0 a 4**:
 
-Para uma arena de largura 5, o contrato aceita posições de **0 a 4**:
+| Caso                      | Esperado                                  |
+| ------------------------- | ----------------------------------------- |
+| `contem(0)`, `contem(4)`  | `true`, fronteiras interiores.            |
+| `contem(-1)`, `contem(5)` | `false`, fronteiras exteriores.           |
+| Largura 0 ou negativa     | `IllegalArgumentException` no construtor. |
 
-| Caso                                | Resultado esperado              |
-| ----------------------------------- | ------------------------------- |
-| `contem(0)`, `contem(4)`            | `true`, fronteiras interiores.  |
-| `contem(-1)`, `contem(5)`           | `false`, fronteiras exteriores. |
-| Construir com largura 0 ou negativa | `IllegalArgumentException`.     |
-
-Os esperados vêm do contrato, mesmo que a implementação esteja errada. Seleção **black-box** usa partições e fronteiras desse contrato; **white-box** procura percursos pela implementação. Testar largura zero pode ser black-box. Estrutura o teste em preparação, ação e asserção, Arrange, Act, Assert.
+Esperado vem do contrato, não do código. **Black-box** parte o domínio em partições e fronteiras; **white-box** procura percursos na implementação. Largura zero é black-box quando a regra a proíbe. Estrutura: preparação, ação, asserção.
 
 ## JUnit e independência
-
-Este teste pertence à classe de testes de `Limite` definida na lição completa:
 
 ```java
 @Test
 void rejeitaFronteiraSuperior() {
-    Limite limite = new Limite(5);
-    assertFalse(limite.contem(5));
+    assertFalse(new Limite(5).contem(5));
 }
 ```
 
-- `@ParameterizedTest` repete o comportamento para dados fornecidos, por exemplo por `@ValueSource`.
-- `assertEquals` compara igualdade lógica; `assertSame`, identidade. Para cálculos aproximados, escolhe uma tolerância adequada.
-- `assertThrows` executa a ação e verifica uma exceção compatível, incluindo subclasses.
-- JUnit Jupiter cria normalmente uma instância por método. `@BeforeEach` prepara e `@AfterEach` limpa cada execução. No ciclo predefinido, `@BeforeAll` e `@AfterAll` são estáticos.
-- Testes não dependem de ordem, estado deixado por outros ou pausas arbitrárias. Injeta tempo, aleatoriedade e I/O quando precisas de os controlar.
+- `@ParameterizedTest` com `@ValueSource` repete por argumento. `assertEquals` é igualdade lógica, `assertSame` identidade; em cálculos aproximados de vírgula flutuante, usa tolerância explícita adequada ao contrato e ao erro numérico. `assertThrows` aceita subclasses da exceção.
+- Uma instância por método, em geral. `@BeforeEach`/`@AfterEach` por execução; `@BeforeAll`/`@AfterAll` estáticos no ciclo predefinido.
+- Sem dependência de ordem, estado entre testes ou pausas arbitrárias. Tempo, aleatoriedade e I/O injetam-se para ficarem controlados.
 
-Os exemplos JUnit e Mockito correm no projeto Gradle local, não no editor Java do site. [Ficheiros completos](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit).
+JUnit e Mockito correm no projeto Gradle local, não no editor do site. [Ficheiros completos](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit).
 
 ## Substitutos e interações
 
-| Substituto | Uso                                                                  |
-| ---------- | -------------------------------------------------------------------- |
-| Stub       | Fornece respostas controladas, como a tecla `"direita"`.             |
-| Fake       | Implementação simplificada funcional, como armazenamento em memória. |
-| Mock       | Permite verificar interações, como enviar a posição aceite à vista.  |
-| Spy        | Envolve um objeto real e executa os métodos por defeito.             |
+| Substituto | Papel                                                              |
+| ---------- | ------------------------------------------------------------------ |
+| Stub       | Respostas fixas, como a tecla `"direita"`.                         |
+| Fake       | Implementação simples funcional, como memória em vez de ficheiros. |
+| Mock       | Verifica interações exigidas, como `mostrar(3)` na vista.          |
+| Spy        | Envolve o real; `doReturn(...).when(spy)` configura sem executar.  |
 
-Em Mockito, `when(entrada.ler()).thenReturn("direita")` controla a entrada; `verify(vista).mostrar(3)` exige uma chamada correspondente. Sozinho, não proíbe outras chamadas. Usa `times` ou `never` quando a quantidade faz parte do contrato.
-
-Verifica interações que têm significado externo, sem fixar todas as chamadas internas de um algoritmo. Num spy, `when(spy.metodo())` pode executar o método na configuração; `doReturn(...).when(spy).metodo()` evita essa execução.
+`when(entrada.ler()).thenReturn("direita")` prepara; `verify(vista).mostrar(3)` exige essa chamada, sem proibir outras. Se o resultado do teste já prova o comportamento, verificar o stub é normalmente redundante; verifica a interação quando faz parte do contrato, como o destino de um efeito, a sua quantidade ou a sua ordem, que as asserções não observam. Verifica efeitos externos, não cada chamada interna de um algoritmo.
 
 ## Cobertura e mutação
 
-Cobertura mede código executado, não a força das asserções. Um teste sem asserção pode executar uma linha e aceitar qualquer resultado.
+Cobertura conta execução, não força de asserção. Para `x >= 0 && x < 5`: `-1` nem avalia a segunda condição, `2` aceita, `5` rejeita na segunda. Linha, branches e condições perguntam coisas diferentes.
 
-Para `x >= 0 && x < 5`, `-1` não avalia a segunda condição; `2` torna ambas verdadeiras; `5` torna a segunda falsa. Cobertura de linhas, branches e condições responde a perguntas diferentes.
+Mutação troca `<` por `<=`: só `x = 5` distingue as versões; 2 e 6 não. Morto é detetado, sobrevivente passou. Sobrevivente pode ser **equivalente**, sem diferença observável no domínio válido: analisa antes de acrescentar testes. PIT evita, por exemplo, mutar chamadas de logging.
 
-**Mutation testing** introduz pequenas mudanças. Um mutante é morto quando os testes falham, sobrevivente quando passam. Mantendo `x >= 0`:
+TDD: falha primeiro pelo requisito, implementação mínima, depois refatoração. Falha de importação não prova proteção. PBT com jqwik verifica propriedades em entradas geradas (`@ForAll`) com shrinking; conserva contraexemplos como regressões.
 
-| x   | Original: `< 5` | Mutante: `<= 5` |
-| --- | --------------- | --------------- |
-| 2   | `true`          | `true`          |
-| 5   | `false`         | `true`          |
-| 6   | `false`         | `false`         |
-
-`x = 5` distingue as versões; 2 e 6 não. Um sobrevivente pode ser equivalente no domínio válido; analisa-o antes de adicionar testes.
-
-No ciclo TDD, observa primeiro uma falha pelo requisito, implementa e só depois refatora. Uma falha de importação não demonstra proteção. Property-based testing verifica propriedades em entradas geradas; conserva casos que revelem erros como regressões reproduzíveis. Testes finitos não provam correção geral.
+[Cobertura e PIT no projeto](/cadeiras/ldts/testes-unitarios/#cobertura-e-mutation-testing).

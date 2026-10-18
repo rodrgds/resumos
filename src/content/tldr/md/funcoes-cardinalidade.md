@@ -1,58 +1,47 @@
-## Funções e imagem
+## Função
 
-Uma função $f:A\to B$ associa **exatamente um** valor de $B$ a cada elemento de $A$.
+Uma função $f:A\to B$ associa exatamente um valor de $B$ a cada elemento de $A$.
 
-- Totalidade exige pelo menos um destino por origem; funcionalidade exige no máximo um. Só funcionalidade dá uma função parcial.
-- A imagem é $f(A)=\{f(a):a\in A\}$, que pode ser menor do que o contradomínio $B$.
-- Existe uma única função $\emptyset\to B$. Não existe função $A\to\emptyset$ quando $A\ne\emptyset$.
+- A totalidade exige pelo menos um destino por origem. A funcionalidade exige no máximo um. Só a funcionalidade dá uma função parcial.
+- A imagem $f(A)=\{f(a):a\in A\}$ pode ser menor que o contradomínio $B$.
+- Existe uma única função $\emptyset\to B$. Não existe função $A\to\emptyset$ com $A\ne\emptyset$.
 
-| Propriedade | Condição e teste de prova                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------- |
-| Injetiva    | $f(a_1)=f(a_2)\Rightarrow a_1=a_2$. Parte de imagens iguais.                                        |
-| Sobrejetiva | $\forall b\in B\exists a\in A,\ f(a)=b$. Encontra uma origem admissível para um destino arbitrário. |
-| Bijetiva    | Injetiva e sobrejetiva. Cada destino tem uma única origem.                                          |
+| Propriedade | Condição                                   |
+| ----------- | ------------------------------------------ |
+| Injetiva    | $f(a_1)=f(a_2)\Rightarrow a_1=a_2$         |
+| Sobrejetiva | $\forall b\in B\exists a\in A,\ f(a)=b$    |
+| Bijetiva    | as duas; cada destino tem uma única origem |
 
-Para refutar injetividade, encontra origens distintas com a mesma imagem. Para refutar sobrejetividade, encontra um destino nunca atingido.
+Para refutar a injetividade, apresenta origens distintas com a mesma imagem. Para refutar a sobrejetividade, apresenta um destino nunca atingido.
 
-O domínio e o contradomínio fazem parte da pergunta. Para $f(x)=x^2$, $\mathbb Z\to\mathbb Z$ não é injetiva nem sobrejetiva; $\mathbb N\to\mathbb N$ é injetiva, mas não atinge 2; $[0,\infty)\to[0,\infty)$ é bijetiva, com inversa $\sqrt y$.
+O domínio e o contradomínio fazem parte da pergunta. Para $f(x)=x^2$: $\mathbb Z\to\mathbb Z$ não é injetiva nem sobrejetiva; $\mathbb N\to\mathbb N$ é injetiva sem atingir 2; $[0,\infty)\to[0,\infty)$ é bijetiva, com inversa $\sqrt y$.
 
 ## Inversa e composição
 
-A **relação inversa** $f^{-1}$ troca os pares e existe sempre. É uma função total $B\to A$ exatamente quando $f$ é bijetiva. Injetividade garante funcionalidade da inversa; sobrejetividade garante totalidade.
+A relação inversa $f^{-1}$ troca os pares e existe sempre como relação. É uma função total $B\to A$ se e só se $f$ é bijetiva.
 
-Para uma função total, usando composição de relações:
+- $f^{-1}\circ f=\operatorname{id}_A$ equivale a $f$ injetiva.
+- $f\circ f^{-1}=\operatorname{id}_B$ equivale a $f$ sobrejetiva.
+- $(g\circ f)(a)=g(f(a))$; aplica primeiro $f$.
 
-$$
-f^{-1}\circ f=\operatorname{id}_A\Longleftrightarrow f\text{ injetiva},\qquad
-f\circ f^{-1}=\operatorname{id}_B\Longleftrightarrow f\text{ sobrejetiva}.
-$$
+A composição preserva injeção e sobrejeção. Se $g\circ f$ é injetiva, então $f$ é injetiva, sem garantir $g$ fora de $f(A)$. Se $g\circ f$ é sobrejetiva, então $g$ é sobrejetiva, sem obrigar $f(A)=B$. Para bijeções, $(g\circ f)^{-1}=f^{-1}\circ g^{-1}$.
 
-Para $f:A\to B,g:B\to C$, $(g\circ f)(a)=g(f(a))$. Aplica primeiro $f$.
+## Fibras
 
-- Duas injeções compõem-se numa injeção; duas sobrejeções, numa sobrejeção.
-- Se $g\circ f$ é injetiva, $f$ é injetiva. Isso não garante que $g$ o seja fora de $f(A)$.
-- Se $g\circ f$ é sobrejetiva, $g$ é sobrejetiva. Isso não obriga $f(A)=B$.
-- Para bijeções, $(g\circ f)^{-1}=f^{-1}\circ g^{-1}$.
-
-## Fibras e quociente
-
-Para uma função total $f:A\to B$, $R=f^{-1}\circ f$ é sempre equivalência:
+Para $f$ total, a relação $R=f^{-1}\circ f$ é uma equivalência:
 
 $$
-aRb\Longleftrightarrow f(a)=f(b),\qquad
-[a]_R=\{x\in A:f(x)=f(a)\}.
+aRb\Longleftrightarrow f(a)=f(b),\qquad[a]_R=\{x:f(x)=f(a)\}.
 $$
 
-As classes são as fibras não vazias. $[a]_R\mapsto f(a)$ é bijeção de $A/R$ para $f(A)$; no caso finito, $|A/R|=|f(A)|$. Já $\operatorname{dom}(R)=\operatorname{rng}(R)=A$. Conta pares da relação por $|R|=\sum_{X\in A/R}|X|^2$ quando $A$ é finito.
+As classes são as fibras não vazias; $[a]_R\mapsto f(a)$ é uma bijeção de $A/R$ para $f(A)$. No caso finito, $|A/R|=|f(A)|$.
 
 ## Cardinalidade
 
-Dois conjuntos têm a mesma cardinalidade se existe uma bijeção entre eles.
+Dois conjuntos têm a mesma cardinalidade quando existe uma bijeção entre eles.
 
-Para $A,B$ **finitos**, uma injeção $A\to B$ exige $|A|\le|B|$; uma sobrejeção exige $|A|\ge|B|$. Com tamanhos iguais, uma função é injetiva se e só se é sobrejetiva.
-
-Num conjunto infinito, um subconjunto próprio pode ter igual cardinalidade: $n\mapsto2n$ é bijeção de $\mathbb N$ para os pares naturais. Não apliques a equivalência entre injetividade e sobrejetividade do caso finito.
-
-Um conjunto é **numerável** se é finito ou admite uma bijeção com $\mathbb N$. $\mathbb N,\mathbb Z,\mathbb Q$ são numeráveis; $\mathbb R$ não é. Uma enumeração de $\mathbb Z$ é $0,-1,1,-2,2,\ldots$.
+- Para $A,B$ finitos, uma injeção $A\to B$ exige $|A|\le|B|$; uma sobrejeção exige $|A|\ge|B|$. Com tamanhos iguais, uma função é injetiva se e só se é sobrejetiva.
+- No caso infinito, uma parte própria pode ter igual cardinalidade: $n\mapsto2n$ é uma bijeção de $\mathbb N$ para os pares.
+- Um conjunto é numerável quando é finito ou admite uma bijeção com $\mathbb N$. $\mathbb N,\mathbb Z,\mathbb Q$ são numeráveis; $\mathbb R$ não é.
 
 [Provas de injetividade, sobrejetividade e cardinalidade](/cadeiras/md/funcoes-cardinalidade/).

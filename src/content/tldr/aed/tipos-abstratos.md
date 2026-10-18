@@ -1,42 +1,32 @@
-## Contrato e representação
+## O que o cliente vê
 
-Um **TAD** define valores e operações observáveis; a representação determina os custos.
+Um TAD promete valores e operações. A representação escolhe campos e custos.
 
-- Consultar `i` exige `0<=i<size`; retirar da frente exige não vazio ou um resultado explícito de ausência.
-- O **invariante da representação** liga campos privados ao valor abstrato. Numa lista simples, a cadeia não tem ciclos, termina em nulo e contém exatamente `tamanho` nós; `primeiro` é nulo exatamente no vazio.
-- O construtor estabelece o invariante; cada método público preserva-o; o destrutor liberta os recursos possuídos.
-- Representações substituíveis respeitam os mesmos resultados e pré-condições.
+- Consulta de `i` pede `0<=i<size`. Retirada da frente pede lista não vazia ou ausência explícita.
+- Invariante típico de lista simples: sem ciclos, termina em nulo, tem exatamente `tamanho` nós. `primeiro` é nulo só no vazio.
+- Construtor cria o invariante. Cada método repõe-no. Destrutor liberta o que é possuído.
 
-## Escolha pelos custos
+## Vetor ou nós
 
-Com `n` elementos:
+| Precisas de                                        | Prefere                                                                                                     |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Índice em $O(1)$ e poucas inserções à frente       | Vetor                                                                                                       |
+| Frente em $O(1)$ e inserção após posição conhecida | Lista                                                                                                       |
+| Consultar o fim                                    | Vetor, ou lista com cauda                                                                                   |
+| Inserir no fim                                     | Vetor em $O(1)$ amortizado, ou lista com cauda em $O(1)$                                                    |
+| Remover o fim                                      | Vetor em $O(1)$; na lista, duplamente ligada com cauda em $O(1)$, simples com cauda em $O(n)$ pelo anterior |
 
-| Operação                       | Vetor                | Lista simplesmente ligada                  |
-| ------------------------------ | -------------------- | ------------------------------------------ |
-| Consultar índice `i`           | $O(1)$               | $O(i+1)$                                   |
-| Inserir/remover à frente       | $O(n)$               | $O(1)$                                     |
-| Acrescentar no fim             | $O(1)$ amortizado    | $O(1)$ com apontador final, $O(n)$ sem ele |
-| Remover último                 | $O(1)$               | $O(n)$ para localizar anterior             |
-| Inserir depois de nó conhecido | $O(n)$ no caso geral | $O(1)$                                     |
+A pesquisa binária corre sobre qualquer sequência ordenada, mas o custo logarítmico habitual exige acesso direto em $O(1)$. Numa lista ligada com iteradores de avanço, chegar ao meio já custa deslocações lineares, por isso o vetor ordenado é a escolha natural.
 
-Uma lista dupla remove um nó conhecido em $O(1)$, mas continua sem acesso direto por índice. Inclui sempre o custo de **localizar** a posição.
+«Inserir em $O(1)$» só conta depois de teres a ligação. Localizar a posição pode dominar.
 
-Muitas consultas por índice e poucas inserções no fim favorecem o vetor.
+## Quem liberta e o que invalida
 
-## Posse e invalidação
+- Não copies só o apontador inicial: dois donos libertam os mesmos nós.
+- `vector` pode realocar ao inserir e nesse caso invalida tudo. Sem realocar, inserir invalida os iteradores da posição em diante.
+- `list` conserva iteradores ao inserir; apagar invalida só os do elemento.
+- `n` inserções em `set` custam $O(n\log n)$. Hash com constantes esperadas dá linear esperado, não garantido.
 
-- Copiar só o apontador inicial de uma estrutura proprietária duplica a posse dos mesmos nós. Dois destrutores acedem a memória libertada e podem libertá-la novamente: comportamento indefinido.
-- Define cópia profunda, transferência de posse ou proibição de cópia. Os containers da biblioteca gerem os seus recursos.
-- Realocar um `vector` invalida todos os iteradores, referências e apontadores para elementos. Sem realocação, inserir pode invalidar os da posição de inserção e seguintes.
-- Num `list`, inserir preserva iteradores e apagar invalida os do elemento apagado. Confere a garantia da operação concreta.
+Testa vazio, um elemento, repetidos e extremidades. Confere o invariante, não só a impressão final.
 
-Com `size()==capacity()`, `push_back` bem-sucedido realoca. Guarda o índice e obtém um iterador novo depois, se a posição lógica se conservar.
-
-## Composição e verificação
-
-- `n` inserções em `set` custam $O(n\log n)$. Consultas hash esperadas constantes dão custo esperado linear sob hipóteses de hashing, sem garantia de pior caso linear.
-- Passar uma estrutura por valor pode custar mais que o trabalho interno. Usa referência constante para leitura sem cópia.
-
-Confere invariantes após alterações e casos limite. Compara com referência independente em entradas pequenas; testes finitos não provam correção geral. Verifica overflow, memória e profundidade recursiva.
-
-[Contratos e exemplos completos](/cadeiras/aed/tipos-abstratos/).
+[Exemplos e contratos](/cadeiras/aed/tipos-abstratos/).

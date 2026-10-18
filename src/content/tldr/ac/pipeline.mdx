@@ -1,55 +1,24 @@
-import pipelineDependencia from '../../ac/examples/pipeline-dependencia.s?raw';
-import CodeSnippet from '../../../components/CodeSnippet.astro';
-
 import Typst from '../../../components/Typst.astro';
 import bolha from '../../ac/pipeline-bolha.typ?raw';
 
 ## Fases e tempo
 
-Modelo de cinco fases, emissão de uma instrução por ciclo e memórias de instruções/dados separadas:
+IF, ID, EX, MEM, WB. Período $T$ = maior atraso de fase (+ registo, se dado). Para $k$ fases e $N$ instruções sem paragens, no modelo da lição:
 
-| Fase | Operação                                                   |
-| ---- | ---------------------------------------------------------- |
-| IF   | Obter instrução pelo PC                                    |
-| ID   | Descodificar e ler registos                                |
-| EX   | ALU, endereço ou condição de salto                         |
-| MEM  | Acesso a dados; redirecionamento do salto no modelo básico |
-| WB   | Escrever registo, quando a instrução o exige               |
+$$T_{\rm conjunto}=(N+k-1)T,\qquad \text{latência}=kT.$$
 
-Sem paragens nem atraso adicional dos registos entre fases, para $k$ fases e $N$ instruções:
+Sobreposição melhora débito, não latência individual. Dividir uma fase muda $k$ e pode mudar penalidades.
 
-$$
-T=\max_i t_i,\qquad \text{latência}=kT,\qquad
-T_{\rm conjunto}=(N+k-1)T.
-$$
+## Conflitos
 
-Com cinco fases e $T=250$ ps, 20 instruções demoram 6000 ps. A sobreposição melhora o débito, sem garantir menor latência individual.
-
-## Divisão de fases
-
-Com custo de registos $\tau$ por fase, **não incluído** no atraso combinacional:
-
-$$T=\max_i t_i+\tau.$$
-
-- Acelerar EX não reduz o período se outra fase mantiver o maior atraso.
-- Dividir MEM acrescenta uma fase: recalcula período, latência $kT$ e tempo finito $(N+k-1)T$.
-- Atrasos `[300,400,350,500,100]` ps, $\tau=150$ ps: original tem 5 fases, T=650 ps; MEM dividida em 250+250 tem 6 fases, T=550 ps, agora limitado por ID.
-- Uma instrução demora 3250/3300 ps; dez, 9100/8250 ps. O débito melhora, mas uma instrução isolada fica mais lenta. O modelo supõe operações independentes sem paragens; novas fases podem mudar dependências e penalidades.
-
-[Contas com custo de registos](/cadeiras/ac/pipeline/#dividir-uma-fase-e-pagar-os-registos).
-
-## Conflitos e forwarding
-
-- **Estrutural:** duas operações pedem um recurso que não as suporta. Uma memória com um porto não serve IF e MEM simultaneamente; um NOP não cria outro porto.
-- **RAW:** o consumidor lê o resultado de uma instrução anterior. Há conflito se o valor ainda não existir no instante de uso.
-- Resultado ALU pronto no fim de EX pode seguir de EX/MEM ou MEM/WB para EX. Se ambos oferecem o mesmo destino, escolhe EX/MEM, o mais recente. Exige `RegWrite` e destino diferente de zero.
-- Um load só tem o dado no fim de MEM. EX/MEM contém o seu **endereço**, não o dado carregado.
+- **Estrutural:** dois usos do mesmo recurso no mesmo ciclo. NOP não cria portos.
+- **RAW:** consumidor usa valor ainda não produzido no instante de uso.
+- Resultado ALU no fim de EX segue para EX. Load só tem o dado no fim de MEM; EX/MEM contém o seu **endereço**.
+- `sw` usa a base em EX e o dado em MEM; verifica o caminho de forwarding disponível.
 
 ## Load-use
 
-<CodeSnippet language="riscv" code={pipelineDependencia} />
-
-Com forwarding para EX, há **uma bolha**. O consumidor espera em ID; congelam-se PC e IF/ID e limpa-se o controlo de ID/EX.
+Com forwarding para EX, no modelo de 5 fases da lição: **uma bolha**. Sem forwarding, com WB-primeiro/ID-depois: **duas**.
 
 <Typst
   source={bolha}
@@ -57,15 +26,10 @@ Com forwarding para EX, há **uma bolha**. O consumidor espera em ID; congelam-s
   alt="Load obtém o dado em MEM 4. O add espera em ID 4 e usa o dado por forwarding em EX 5, terminando em WB 7."
 />
 
-- Sem forwarding, com WB na primeira metade e ID na segunda, o `add` lê no ciclo 5: **duas paragens**. Outra regra temporal muda a conta.
-- `sw` usa a base em EX e o dado em MEM. Load seguido de store do seu resultado pode dispensar bolha se existir atalho do dado para MEM. Verifica o caminho disponível.
-
 ## Contar ciclos
 
-- Até WB da última instrução, $C=N+4+B$, com $B$ bolhas efetivas. Não cobres duas vezes esperas sobrepostas. Para uma escrita final de store, identifica MEM.
-- Num ciclo repetido, inclui dependências entre iterações. Em regime, $CPI\approx(n+B_{\rm iter})/n$.
-- Duas iterações de `add a0,t0,a1; lw t0,0(a0)` têm quatro instruções e uma bolha interna: 9 ciclos, CPI $9/4$. Em muitas iterações, uma bolha por duas instruções dá CPI tendente a 1,5.
-- Intercalar uma instrução independente pode ocultar load-use, se conservar dependências de registos e memória.
-- Compara **ciclos × período**. 9 ciclos a 300 ps dão 2700 ps; 7 a 400 ps dão 2800 ps.
+$$C=N+4+B$$
+
+até WB da última instrução, com $B$ bolhas efetivas. Em ciclos repetidos, inclui dependências entre iterações; em regime, $CPI\approx(n+B_{\rm iter})/n$. Compara sempre **ciclos × período**.
 
 [Traços e reordenação](/cadeiras/ac/pipeline/#contar-e-reduzir-paragens).

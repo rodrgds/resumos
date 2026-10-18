@@ -2,45 +2,40 @@ import arvoreRemocao from '../../aed/arvore-remocao.dot?raw';
 
 import Dot from '../../../components/Dot.astro';
 
-## Ordem global e pesquisa
+## Invariante global
 
-Numa **BST com chaves únicas**, todas as chaves da esquerda de um nó são menores e todas as da direita são maiores.
+Cada nó exige que toda a subárvore esquerda tenha chaves menores e toda a direita tenha chaves maiores. Esta página usa chaves únicas: a igualdade não cria um nó novo.
 
-- A condição aplica-se à subárvore inteira. Raiz 20, esquerda 8 e direita de 8 igual a 25 é inválida, apesar das comparações locais.
-- Valida com limites **abertos** herdados dos antepassados. Evita `x-1` e `x+1`, sujeitos a overflow.
-- Em-ordem produz chaves crescentes. Para procurar, compara com o nó atual e segue só o lado possível; chegar ao vazio prova ausência.
-- Inserir segue a pesquisa até um filho vazio. Encontrar igualdade não altera o conjunto. Mínimo segue filhos esquerdos; máximo segue direitos.
+- Comparações locais não chegam. Numa árvore com raiz 8, filho esquerdo 4 e filho direito de 4 com chave 9, cada ligação pai-filho parece ordenada, mas o 9 está na subárvore esquerda de 8 e viola o invariante.
 
-Operações custam $O(h+1)$: logarítmicas com equilíbrio, lineares numa cadeia. Inserção crescente pode criar altura `n-1`; altura esperada logarítmica pressupõe ordem uniformemente aleatória de chaves distintas.
+- Valida com limites abertos herdados. Não uses `x-1` nem `x+1`.
+- Pesquisa desce um só lado em $O(h+1)$. Vazio prova ausência.
+- Inserir para em filho vazio. Igualdade não muda o conjunto.
 
-- Maior altura com `n` chaves distintas: `n-1`, obtida por inserção crescente ou decrescente. Para minimizar, insere medianas recursivas antes dos seus descendentes. Sete chaves podem dar altura 2 ou 6.
-- O mínimo **não tem filho esquerdo**, mas pode ter direito e não ser folha. Uma cadeia crescente tem o mínimo na raiz.
+Cadeia dá altura `n-1`. Inserir as chaves pela ordem das medianas recursivas minimiza a altura: ordena primeiro e insere a mediana, depois as medianas das metades.
 
-## Remoção
+## Retirar sem partir a ordem
 
-| Filhos do nó encontrado | Operação                                                                   |
-| ----------------------- | -------------------------------------------------------------------------- |
-| Nenhum                  | Substitui a ligação de entrada por vazio e liberta o nó                    |
-| Um                      | Substitui a ligação pelo único filho e liberta o nó                        |
-| Dois                    | Copia chave e valor do sucessor, mínimo da direita, e remove esse sucessor |
+| Nó tem      | Faz                                 |
+| ----------- | ----------------------------------- |
+| Zero filhos | Liga vazio e liberta                |
+| Um filho    | Liga o filho e liberta              |
+| Dois filhos | Copia o sucessor e apaga o sucessor |
 
-O sucessor não tem filho esquerdo, mas pode ter direito: **religa esse filho** antes de libertar o sucessor. Atualiza também o apontador da raiz quando a remoção o exigir. Se a chave faltar, conserva a árvore.
+Sucessor é o mínimo da direita e não tem esquerdo, mas pode ter direito: religa-o. Atualiza a raiz quando for preciso.
 
 <Dot
   source={arvoreRemocao}
-  alt="Remover raiz 3 copia o sucessor 6 para a raiz e liga o seu filho direito 7 à esquerda de 8. O nó 1 permanece à esquerda da raiz."
+  alt="Retirar 3 copia 6 para a raiz e liga 7 à esquerda de 8."
 />
 
-Em-ordem final `[1,6,7,8]`. Procurar e retirar o sucessor custa $O(h+1)$.
+Em-ordem final `[1,6,7,8]`.
 
-## Sucessor, intervalos e biblioteca
+## Intervalos e biblioteca
 
-- Sucessor: mínimo da direita, se existir; senão, primeiro antepassado cujo ramo esquerdo contém a chave. Pode não existir. Predecessor é simétrico.
-- Numa árvore equilibrada, enumerar `k` chaves num intervalo com poda custa $O(\log n+k)$; percorrer tudo e filtrar custa $O(n)$.
-- `set` e `map` têm pesquisa, inserção e remoção por chave logarítmicas. `find` consulta sem inserir; `map[chave]` cria valor por omissão se faltar.
-- `multiset` admite repetidos. `erase(valor)` apaga todos; `erase(it)` apaga um, com iterador válido. Contar ou apagar `m` ocorrências custa $O(\log n+m)$.
-- `lower_bound(x)` procura o primeiro `>=x`; `upper_bound(x)`, o primeiro `>x`. Podem devolver `end()`. Iteradores de árvores não se subtraem como os de um vetor.
+- Sucessor sem direita é o primeiro antepassado vindo da esquerda. Pode não existir.
+- Enumerar `k` chaves com poda custa $O(\log n+k)$.
+- `set` e `map` pesquisam em logaritmo. `find` não insere; `map[k]` cria se faltar.
+- `lower_bound(x)` é o primeiro `>=x`; `upper_bound(x)` o primeiro `>x`. Podem ser `end()`.
 
-Equivalência depende do comparador. Multiplicidades por nó exigem adaptar remoção e tamanho. Inclui o custo das comparações, por exemplo de strings.
-
-[Remoção e contratos completos](/cadeiras/aed/arvores-pesquisa/).
+[Contratos completos](/cadeiras/aed/arvores-pesquisa/).

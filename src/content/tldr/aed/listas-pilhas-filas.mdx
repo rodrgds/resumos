@@ -1,68 +1,62 @@
 import Estados from '../../aed/Estados.astro';
 
-## Listas ligadas
+## Ligações sem perder nós
 
-- **Inserir à frente:** cria o nó com a ligação antiga, depois atualiza `primeiro`.
-- **Remover:** guarda a vítima e o sucessor, altera a ligação que chega à vítima, só depois liberta-a. A ligação pode ser `primeiro` ou `anterior.seguinte`.
-- Ao remover todos os valores iguais, examina novamente a mesma ligação depois de apagar. Em `[5,5,3]`, avançar logo saltaria o segundo 5.
-- Remover a posição `k` exige `0<=k<tamanho`. Encontrar a ligação custa $O(k+1)$; religar e atualizar o tamanho custam $O(1)$. Um apontador final não dá acesso ao penúltimo numa lista simples.
+- Frente: cria o nó já com a ligação antiga, depois muda `primeiro`.
+- Remoção: altera primeiro a ligação de entrada, depois liberta. A ligação pode ser `primeiro` ou `anterior.seguinte`.
+- Ao apagar todos os iguais, revê a mesma ligação. Em `[5,5,3]`, avançar logo perdia o segundo 5.
+- Posição `k` pede `0<=k<tamanho`. Achar a ligação custa $O(k+1)$; religar custa $O(1)$.
 
-Numa lista **dupla**, insere ajustando ambas as ligações entre novo nó e vizinhos. Remove nó conhecido em $O(1)$; localizar por índice continua linear.
+Dupla remove nó conhecido em $O(1)$ mas localiza por índice em $O(n)$. Circular com sentinela termina ao voltar à sentinela.
 
-Numa lista **circular com sentinela**, o vazio liga-a a si própria. O percurso termina ao regressar à sentinela. Seguir `seguinte` e depois `anterior` deve regressar ao nó inicial.
+## Cortar e juntar
 
-## Separação e intercalação
+- `separar(resto,k)` quer destino vazio e distinto. `k<=0` leva tudo; `k>=n` leva nada. Corta com nulo e reparte tamanhos.
+- Intercala ordenadas: escolhe a menor frente, esquerda no empate, e liga o resto quando uma acaba. Sem criar nós, auxiliar $O(1)$.
+- Custo de pior caso $O(a+b)$ para entradas de tamanhos $a$ e $b$. Não é $\Theta$ por entrada: intercalar `[1]` com `[2,\dots,n]` faz uma comparação e depois liga o resto.
 
-- `separar(resto,k)` exige destino **distinto e vazio**. Com `k<=0`, transfere tudo; com `k>=n`, nada. No interior, encontra a posição `k-1`, transfere o sucessor para a nova cabeça, corta com nulo e reparte os tamanhos. Interior $\Theta(k)$, extremos $O(1)$ com tamanho guardado.
-- Intercalar exige listas ordenadas. Liga a menor frente, **esquerda no empate**, e avança só essa frente. Quando uma acaba, liga o sufixo restante em $O(1)$; esvazia a origem direita, que perdeu a posse desses nós.
-- Sem criar ou apagar nós; auxiliar $O(1)$. Com ambas não vazias, pior caso $\Theta(a+b)$ e até `a+b-1` comparações; com uma vazia, liga a outra em $O(1)$. Não é $O(\min(a,b))$: `[m+1]` contra `[1,…,m]` consome `m` frentes embora o menor comprimento seja sempre 1.
+## Pilha, fila e deque
 
-## Deque, pilha e fila
+| Depois de 4, 7, 2 | Sai primeiro | Resto |
+| ----------------- | ------------ | ----- |
+| Pilha             | 2            | 7, 4  |
+| Fila              | 4            | 7, 2  |
 
-| Estrutura   | Operações e ordem                       | Saídas depois de inserir 4, 7, 2 |
-| ----------- | --------------------------------------- | -------------------------------- |
-| Deque       | Inserir e retirar nas duas extremidades | Depende da extremidade escolhida |
-| Pilha, LIFO | Último a entrar, primeiro a sair        | 2, 7, 4                          |
-| Fila, FIFO  | Entra no fim, sai à frente              | 4, 7, 2                          |
+Deque aceita ambas as extremidades. Array circular usa `(inicio+i)%capacidade` com tamanho guardado.
 
-- Uma pilha em vetor usa `push_back`, `back`, `pop_back`; uma fila em deque usa `push_back`, `front`, `pop_front`. Consultar ou retirar exige não vazio.
-- Num array circular, posição lógica `i` corresponde a `(inicio+i)%capacidade`, com capacidade positiva. Guarda também o tamanho para distinguir vazio e cheio.
+## Duas pilhas fazem uma fila
 
-## Fila com duas pilhas
+`entrada` recebe; `saida` tem o mais antigo no topo.
 
-`entrada` recebe novos valores. `saida` guarda no topo o mais antigo. A sequência da fila é `saida` do topo para o fundo, seguida de `entrada` do fundo para o topo.
-
-1. Para retirar, **só se `saida` estiver vazia**, transfere todos os elementos de `entrada` para `saida`.
-2. Se ambas estiverem vazias, devolve ausência. Caso contrário, retira o topo de `saida`.
+1. Só transfere tudo quando `saida` está vazia.
+2. Vazia nas duas significa fila vazia.
 
 <Estados
-  caption="As pilhas aparecem do fundo para o topo. Transferir inverte a ordem."
+  caption="Transferir inverte a ordem e põe o mais antigo no topo."
   steps={[
     {
-      label: 'Inserir 3 e 5',
+      label: 'Entram 3 e 5',
       values: ['entrada: 3, 5', 'saída: vazia'],
-      note: 'A primeira retirada transfere e devolve 3.',
+      note: 'Retirar transfere e devolve 3.',
     },
     {
-      label: 'Inserir 8',
+      label: 'Entra 8',
       values: ['entrada: 8', 'saída: 5'],
-      note: 'A próxima retirada devolve 5, sem transferir 8.',
+      note: 'Devolve 5 sem mexer em 8.',
     },
     {
-      label: 'Saída fica vazia',
-      values: ['entrada: 8', 'saída: vazia'],
-      note: 'Agora transfere 8 e retira-o. Ordem: 3, 5, 8.',
+      label: 'Esvazia saída',
+      values: ['entrada: vazia', 'saída: vazia'],
+      note: 'Transfere 8. Ordem: 3, 5, 8.',
     },
   ]}
 />
 
-Uma retirada pode custar $\Theta(n)$; cada elemento atravessa cada pilha uma vez. `m` operações custam $O(m)$, logo $O(1)$ amortizado, incluindo crescimento dos vetores.
+Cada elemento muda de pilha uma vez por passagem. `m` operações custam $O(m)$: $O(1)$ amortizado.
 
-## Aplicações de pilhas
+## Parênteses e próximos maiores
 
-- **Parênteses:** empilha aberturas; cada fecho exige topo correspondente, que retiras. No fim, a pilha deve estar vazia. `([)]` falha no primeiro fecho, apesar de ter contagens iguais. Tempo e espaço de pior caso $O(n)$.
-- **Próximo estritamente maior:** guarda índices ainda sem resposta, com valores não crescentes. Ao chegar `x`, retira os de valor `<x` e responde com a posição atual. Iguais permanecem. Cada índice entra e sai uma vez, dando $O(n)$.
+- Fecha só com topo correspondente e pilha não vazia. `([)]` falha apesar das contagens.
+- Próximo estritamente maior: guarda índices sem resposta por ordem não crescente. Cada índice entra e sai uma vez, logo $O(n)$.
 
-Para `[3,1,4,4,2]`, os próximos índices estritamente maiores são `[2,2,ausente,ausente,ausente]`.
-
-[Implementação de listas e da fila](/cadeiras/aed/listas-pilhas-filas/).
+[Código e traços](/cadeiras/aed/listas-pilhas-filas/).

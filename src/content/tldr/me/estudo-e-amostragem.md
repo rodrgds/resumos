@@ -13,7 +13,7 @@
 | Sem reposição numa população finita    | As escolhas são dependentes. A independência só pode ser uma aproximação quando a fração amostrada é pequena. |
 | Estratificada                          | Seleciona aleatoriamente dentro de grupos e usa os pesos populacionais na estimativa global.                  |
 
-Se 80% dos casos são diurnos e 20% noturnos, com médias 2 e 6 s, a média ponderada é $0,8(2)+0,2(6)=2,8$ s. Uma amostra voluntária maior não elimina enviesamento de seleção.
+- Se 80% dos casos são diurnos e 20% noturnos, com médias 2 e 6 s, a média ponderada é $0,8(2)+0,2(6)=2,8$ s. Uma amostra voluntária maior não elimina enviesamento de seleção.
 
 ## Observação, experiência e pares
 

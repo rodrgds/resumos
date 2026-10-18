@@ -33,7 +33,7 @@ $$
 =\frac{E_m^2}{2Z_0},\qquad Z_0\simeq377\,\Omega.
 $$
 
-Com valor eficaz, $\mathcal I=\varepsilon_0cE_{\rm ef}^2$. Uma onda de $100\,\mathrm{MHz}$ com $E_m=10\,\mathrm{V/m}$ tem $\lambda\simeq3\,\mathrm m$, $B_m\simeq3{,}34\times10^{-8}\,\mathrm T$ e $\mathcal I\simeq0{,}133\,\mathrm{W/m^2}$. A potência numa área perpendicular $A$ é $\mathcal IA$, não necessariamente a potência absorvida.
+Com valor eficaz, $\mathcal I=\varepsilon_0cE_{\rm ef}^2$. Uma onda de $100\,\mathrm{MHz}$ com $E_m=10\,\mathrm{V/m}$ tem $\lambda\simeq3\,\mathrm m$ e $\mathcal I\simeq0{,}133\,\mathrm{W/m^2}$. A potência numa área perpendicular $A$ é $\mathcal IA$, não necessariamente a potência absorvida. [Ver intensidade](/cadeiras/f2/ondas-eletromagneticas/#energia-e-vetor-de-poynting).
 
 O balanço local é $\partial_tw=-\vec J\cdot\vec E-\nabla\cdot\vec S$. A energia diminui quando o campo fornece potência à matéria ou sai fluxo líquido.
 

@@ -1,57 +1,44 @@
 ## Fecho das regulares
 
-As regulares são fechadas para união, interseção, diferença, complemento, concatenação, estrela, reverso e intercalação. Toda a linguagem finita é regular.
+As linguagens regulares são fechadas para união, interseção, diferença, complemento, concatenação, estrela, reverso e intercalação. Toda a linguagem finita é regular.
 
-- **Produto de DFA completos**, sobre o mesmo alfabeto: guarda $(p,q)$ e atualiza ambas as componentes por cada letra. Para interseção, ambas devem ser finais; para união, basta uma; para diferença $A\setminus B$, a primeira deve ser final e a segunda não.
-- **Complemento:** troca finais e não finais num DFA completo.
-- **Reverso:** inverte as arestas, torna o antigo início final e cria um início com ε para todos os antigos finais.
-- **Intercalação:** um NFA-pares escolhe qual componente avança em cada letra; a outra fica parada. Conserva a ordem interna de cada palavra e exige ambas finais.
-- **Quociente à direita** $L/a=\{w\mid wa\in L\}$: torna final $q$ quando $\delta(q,a)\in F$.
-- **Derivada à esquerda** $a\backslash L=\{w\mid aw\in L\}$: muda o início para $\delta(q_0,a)$.
+- O **produto** combina dois DFA completos sobre o mesmo alfabeto. Cada estado é um par $(p,q)$, com $p$ do primeiro DFA e $q$ do segundo, e cada letra atualiza ambas as componentes. Os finais dependem da operação: ambas as componentes finais na interseção, pelo menos uma componente final na união, primeira final e segunda não final na diferença.
+- O **complemento** troca finais com não finais num DFA completo.
+- O **reverso** inverte as arestas; o antigo início passa a ser o único final e um início novo liga por ε aos antigos finais.
+- A **intercalação** usa pares $(p,q)$ onde cada letra avança apenas uma componente. Cada ramo escolhe a palavra de origem da letra e os finais exigem ambas as componentes finais, o que conserva a ordem interna de cada palavra.
+- O **quociente** $L/a$ torna final cada estado $q$ com $\delta(q,a)$ final. A **derivada** $a\backslash L$ desloca o início para $\delta(q_0,a)$.
 
 ## Decisão e equivalência
 
-| Pergunta            | Algoritmo                                                                 |
-| ------------------- | ------------------------------------------------------------------------- |
-| $L=\emptyset$?      | Procura um final alcançável                                               |
-| $L=\Sigma^*$?       | Testa vazio no complemento                                                |
-| $L$ infinita?       | Num DFA, procura um ciclo alcançável que permita chegar a um final        |
-| $L_1\subseteq L_2$? | Testa vazio de $L_1\setminus L_2$                                         |
-| $L_1=L_2$?          | No produto, procura um par alcançável com exatamente uma componente final |
+| Pergunta            | Procedimento                                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| $L=\emptyset$?      | Verifica se nenhum estado final é alcançável a partir do início.                                                      |
+| $L=\Sigma^*$?       | Complementa o DFA completo e testa se a linguagem resultante é vazia.                                                 |
+| $L$ infinita?       | No DFA, procura um ciclo alcançável do início do qual se alcance um estado final. Um ciclo só de ε num NFA não chega. |
+| $L_1\subseteq L_2$? | Testa se a diferença $L_1\setminus L_2$ é vazia.                                                                      |
+| $L_1=L_2$?          | No produto, procura um par alcançável com exatamente uma componente final.                                            |
 
-Se o último teste encontra esse par, os rótulos do percurso dão uma palavra distinguidora, e a pesquisa em largura encontra uma das mais curtas; se não há tal par, as linguagens são iguais. Para a infinitude, usa o DFA: um ciclo só de ε num NFA não garante palavras arbitrariamente compridas.
+Se esse par não existir, as linguagens são iguais. Se existir, os rótulos do percurso desde o início formam uma palavra que distingue as linguagens, e a pesquisa em largura encontra uma das mais curtas.
 
 ## Minimização
 
-Estados $p,q$ são equivalentes quando **todas** as continuações dão a mesma resposta de aceitação.
+Parte de um DFA completo e procede assim:
 
-1. Remove estados inacessíveis.
-2. Marca pares final/não final, distinguidos por $\varepsilon$.
-3. Marca um par se alguma letra leva a um par já marcado. Repete até estabilizar.
-4. Junta os estados dos pares não marcados em classes.
+1. Remove os estados inacessíveis a partir do início.
+2. Marca cada par com um estado final e outro não final, pois a palavra vazia $\varepsilon$ já os distingue.
+3. Marca o par $(p,q)$ quando alguma letra $a$ leva a um par já marcado. Repete este passo até nenhuma ronda produzir marcas novas.
+4. Junta os pares que continuam sem marca em classes de equivalência.
 
-Se $w$ distingue os destinos por $a$, então $aw$ distingue os estados de origem. O DFA mínimo completo é único a menos dos nomes dos estados.
+A palavra $w$ distingue os destinos por $a$ exatamente quando $aw$ distingue as origens, o que justifica a propagação para trás. O DFA mínimo completo é único a menos dos nomes dos estados.
+
+## Lema da repetição
+
+Se $L$ é regular, existe um inteiro $p\ge1$ tal que toda a palavra $s\in L$ com $|s|\ge p$ admite uma decomposição $s=xyz$ com $|y|\ge1$, $|xy|\le p$ e $xy^iz\in L$ para todo o inteiro $i\ge0$. Esta condição é necessária, mas não suficiente para provar regularidade.
+
+Para refutar, supõe que $L$ é regular, recebe esse $p$, escolhe uma palavra $s$ em função de $p$, cobre **todas** as decomposições válidas e exibe um $i$ cuja palavra bombeada sai de $L$.
+
+- Com $L=\{0^n1^n\mid n\ge0\}$ e $s=0^p1^p$, qualquer corte válido tem $y=0^k$ com $1\le k\le p$; retirar $y$ com $i=0$ quebra a igualdade entre os blocos.
+- Mostrar que **um** corte falha não chega. Em $L=\{(00)^n\mid n\ge0\}$, fixa um inteiro $p\ge2$ e $s=0^{2p}$: o corte $y=0$ sai da linguagem com $i=0$, mas o corte válido $y=00$ bombeia dentro de $L$ para todo $i\ge0$. Só contrarias o lema quando todos os cortes válidos falham. Da mesma forma, exibir um corte que funciona numa palavra isolada não prova que a linguagem é regular.
+- Em alternativa, usa o fecho: se $\{0^i1^j\mid i\ne j\}$ fosse regular, então $0^*1^*$ menos essa linguagem seria $0^n1^n$.
 
 [Exemplo com rondas e palavras distinguidoras](/cadeiras/tc/limites-regulares/#rondas-da-tabela-e-palavras-distinguidoras).
-
-## Lema da repetição regular
-
-Se $L$ é regular, existe $p\ge1$ tal que **toda** a palavra $s\in L$ de comprimento pelo menos $p$ admite $s=xyz$ com:
-
-$$
-|y|\ge1,\qquad |xy|\le p,\qquad
-\forall i\ge0,\ xy^iz\in L.
-$$
-
-É uma condição necessária. Satisfazê-la não prova regularidade.
-
-Para provar **não regularidade**:
-
-1. Supõe regularidade e recebe $p$.
-2. Escolhe $s\in L$, dependente de $p$, com $|s|\ge p$.
-3. Considera **qualquer** decomposição válida, sem escolher o corte.
-4. Mostra que existe $i\ge0$ que produz uma palavra fora de $L$.
-
-Em $L=\{0^n1^n\mid n\ge0\}$, escolhe $s=0^p1^p$. Qualquer corte válido tem $y=0^k$, $k\ge1$. Com $i=0$, ficam $0^{p-k}1^p$, com contagens diferentes. Contradição.
-
-Também podes usar fecho: se $H=\{0^i1^j\mid i\ne j\}$ fosse regular, $0^*1^*\setminus H$ seria regular, mas é precisamente a linguagem não regular anterior.

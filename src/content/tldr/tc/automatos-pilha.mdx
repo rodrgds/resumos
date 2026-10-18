@@ -1,61 +1,42 @@
 import PdaLab from '../../../components/PdaLab.astro';
 
-## Pilha e configurações
+## Modelo
 
-Um **PDA** combina estados finitos com uma pilha. Uma transição escolhe pelo estado, pela letra ou ε e pelo topo; muda de estado e substitui o topo por uma sequência.
+PDA: estados finitos mais pilha. Transição escolhe por estado, letra ou ε e topo; substitui o topo por uma sequência. Topo **à esquerda**: $X$ por $YZ$ deixa $Y$ no topo; por $\varepsilon$ retira $X$.
 
-- O topo fica **à esquerda**. Substituir $X$ por $YZ$ deixa $Y$ no topo; substituir por ε retira $X$.
-- $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$. Se $a=\varepsilon$, não consome entrada, mas continua a exigir o topo $X$.
-- Uma configuração $(q,w,\gamma)$ guarda estado, entrada restante e pilha. Se $(p,\alpha)\in\delta(q,a,X)$:
-
-$$
-(q,aw,X\beta)\vdash(p,w,\alpha\beta).
-$$
+- $a,X/\alpha$: lê $a$, substitui $X$ por $\alpha$. Com $a=\varepsilon$, não consome mas exige o topo.
+- Configuração $(q,w,\gamma)$: estado, entrada restante, pilha. $(q,aw,X\beta)\vdash(p,w,\alpha\beta)$ se $(p,\alpha)\in\delta(q,a,X)$.
 
 ## Aceitação
 
-Existe um ramo aceitante quando, **após consumir toda a entrada**:
+Um PDA aceita quando **existe** um ramo que consome toda a entrada e cumpre o critério. Encontrar um ramo que chega a um final, ou que esvazia a pilha, antes de consumir tudo não chega.
 
-| Critério     | Condição                                 |
-| ------------ | ---------------------------------------- |
-| Estado final | Estado em $F$; a pilha pode ter símbolos |
-| Pilha vazia  | Pilha vazia; o estado não importa        |
+| Critério     | O ramo aceitante termina com                                       |
+| ------------ | ------------------------------------------------------------------ |
+| Estado final | Entrada consumida e estado em $F$; a pilha pode conservar símbolos |
+| Pilha vazia  | Entrada consumida e pilha vazia; o estado não importa              |
 
-Os critérios têm o mesmo poder para PDA não determinísticos, mas exigem conversão da máquina. Não basta mudar a interpretação da mesma construção.
+Os dois critérios têm o mesmo poder para PDA **não determinísticos**, mas é preciso construir outra máquina para trocar o critério. Mudar o critério na mesma máquina pode mudar a linguagem. Os PDA determinísticos têm menos poder que os não determinísticos.
 
 ## Contagens e palíndromos
 
-Para $a^nb^n$, empilha um $A$ por $a$, muda de fase no primeiro $b$ e retira um $A$ por $b$. Só aceita com fundo $Z$ exposto e entrada consumida. A fase dos $b$ não permite voltar a ler $a$.
+Para $\{a^nb^n\mid n\ge0\}$, com $n$ a contar os pares: empilha $A$ por cada $a$, muda de fase no primeiro $b$ e retira um $A$ por cada $b$. A palavra vazia é aceite pela transição vazia desde o início, sem ler nada. Em $aabb$ a pilha passa por $Z,AZ,AAZ,AZ,Z$ e o ramo aceitante termina com a entrada consumida e $Z$ exposto. Ver só $Z$ no topo a meio da palavra não prova nada: $aab$ sobra marcador, $abb$ bloqueia e $aba$ quebra a ordem.
 
-Em $aabb$, a pilha passa por $Z$, $AZ$, $AAZ$, $AZ$, $Z$. Em $aab$, sobra um marcador; em $abb$, falta um; em $aba$, a ordem falha. A transição vazia do início para um final permite aceitar ε, mas não entradas ainda por consumir.
-
-Compara esses casos no laboratório. No palíndromo par $0110$, o ramo correto empilha $01$, escolhe o meio por ε e compara $10$ retirando os símbolos do topo.
+- Intervalo $n\le m\le2n$: empilha um ou dois marcadores por $a$; CFG $S\to aSb\mid aSbb\mid\varepsilon$.
+- Palíndromo par $ww^R$: empilha a primeira metade, adivinha o meio por ε, compara retirando. Com separador $w\#w^R$, o $\#$ marca a mudança.
 
 <PdaLab preset="equal-count" examples={['equal-count', 'even-palindrome']} />
 
-- Para $a^nb^m$ com $n\le m\le2n$, escolhe um ou dois marcadores por $a$ e retira um por $b$. A CFG equivalente é $S\to aSb\mid aSbb\mid\varepsilon$.
-- Para $ww^R$, sem separador, o PDA adivinha o meio. Em $w\#w^R$, o separador indica a mudança de fase.
-- PDA determinísticos não permitem escolhas concorrentes, incluindo ε com leitura para o mesmo estado/topo. Reconhecem uma subclasse própria das CFL, ao contrário da equivalência DFA/NFA.
-
 ## Conversões
 
-- **Pilha vazia para final:** põe um fundo novo abaixo da pilha simulada. Quando esse fundo fica exposto, permite ir a um final novo.
-- **Final para pilha vazia:** usa um fundo novo; dos antigos finais, permite entrar numa fase ε que retira tudo. Essa fase não lê entrada, por isso não aceita se restarem letras.
-- **CFG para PDA:** começa com $S$ no topo. Substitui uma variável pela produção escolhida sem ler; lê cada terminal quando coincide com o topo e retira-o. Aceita por pilha vazia. Ao empilhar símbolo a símbolo, insere o lado direito da direita para a esquerda.
-- **PDA para CFG:** $[pXq]$ gera as palavras que levam de $p$ a $q$ removendo $X$, sem tocar no que estava abaixo. Se $(r,YZ)\in\delta(p,a,X)$, para todos os estados $s,t$ acrescenta:
+- **Troca de critério:** para passar de pilha vazia a estado final, põe um fundo novo abaixo da pilha e aceita quando ele fica exposto depois de consumir tudo; no sentido inverso, usa fundo novo e uma fase de limpeza desde os antigos finais. Em ambos os casos, só conta quando a entrada está consumida.
+- **CFG para PDA:** começa com $S$ no topo. Cada produção $A\to\alpha$ dá uma transição $\varepsilon$ que substitui a variável $A$ no topo pelo lado direito $\alpha$, sem ler entrada. Cada terminal $a$ dá uma transição que lê $a$ quando $a$ está no topo e o retira. Empilha o lado direito da direita para a esquerda para manter a ordem.
+- **PDA para CFG:** a variável $[pXq]$ gera as palavras que levam de $p$ a $q$ removendo o $X$ do topo, sem mexer na pilha que está abaixo de $X$. Se $(r,YZ)\in\delta(p,a,X)$: $[pXt]\to a[rYs][sZt]$ para todos os estados $s,t$. Se $(r,\varepsilon)\in\delta(p,a,X)$: $[pXr]\to a$.
 
-$$
-[pXt]\to a[rYs][sZt].
-$$
-
-Se $(r,\varepsilon)\in\delta(p,a,X)$, acrescenta $[pXr]\to a$, podendo $a$ ser ε. O estado intermédio liga a remoção de $Y$ à de $Z$.
-
-Uma linguagem é CFL **se e só se** algum PDA não determinístico a reconhece.
-
-[Construção completa de PDA para CFG](/cadeiras/tc/automatos-pilha/#pda-para-cfg-num-exemplo-pequeno).
+Uma linguagem é CFL se e só se algum PDA não determinístico a reconhece.
 
 ## Escolha de fase
 
-Um PDA que empilha por a e escolhe uma fase só de b ou só de c reconhece $\{a^nb^n\mid n\ge1\}\cup\{a^nc^n\mid n\ge1\}$, se a entrada vazia não tiver caminho aceitante. Em aabc, o primeiro b escolhe a fase que bloqueia no c.
+Empilhar por $a$ e escolher uma fase só de $b$ ou só de $c$ dá $\{a^nb^n\mid n\ge1\}\cup\{a^nc^n\mid n\ge1\}$: $aabc$ bloqueia em $(q,c,AZ)$. Fundir as fases numa só, que aceita $b$ ou $c$ em cada remoção, dá $\{a^nu\mid n\ge1,\ u\in\{b,c\}^n\}$, que aceita $aabc$. A contagem não substitui a restrição das letras.
 
-Fundir as fases e permitir b ou c em cada remoção dá $\{a^nu\mid n\ge1,\ u\in\{b,c\}^n\}$, que aceita aabc. A contagem não substitui a restrição das letras. [Máquina e configurações](/cadeiras/tc/automatos-pilha/#escolher-uma-fase-e-conservar-a-escolha).
+[Construção completa de PDA para CFG](/cadeiras/tc/automatos-pilha/#pda-para-cfg-num-exemplo-pequeno).

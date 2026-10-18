@@ -1,53 +1,39 @@
 import Manim from '../../../components/Manim.astro';
 
-## Hash e colisões
+## Ideia central
 
-Uma **tabela de dispersão** localiza chaves por hash, sem as ordenar. Chaves iguais exigem hash igual; a implicação inversa não vale.
+Uma tabela de dispersão localiza a chave pelo seu hash, sem manter ordem.
 
-- Endereçamento direto de chaves em `[0,M)` custa $O(1)$ por acesso e $\Theta(M)$ de memória.
-- Hashing reduz um universo grande a `m` posições. **Colisões** são chaves diferentes com a mesma posição e exigem tratamento.
-- Hash de string pode custar $O(L)$, com comprimento `L`. Inclui comparação de chaves.
+- Se duas chaves são iguais, os seus hashes são iguais. A recíproca é falsa: uma colisão não prova igualdade.
+- Chaves em `[0,M)` dispensam hash: o acesso direto custa $O(1)$ com memória $\Theta(M)$.
+- O hash comprime um universo grande em `m` posições. Calcular o hash de uma string lê em geral os seus carateres: custa o comprimento da chave, não $O(1)$ por defeito. Uma soma simples dos códigos, reduzida módulo `m`, colide anagramas; serve para mostrar esse custo, não como hash recomendado. A lição usa uma combinação polinomial (Horner, base 31) para distribuir melhor.
+- A carga é $\alpha=n/m$, com `n` chaves em `m` posições. Com dispersão uniforme e custo constante de hash e comparação (chaves de dimensão limitada), o encadeamento custa $O(1+\alpha)$ em média; se tudo colidir, degrada para $\Theta(n)$.
 
-## Encadeamento e carga
+## Três estados da sondagem
 
-No **encadeamento separado**, cada posição guarda uma coleção de chaves. Com `n` chaves e `m` posições, o fator de carga é $\alpha=n/m$.
+Linear tenta $(h+i)\bmod m$. Apagar sem marcador parte a pesquisa.
 
-- Sob distribuição aproximadamente uniforme e hash/comparação constantes, uma operação custa $O(1+\alpha)$ esperado.
-- Se todas as chaves colidirem, pesquisar pode custar $\Theta(n)$. Carga baixa não corrige uma função hash má.
+| Encontra  | Pesquisa             | Inserção                     |
+| --------- | -------------------- | ---------------------------- |
+| Ocupada   | Compara              | Rejeita se igual             |
+| Tombstone | Passa à frente       | Guarda para reutilizar       |
+| Livre     | Termina com ausência | Fecha a procura de duplicado |
 
-## Sondagem e remoção
+Limita a `m` passos. Só reutiliza a tombstone depois de excluir duplicado à frente.
 
-A sondagem linear tenta $(h(x)+i)\bmod m$, com `i=0,1,…`. Distingue três estados:
-
-| Estado             | Pesquisa        | Inserção                               |
-| ------------------ | --------------- | -------------------------------------- |
-| Ocupada            | Compara a chave | Rejeita duplicado se a chave coincidir |
-| Apagada, tombstone | Continua        | Memoriza a primeira para reutilizar    |
-| Livre, nunca usada | Prova ausência  | Termina a procura de duplicado         |
-
-Limita a pesquisa a `m` tentativas para não entrar num ciclo numa tabela cheia. Antes de inserir numa tombstone, continua até excluir um duplicado posterior ou completar uma volta.
-
-Com `m=7` e `h(x)=x mod 7`, 10, 17 e 24 ocupam 3, 4 e 5. Apagar 17 deve deixar tombstone em 4, permitindo encontrar 24 em 5.
+Com `m=7` e `h(x)=x \bmod 7`, as chaves 10, 17 e 24 ficam nas posições 3, 4 e 5. Apagar 17 deixa uma marca na posição 4; a pesquisa de 24 atravessa essa marca e encontra a chave na posição 5.
 
 <Manim
   animation="aed-sondagem-remocao"
   title="Pesquisar através de uma célula apagada"
-  description="A pesquisa de 24 começa na posição 3, atravessa a posição 4 apagada e encontra a chave em 5. Uma célula livre em 4 interromperia o percurso."
+  description="A pesquisa de 24 atravessa a posição apagada e encontra a chave em 5."
 />
 
-## Cobertura e reconstrução
+## Passo e reconstrução
 
-- A sondagem linear cria agrupamentos. Na quadrática, a cobertura depende do tamanho e dos coeficientes; não assumes que visita todas as posições.
-- No hashing duplo, $(h_1(x)+i h_2(x))\bmod m$ cobre todas as posições se o passo for não nulo e coprimo com `m`. Com `m` primo, qualquer passo em `[1,m)` serve.
-- No endereçamento aberto, $\alpha<1$ permite espaço livre, mas tombstones também alongam pesquisas.
-- **Rehash:** recalcula e reinsere todas as chaves com o novo tamanho. Ao passar de 7 para 13, 10, 17 e 24 ficam em 10, 4 e 11; copiar os índices antigos quebra a pesquisa.
+- Linear agrupa. Quadrática pode não cobrir todas as posições.
+- Duplo usa um passo coprimo com `m`. Com `m` primo, qualquer passo com $1\le passo<m$ percorre a tabela; um múltiplo de `m` não serve, mesmo sendo não nulo como inteiro.
+- Rehash recalcula cada chave no novo tamanho. Copiar os índices antigos invalida a tabela.
+- `unordered_set` tem custo médio constante e pior linear. `reserve(n)` reduz reconstruções, mas não as elimina em geral; rehash invalida iteradores.
 
-Com distribuição adequada e capacidade proporcional a `n`, reconstruir é esperado linear. Crescimento geométrico dá custo esperado amortizado constante por inserção sob essas hipóteses; não elimina o pior caso de colisões.
-
-## Biblioteca e strings
-
-- `unordered_set` e `unordered_map` têm operações médias constantes e pior caso linear. `find` consulta; `map[key]` insere um valor por omissão se faltar.
-- `reserve` reduz reconstruções; rehash invalida iteradores.
-- Copiar e contar substrings de comprimento `K` custa $O(nK)$ esperado. Em `ACACA`, `AC` e `CA` surgem duas vezes, incluindo sobreposições.
-
-[Implementação completa da sondagem](/cadeiras/aed/tabelas-dispersao/#sondagem-e-três-estados).
+[Exemplo completo](/cadeiras/aed/tabelas-dispersao/#sondagem-e-três-estados).

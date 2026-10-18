@@ -2,71 +2,68 @@ import copiaSuperficial from '../../p/copia-superficial.dot?raw';
 
 import Dot from '../../../components/Dot.astro';
 
-## Construção, atribuição e independência
+## Que cópia preciso?
 
-| Expressão  | Operação                                               |
-| ---------- | ------------------------------------------------------ |
-| `T b = a;` | Constrói `b` com `T(const T&)`                         |
-| `b = a;`   | Substitui o estado de `b` com `T& operator=(const T&)` |
+| Expressão  | Significado                         |
+| ---------- | ----------------------------------- |
+| `T b = a;` | Constrói `b` com `T(const T&)`      |
+| `b = a;`   | Substitui o estado de `b` existente |
 
-A cópia gerada copia bases e membros. Um `vector` gere a cópia dos seus elementos; um apontador cru só copia o endereço.
-
-- Uma **cópia superficial** duplica a representação, incluindo endereços. Dois apontadores donos com destrutores que libertam o mesmo recurso causam dupla libertação.
-- Uma **cópia profunda** cria recursos independentes e copia o conteúdo. Partilhar pode ser correto, mas exige uma política explícita, como `shared_ptr`.
+- Superficial copia endereços. Dois donos com o mesmo recurso partem na destruição.
+- Profunda cria recurso próprio e copia o conteúdo.
+- Partilha exige política explícita, como `shared_ptr`.
 
 <Dot
   source={copiaSuperficial}
   alt="Após cópia profunda e alteração de b, a possui 4 e 6; b possui outro array com 9 e 6."
 />
 
-No `Buffer` da lição, a cópia reserva `outro.tamanho_` inteiros e copia-os. `unique_ptr<int[]>` liberta o array. Alterar `b.at(0)` para `9` deixa `a.at(0)` igual a `4`.
+No `Buffer`, a cópia reserva `outro.tamanho_` e copia cada posição. Mudar `b` não toca em `a`.
 
-## Atribuição segura
+## Atribuição sem perder nada
 
-**Copy-and-swap** prepara uma cópia completa antes de substituir o estado do destino:
+1. Constrói `copia(outro)` completa.
+2. Troca com o destino, sem lançar.
+3. O temporário destrói o recurso antigo.
 
 ```cpp
 Buffer& operator=(const Buffer& outro) {
     if (this == &outro) return *this;
     Buffer copia(outro);
-    trocar(copia);  // troca tamanho e propriedade sem lançar
+    trocar(copia);
     return *this;
 }
 ```
 
-| Momento        | Destino `c` | Temporário               |
-| -------------- | ----------- | ------------------------ |
-| Antes          | `2, 3, 5`   | Não existe               |
-| Preparar cópia | `2, 3, 5`   | `9, 6`                   |
-| Trocar         | `9, 6`      | `2, 3, 5`                |
-| Sair           | `9, 6`      | Destrói o recurso antigo |
+| Fase     | `c`       | Temporário |
+| -------- | --------- | ---------- |
+| Antes    | `2, 3, 5` | Não existe |
+| Preparar | Intacto   | `9, 6`     |
+| Trocar   | `9, 6`    | `2, 3, 5`  |
 
-Se a reserva falhar, o destino continua intacto: **garantia forte**. Libertar primeiro e copiar depois perde o estado anterior e pode ler memória já libertada na autoatribuição. Testar `this == &outro` resolve a autoatribuição, mas sozinho não dá segurança perante falhas de reserva.
+Se a reserva falha, o destino continua igual. É a garantia forte. Libertar primeiro perde o estado e parte na autoatribuição.
 
-Devolve `*this` por referência para permitir `a = b = c`, nunca uma referência ao temporário.
+## Movimento e regras
 
-## Movimento e estado da origem
-
-`std::move` permite selecionar uma operação de movimento; não transfere recursos sozinho. No `Buffer`, o construtor de movimento transfere o dono e põe o tamanho da origem a zero:
+`std::move` só seleciona movimento. Quem transfere é a operação escolhida.
 
 ```cpp
-Buffer(Buffer&& outro) noexcept
-    : tamanho_(std::exchange(outro.tamanho_, 0)),
-      dados_(std::move(outro.dados_)) {}
+Buffer b(2);
+Buffer d = std::move(b);  // b.size() = 0, d.size() = 2
 ```
 
-Com `Buffer b(2); Buffer d = std::move(b);`, `b.size()` dá `0` e `d.size()` dá `2`. `b.at(0)` lança porque não existe elemento. A atribuição por movimento da lição deteta autoatribuição e conserva o objeto nesse caso.
+- Origem deste `Buffer` fica vazia. Na biblioteca padrão, um objeto movido continua válido mas sem estado prometido; tipos como `unique_ptr` dão garantias adicionais, e nos teus tipos vale o contrato que escreveres.
+- Depois de mover um `vector`, podes destruir, atribuir ou consultar `size()`. Ler elementos continua a exigir a pré-condição própria, como um índice dentro do tamanho.
+- `std::move` apenas permite selecionar movimento. Se não houver operação
+  de movimento aplicável, a inicialização pode copiar.
+- `noexcept` no movimento ajuda contentores a escolhê-lo na realocação.
 
-Um `string` ou `vector` movido fica válido, mas o estado não é geralmente especificado. Podes consultar `size()` e `empty()`, destruir ou atribuir outro valor; `front()` exige confirmar que há elementos. Não generalizes o estado vazio deste `Buffer` a todos os tipos.
+| Regra | Quando rever                                             |
+| ----- | -------------------------------------------------------- |
+| Três  | Destrutor, cópia e atribuição de cópia com gestão manual |
+| Cinco | As três mais movimento de construção e de atribuição     |
+| Zero  | Prefere `vector` e evita escrever operações próprias     |
 
-`noexcept` promete não propagar exceções e ajuda coleções a escolher movimento na realocação.
+Valor copia independente. Propriedade exclusiva proíbe cópia e permite movimento.
 
-## Regras de três, cinco e zero
-
-- **Três:** ao gerir recursos manualmente, revê destrutor, construção de cópia e atribuição de cópia.
-- **Cinco:** acrescenta construção e atribuição de movimento. Operações podem ser geradas, definidas ou proibidas com `= delete`.
-- **Zero:** prefere membros que já gerem recursos, como `vector`, evitando operações especiais próprias.
-
-Um tipo de valor pede cópias independentes; propriedade exclusiva pede cópia proibida e movimento permitido.
-
-[Implementação completa de Buffer](/cadeiras/p/copia-propriedade/#um-buffer-com-propriedade-exclusiva).
+[Buffer completo](/cadeiras/p/copia-propriedade/#um-buffer-com-propriedade-exclusiva).

@@ -9,49 +9,99 @@ editorial:
       url: https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view
 ---
 
-## Tipos e funções
+## Tipos e divisão
 
-- `5 / 2` dá `2`; `5.0 / 2` dá `2.5`, porque a divisão usa os operandos. Converter o destino depois não recupera a fração. Divisão inteira por zero e overflow com sinal têm comportamento indefinido. [Expressões](/cadeiras/p/cpp-fundamentos/#operadores-e-divisão).
-- `=` atribui; `==` compara. Um intervalo exige `min <= x && x <= max`, não `min <= x <= max`. `&&` e `||` usam curto-circuito. Inicializa antes de ler e confirma o sucesso de `cin`. [Entrada e controlo](/cadeiras/p/cpp-fundamentos/#entrada-e-saída-com-iostream).
-- `T` passa por valor; `T&` dá acesso modificável; `const T&` evita a cópia e restringe esse acesso; `T*` pode ser nulo. Uma referência não muda de destino. Parâmetros são os nomes na função; argumentos são as expressões na chamada. Sobrecargas não se distinguem só pelo retorno. [Funções](/cadeiras/p/funcoes-arrays/#valor-referência-e-const).
-- Um array C tem índices de `0` a `N-1`. Num parâmetro, ajusta-se para apontador e precisa de tamanho separado. `sizeof` do parâmetro não mede o array original. Uma string de C exige `\0`, logo `n+1` posições para `n` unidades de texto. [Arrays e texto](/cadeiras/p/funcoes-arrays/#arrays-c-e-dimensões).
-- Array de saída: capacidade e prefixo válido são diferentes; devolve quantos elementos escreveste. Para conservar ocorrências repetidas, procura outro índice igual antes ou depois, sem eliminar repetições nem mudar a ordem. [Filtro](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída).
-- Diferença simétrica de letras: presença em exatamente um texto, não diferença de frequências. Duas tabelas de 26 presenças permitem escrever alfabeticamente; reserva 27 posições e termina com `\0`, incluindo no vazio. Confere alfabeto, entradas válidas e ausência de sobreposição. [Letras](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).
+| Quero                | Regra                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Fração de inteiros   | Converte antes: `static_cast<double>(a) / b`. `a / b` inteiro perde a fração |
+| Sinal de `-7 / 2`    | `-3`, resto `-1`. Trunca para zero                                           |
+| Proteger `soma / n`  | `n != 0 && soma / n > 10`. Com `n == 0`, a segunda parte não corre           |
+| Intervalo `0` a `20` | `0 <= nota && nota <= 20`. `0 <= nota <= 20` está errado                     |
 
-## Memória e propriedade
+Indefinido: divisão inteira por zero, overflow com sinal. [Expressões](/cadeiras/p/cpp-fundamentos/#operadores-e-divisão).
 
-| Expressão    | Significado                            |
-| ------------ | -------------------------------------- |
-| `p = &x`     | Guarda o endereço de x                 |
-| `*p = 7`     | Altera o objeto apontado               |
-| `p + i`      | Avança i elementos no mesmo array      |
-| `p->campo`   | Equivale a `(*p).campo`                |
-| `const T* p` | Apontador ajustável, acesso de leitura |
-| `T* const p` | Endereço fixo, acesso modificável      |
+## Funções e arrays
 
-- `[begin, end)` exclui o fim. A posição depois do último elemento pode marcar o fim, mas não pode ser desreferenciada. A aritmética não permite saltar entre objetos independentes. [Limites](/cadeiras/p/apontadores-memoria/#apontadores-e-arrays).
-- Um objeto automático morre ao sair do âmbito; retornar o seu endereço não prolonga a vida. `new T` exige `delete`; `new T[n]` exige `delete[]`. `delete nullptr` é válido; desreferenciar `nullptr` não é. Após destruição, todos os aliases ficam pendentes. Pôr um deles a nulo não repara os outros. [Duração](/cadeiras/p/apontadores-memoria/#pilha-área-livre-e-duração-de-vida).
-- RAII liga a libertação à vida do dono. Prefere `vector`, `string` e `unique_ptr`; usa `shared_ptr` só com propriedade realmente partilhada. Um observador não prolonga a vida do recurso. [RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
+| Preciso de         | Usa                                           |
+| ------------------ | --------------------------------------------- |
+| Ler sem copiar     | `const T&`                                    |
+| Alterar original   | `T&`                                          |
+| Pode faltar        | `T*`, testa nulo                              |
+| Referência `r = b` | Copia valor para o referido. Não muda destino |
 
-## Objetos, cópia e herança
+- Array `N` tem `0` a `N-1`. Em parâmetro vira apontador. Passa tamanho.
+- Descer com `size_t`: `for (i = size(); i > 0;) { --i; lê v[i]; }`. Com `size() = 0`, não entra.
+- Saída: devolve quantos escreveu. Chamador lê só esse prefixo.
+- Letras `a` a `z`: 26 presenças, destino 27 com `\0`. Conta letras, não terminador. [Arrays](/cadeiras/p/funcoes-arrays/#arrays-c-e-dimensões). [Filtro](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída). [Letras](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).
 
-- O construtor deve estabelecer o invariante; cada operação pública deve conservá-lo. Bases e membros constroem-se antes do corpo, pela ordem de declaração; destroem-se em ordem inversa. `const` depois do método permite consulta por objeto constante. [Classes](/cadeiras/p/classes-objetos/#construtores-e-destrutor).
-- `T b = a` constrói uma cópia; `b = a` atribui a um objeto existente. A cópia de apontador copia o endereço. Um dono precisa de decidir entre cópia profunda, partilha ou cópia proibida. Na atribuição, prepara o novo recurso antes de perder o anterior. [Cópia](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior).
-- Regra de três: destrutor, construção e atribuição de cópia. Regra de cinco acrescenta movimento. Regra de zero prefere membros que já gerem recursos. `std::move` permite movimento; a operação escolhida efetua-o. Não assumes um estado concreto da origem sem contrato. Consultas como `size()` continuam válidas; operações como `front()` exigem verificar as suas pré-condições. [Movimento](/cadeiras/p/copia-propriedade/#regras-de-três-cinco-e-zero).
-- Virtual pela referência ou apontador da base usa o tipo dinâmico. `override` confere a substituição, incluindo `const`. Copiar para um objeto base provoca slicing. `= 0` declara uma virtual pura. Destruir derivadas pela base exige destrutor virtual. [Polimorfismo](/cadeiras/p/heranca-polimorfismo/#funções-virtuais-e-override).
+## Memória
 
-## STL
+| Expressão    | Significado                                   |
+| ------------ | --------------------------------------------- |
+| `p = &x`     | Guarda o endereço de `x` em `p`               |
+| `*p = 7`     | Altera o objeto apontado por `p`              |
+| `p + i`      | Avança `i` elementos no mesmo array           |
+| `const T* p` | O destino pode mudar; a leitura não altera    |
+| `T* const p` | O destino não muda; a escrita altera o objeto |
 
-- `vector` oferece índice constante e inserção no fim amortizada constante. `list` permite remoção constante com posição conhecida, mas procura linear. `map` e `set` ordenam chaves e oferecem procura logarítmica. `unordered_map` procura em tempo médio constante, sem ordem fixa. [Escolha](/cadeiras/p/templates-stl/#escolher-um-contentor).
-- `reserve` muda capacidade; `resize` muda tamanho. Uma realocação de `vector` invalida todos os acessos aos elementos. `erase` invalida na posição e depois; usa o iterador devolvido para continuar. Não desreferencies `end()`. [Invalidação](/cadeiras/p/templates-stl/#invalidação-de-iteradores).
-- `sort` exige acesso aleatório e um comparador estrito, com `comp(x, x) == false`. Essa condição é necessária, mas não prova transitividade. `unique` remove repetidos adjacentes do intervalo lógico; `remove_if` compacta; ambos precisam de `erase` para reduzir o contentor. Pesquisa binária exige a ordenação adequada. `map[chave]` pode inserir; `find` consulta sem inserir. [Algoritmos](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).
-- Para ordenar médias, cria um resumo por chave num vetor e explicita o desempate. A média das médias dá peso igual a cada grupo; juntar todos os valores muda os pesos. Calcula antes de formatar e define o vazio. [Agregação](/cadeiras/p/templates-stl/#agregar-por-chave-e-ordenar-pelo-resultado).
+- `[begin, end)` exclui o fim. O fim marca a paragem, não se lê.
+- Automático morre no bloco. `new T` pede `delete`. `new T[n]` pede `delete[]`.
+- Depois de `delete`, os outros acessos a esse objeto ficam pendentes.
+  Atribuir `nullptr` só limpa esse nome.
+- RAII: `vector`, `string`, `unique_ptr` primeiro. `shared_ptr` só com partilha real. [Limites](/cadeiras/p/apontadores-memoria/#apontadores-e-arrays). [Duração](/cadeiras/p/apontadores-memoria/#pilha-área-livre-e-duração-de-vida). [RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
 
-## Erros, ficheiros e build
+## Objetos e cópia
 
-- `while (fluxo >> valor)` usa apenas leituras válidas. `eof()` descreve o passado, não prevê a leitura. Uma conversão parcial não valida o registo: `12abc` lê `12` e deixa `abc`. `getline` conserva espaços interiores; valida todos os campos e rejeita conteúdo extra. [Ficheiros](/cadeiras/p/ficheiros/#ler-sem-antecipar-o-fim).
-- Exceções destroem donos automáticos já construídos ao sair dos âmbitos. Apanha por referência constante. Um destrutor não deve deixar sair exceções. A garantia básica conserva invariantes sem fugas; a forte não deixa efeitos observáveis. Testa fronteiras a partir do contrato; `assert` pode desaparecer com `NDEBUG`. Sanitizers só observam os caminhos executados. [Erros e testes](/cadeiras/p/excecoes-testes/#testar-com-asserts).
-- O cabeçalho declara; o `.cpp` define; a ligação reúne os ficheiros objeto. Uma definição em falta causa erro de ligação. Templates precisam da definição visível na instanciação. [Módulos](/cadeiras/p/organizar-programas/#compilação-e-ligação).
+- Invariante primeiro. Valida antes de alterar. [Classes](/cadeiras/p/classes-objetos/#construtores-e-destrutor).
+- `T b = a` constrói. `b = a` substitui existente.
+- Atribuição segura: prepara cópia completa, troca sem lançar, destrói antiga. Libertar primeiro perde estado. [Cópia](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior).
+- Três: destrutor, cópia, atribuição. Cinco: mais dois movimentos. Zero: prefere `vector`.
+- `move` apenas permite selecionar movimento. A operação escolhida é que transfere. Na biblioteca padrão, a origem continua válida sem estado prometido; tipos como `unique_ptr` prometem mais, e nos teus tipos vale o teu contrato. Em `vector` e `string`, podes destruir, atribuir ou consultar `size()`; o acesso a elementos continua a pedir índice válido.
+
+## Herança
+
+- Virtual por referência ou apontador usa tipo dinâmico.
+- `override` confere, incluindo `const`.
+- Cópia para base faz slicing.
+- `= 0` é pura, classe abstrata.
+- Destruir por base pede destrutor virtual. [Polimorfismo](/cadeiras/p/heranca-polimorfismo/#funções-virtuais-e-override).
+
+## STL por decisão
+
+| Quero                          | Escolhe                                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Índice e crescer no fim        | `vector`                                                                                                            |
+| Chave ordenada                 | `map`, `set`; procura, inserção e remoção em `O(log n)` comparações                                                 |
+| Chave sem ordem                | `unordered_map`; média `O(1)` com boa distribuição das chaves e hash/igualdade de custo constante; pior caso linear |
+| Remover com iterador conhecido | `list` constante; localizar o elemento pode custar `O(n)`                                                           |
+
+- `reserve(n)` só aumenta a reserva se `n` exceder a capacidade atual; não cria elementos nem diminui. `resize` muda o tamanho.
+- No `vector`, realocar invalida todos os acessos aos elementos. `erase`
+  no `vector` invalida os acessos da posição removida em diante. Usa o
+  iterador devolvido.
+- Comparador estrito: `comp(x, x)` falso. `<=` não serve. Só isso não prova transitividade.
+- `unique`: junta adjacentes, devolve fim lógico, tamanho igual. Cauda válida sem valor prometido. Faz `erase` e não contes com ela. Ordena antes para todos os repetidos.
+- `remove_if`: compacta por predicado. Também pede `erase`.
+- Pesquisa: `lower_bound` exige intervalo particionado pelo mesmo
+  comparador. Confirma `!= end()` e a igualdade.
+- Consulta: `find` não insere. `map[chave]` insere um valor por omissão
+  quando falta: `int` fica `0`, `string` fica vazia. [Contentor](/cadeiras/p/templates-stl/#escolher-um-contentor). [Invalidação](/cadeiras/p/templates-stl/#invalidação-de-iteradores). [Algoritmos](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).
+
+## Erros e ficheiros
+
+- Ciclo: `while (fluxo >> valor)`. `eof()` conta passado, não prevê.
+- Linha: `getline` mais `istringstream`. Confirma extração, sem sobra, domínio `0` a `20`.
+- Incompleto dá linha inválida. Vazio não dá registo. [Ficheiros](/cadeiras/p/ficheiros/#ler-sem-antecipar-o-fim).
+- Exceção: apanha por referência constante. Os destrutores devem libertar recursos sem deixar sair exceções; se uma exceção escapa de um destrutor chamado durante o desenrolamento, o programa termina com `std::terminate`.
+- Básica conserva invariantes e evita fugas, sem prometer o valor. Forte
+  não deixa efeitos observáveis.
+- `assert` desaparece com `NDEBUG`. Sanitizers só veem o executado. [Testes](/cadeiras/p/excecoes-testes/#testar-com-asserts).
+
+## Build
+
+- O cabeçalho declara a função. O `.cpp` define-a. A ligação junta os
+  objetos. Em falta dá `undefined reference`.
+- Templates veem definição no cabeçalho. [Módulos](/cadeiras/p/organizar-programas/#compilação-e-ligação).
 
 ```sh
 g++ -std=c++17 -Wall -Wextra -Wpedantic -g programa.cpp -o programa

@@ -3,37 +3,29 @@ import Dot from '../../../components/Dot.astro';
 import moverNo from '../../ltw/mover-no-dom.dot?raw';
 import propagacao from '../../ltw/propagacao-evento.mmd?raw';
 
-## Valores e conversões
+## Valores
 
-- `const` impede reatribuir a ligação, mas permite alterar o objeto referido. `let` permite reatribuição; ambos têm âmbito de bloco. `var` tem âmbito de função.
-- `'8' + 1` dá a string `'81'`; `'8' - 1` dá 7. `===` compara sem conversão implícita. Objetos com conteúdo igual podem ter referências diferentes: `[1] === [1]` é falso.
-- `Number('8x')` dá `NaN`; `parseInt('8x', 10)` dá 8. Para uma entrada inteira completa, rejeita vazio, converte, verifica `Number.isInteger` e os limites.
-- `0`, `''`, `null`, `undefined`, `NaN` e `false` são falsos num teste booleano; arrays e objetos vazios são verdadeiros. `||` substitui valores falsos; `??` só substitui `null` e `undefined`.
+- `const` fixa a ligação, não o objeto; `let` e `const` têm âmbito de bloco, `var` de função.
+- `'8' + 1` é `'81'`; `'8' - 1` é 7. `===` não converte; `[1] === [1]` é falso (referências distintas).
+- `Number('8x')` é `NaN`; `parseInt('8x', 10)` é 8. Entrada inteira completa: rejeita vazio, converte, confirma `Number.isInteger` e limites.
+- Falsos: `0`, `''`, `null`, `undefined`, `NaN`, `false`. Arrays e objetos vazios são verdadeiros. `||` substitui falsos; `??` só `null`/`undefined` (quantidade 0 válida pede `??`).
 
-## Arrays e callbacks
+## Arrays e funções
 
-| Operação                        | Efeito                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `map`, `filter`                 | Novo array com valores transformados ou selecionados                   |
-| `reduce`                        | Acumula um resultado; fornece valor inicial para admitir entrada vazia |
-| `forEach`                       | Executa efeitos e devolve `undefined`                                  |
-| `slice`, spread `[...a]`        | Cópia superficial                                                      |
-| `splice`, `push`, `pop`, `sort` | Alteram o array                                                        |
+| Operação                        | Devolve           | Altera o original? |
+| ------------------------------- | ----------------- | ------------------ |
+| `map`, `filter`                 | Novo array        | Não                |
+| `reduce` (com inicial)          | Valor acumulado   | Não                |
+| `forEach`                       | `undefined`       | Só por efeito      |
+| `slice`, `[...a]`               | Cópia superficial | Não                |
+| `splice`, `push`, `pop`, `sort` | Vários            | Sim                |
 
-`for...of` percorre valores; `for...in` percorre nomes de propriedades. Uma função é um valor: `map(obterTitulo)` passa a função; `map(obterTitulo())` chama-a imediatamente. Uma arrow com corpo entre chavetas precisa de `return` para devolver.
+- `for...of` dá valores; `for...in` dá nomes de propriedades.
+- `map(f)` passa a função; `map(f())` passa o resultado da chamada. Arrow com chavetas precisa de `return`.
+- `sort` sem comparador ordena como texto (`[25, 3, 8]`). Números: `sort((a, b) => a - b)` sobre cópia.
+- Cópia superficial partilha objetos interiores: `b[0].preco = x` muda `a[0].preco`.
 
-```js
-const precos = [8, 25, 3];
-const ordenados = [...precos].sort((a, b) => a - b);
-console.log(ordenados); // [3, 8, 25]
-console.log(precos); // [8, 25, 3]
-```
-
-Sem comparador, `sort` compara texto e daria `[25, 3, 8]`. Uma cópia superficial separa arrays, mas conserva referências aos objetos interiores. Alterar `b[0].n` pode também mudar `a[0].n`.
-
-## Closures, this e protótipos
-
-Uma **closure** conserva acesso ao ambiente lexical onde a função foi criada.
+## Closures e `this`
 
 ```js
 function contador(inicio) {
@@ -42,53 +34,38 @@ function contador(inicio) {
 }
 const a = contador(5),
   b = contador(0);
-console.log(a(), a(), b(), a()); // 6 7 1 8
+a();
+a();
+b();
+a(); // 6 7 1 8
 ```
 
-Cada chamada a `contador` cria um `n` independente. `let` num ciclo permite ligações por iteração; callbacks sobre um `var` partilhado podem ler todos o valor final.
+- Cada chamada cria ambiente próprio. `let` no ciclo dá ligação por iteração; `var` partilhado deixa callbacks lerem o valor final.
+- `livro.nome()` tem `this` no recetor; `const f = livro.nome` perde-o (`undefined` em modo estrito). `call` executa com recetor; `bind` cria função ligada. Arrow herda `this` do local de criação.
+- Métodos de classe vivem no protótipo; dados do construtor, na instância. `static` pertence à classe; `#` restringe acesso.
 
-- Num método normal chamado como `livro.nome()`, `this` refere o recetor. Separar `const f = livro.nome` perde essa associação; em modo estrito, `f()` tem `this` indefinido. `f.call(livro)` chama com recetor; `f.bind(livro)` cria uma função ligada.
-- Uma arrow herda `this` lexicalmente. Não recebe automaticamente o objeto onde foi guardada.
-- A procura de propriedades continua na cadeia de protótipos. Métodos normais de `class Livro` ficam em `Livro.prototype`; propriedades criadas no construtor ficam na instância. `extends` liga herança; membros `static` pertencem à classe.
+## DOM: procurar e mudar
 
-## DOM
-
-`querySelector` devolve o primeiro elemento ou `null`; `querySelectorAll` dá uma NodeList estática. `children` é uma coleção viva de elementos; `childNodes` inclui texto e comentários.
-
-- `closest` começa no próprio elemento e procura antepassados. `classList` altera classes; `dataset.id` lê `data-id`; `input.value` lê o valor atual, que pode diferir do atributo inicial.
-- `createElement` cria; `append` insere; `replaceChildren` substitui filhos; `remove` retira. `cloneNode(true)` cria outro nó e copia descendentes, mas não listeners de `addEventListener`; evita IDs repetidos.
-- `textContent` apresenta texto literal. `innerHTML` interpreta marcação e é perigoso com entrada não confiável.
+- `querySelector` dá o primeiro ou `null`; `querySelectorAll` dá NodeList estática. `children` é viva (só elementos); `childNodes` inclui texto.
+- `closest` sobe a partir do próprio elemento; `dataset.id` lê `data-id`; `input.value` é o valor atual, não o atributo inicial.
+- `textContent` escreve texto literal; `innerHTML` interpreta marcação (perigoso com entrada).
+- Inserir nó existente **move-o**; `cloneNode(true)` copia descendentes mas não listeners; nunca dupliques IDs.
 
 <Dot
   source={moverNo}
   alt="destino.append(item) move o mesmo li Redes de origem para destino, sem cópia."
 />
 
-Mover conserva a identidade e os listeners do item; a propagação passa pelos novos antepassados.
-
-## Eventos e delegação
+## Eventos
 
 <Mermaid
   source={propagacao}
   alt="O clique tem target no span. A captura desce por ul, li e button; o bubbling sobe de novo até ul. No listener de ul, currentTarget é ul."
 />
 
-`target` identifica onde o evento começou; `currentTarget` é o elemento cujo listener está a correr. Num listener do `ul`, usa `target.closest(...)` para encontrar o botão, confirma que pertence à lista e remove o `li` correspondente. A **delegação** abrange itens criados depois.
+- `target` é onde começou; `currentTarget` é o elemento do listener em execução. Delegação: um listener no `ul` serve itens futuros via `closest`.
+- `preventDefault` cancela a ação nativa; `stopPropagation` trava o percurso. São independentes.
+- `defer` corre por ordem após a análise, antes de `DOMContentLoaded`; `async` corre ao acabar o download. `setTimeout` dá atraso mínimo, não hora exata.
+- **Remover exige a mesma função.** Cada `bind` cria função nova: guarda-a e reutiliza-a em `removeEventListener`, com igual tipo e captura. Repetir a mesma combinação não duplica o registo.
 
-`preventDefault` cancela a ação nativa, não a propagação. `stopPropagation` interrompe a propagação, não a ação nativa.
-
-## Carregamento e temporizadores
-
-Scripts clássicos com `defer` correm depois da análise do documento, antes de `DOMContentLoaded`, pela ordem declarada. `async` corre quando o download acaba, sem essa garantia; módulos são deferidos por defeito.
-
-`setTimeout` define um atraso mínimo, não um instante exato. O código corrente termina antes dos callbacks agendados. `clearTimeout` e `clearInterval` cancelam temporizadores.
-
-[Laboratório de tarefas e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação).
-
-## Identidade do callback
-
-Cada `bind` devolve uma função nova. Guarda a função ligada ao registá-la e usa a mesma referência em `removeEventListener`; criar outro `bind` ou outra arrow com corpo igual não remove o original. O tipo de evento e captura também devem coincidir.
-
-Adicionar outra vez a mesma combinação de tipo, callback e captura não duplica o listener. Registar uma função nova pode duplicar as chamadas. Remover o listener não destrói o objeto nem a função: desfaz aquele registo de evento.
-
-[Registo e remoção de funções ligadas](/cadeiras/ltw/javascript-dom-eventos/#guardar-a-função-que-foi-registada).
+[Explicação completa](/cadeiras/ltw/javascript-dom-eventos/#guardar-a-função-que-foi-registada).

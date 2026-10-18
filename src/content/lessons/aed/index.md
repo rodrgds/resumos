@@ -25,8 +25,8 @@ Se a sintaxe dos vetores ou das referências ainda te prende, começa pelos [fun
 3. [Tipos abstratos](/cadeiras/aed/tipos-abstratos/) e [estruturas lineares](/cadeiras/aed/listas-pilhas-filas/): escolher a representação, manter ligações e analisar sequências de operações.
 4. [Envolvente convexa](/cadeiras/aed/envolvente-convexa/): orientação geométrica, Graham e a escolha entre pilha e lista circular.
 5. [Árvores binárias](/cadeiras/aed/arvores-binarias/), [árvores de pesquisa](/cadeiras/aed/arvores-pesquisa/) e [equilíbrio](/cadeiras/aed/arvores-pesquisa-equilibradas/): percursos, remoções, AVL e vermelho-pretas.
-6. [Dispersão](/cadeiras/aed/tabelas-dispersao/) e [heaps](/cadeiras/aed/filas-prioridade-heaps/): acesso por chave ou prioridade, colisões e construção linear.
-7. [DFS e BFS](/cadeiras/aed/grafos-pesquisa/) e [aplicações em grafos](/cadeiras/aed/grafos-aplicacoes/): caminhos mínimos sem pesos, ciclos, ordem topológica, componentes fortes, pontes e articulações.
+6. [DFS e BFS](/cadeiras/aed/grafos-pesquisa/) e [aplicações em grafos](/cadeiras/aed/grafos-aplicacoes/): caminhos mínimos sem pesos, ciclos, ordem topológica, componentes fortes, pontes e articulações.
+7. [Dispersão](/cadeiras/aed/tabelas-dispersao/) e [heaps](/cadeiras/aed/filas-prioridade-heaps/): acesso por chave ou prioridade, colisões e construção linear.
 
 Cada capítulo termina com exercícios que pedem uma decisão, um traço ou uma justificação. Tenta resolver antes de abrir as pistas. A [Cheat sheet](/cadeiras/aed/folha-consulta/) reúne condições e custos para revisão; as provas e os exemplos ficam nos capítulos.
 

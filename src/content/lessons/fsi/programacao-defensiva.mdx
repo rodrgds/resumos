@@ -2,7 +2,7 @@
 title: 'Programação defensiva e memória'
 description: 'Format strings, memória e ROP, canários, taint, cópia segura, TOCTOU e mitigações.'
 section: conteudo
-order: 6
+order: 2
 practices:
   - fsi/praticar-programacao-defensiva
 editorial:
@@ -63,6 +63,8 @@ Em `printf(formato, ...)`, o primeiro argumento descreve como interpretar os seg
 | `%%`          | Nenhum                                               | Imprime o caráter `%`                                       |
 
 `%n` não imprime o inteiro apontado: é uma escrita. Argumentos ausentes, tipos incompatíveis ou ponteiros inválidos produzem comportamento indefinido; não permitem prever uma saída portátil. Por exemplo, não executes `%s` com um ponteiro nulo para tentar obter um resultado garantido.
+
+Uma entrada com formato controlado também é uma primitiva de leitura potencial: pode levar a implementação a interpretar argumentos inexistentes e, nesta máquina de laboratório x86, a devolver valores lidos de posições da pilha, que podem incluir segredos ou o canário da [secção seguinte](#canários-o-que-está-a-ser-verificado). Em C, argumentos ausentes ou incompatíveis dão comportamento indefinido, sem saída portátil garantida, como exige `printf(3)`. Por isso uma fuga de formato pode anular uma defesa que dependa de um valor imprevisível, sem prometer fuga automática em qualquer ABI.
 
 No programa seguinte só há formatos literais e argumentos válidos: o `%` da entrada é dado, não um especificador, e no segundo `printf` o `%n` guarda 3 antes de serem impressos `!` e a mudança de linha.
 
@@ -206,7 +208,7 @@ Não podemos acrescentar livremente argumentos às etapas anteriores: sem ajuste
 
 ASLR dificulta localizar código; uma fuga de endereços pode reduzir essa proteção. Verificação de integridade do fluxo de controlo e mecanismos de retorno protegido procuram restringir os destinos. A correção continua a ser remover a corrupção de memória que permite controlar o fluxo.
 
-**Control-Flow Integrity**, ou CFI, verifica em execução se certos desvios seguem destinos admitidos pelo modelo de fluxo de controlo. Não é uma verificação de todos os índices ou comprimentos. Se um acesso fora dos limites corrompe apenas dados, sem violar um desvio verificado, pode continuar a escapar a CFI. O conjunto de destinos, os desvios cobertos e a precisão da política determinam o limite da proteção. Distingue-o de [SFI e interposição de chamadas](/cadeiras/fsi/sistemas-seguros/#interposição-e-isolamento-por-software).
+**Control-Flow Integrity**, ou CFI, verifica em execução se certos desvios seguem destinos admitidos pelo modelo de fluxo de controlo. Não é uma verificação de todos os índices ou comprimentos. Se um acesso fora dos limites corrompe apenas dados, sem violar um desvio verificado, pode continuar a escapar a CFI. O conjunto de destinos, os desvios cobertos e a precisão da política determinam o limite da proteção. A distinção face a SFI e interposição de chamadas fica para [sistemas seguros](/cadeiras/fsi/sistemas-seguros/#interposição-e-isolamento-por-software).
 
 ## Canários: o que está a ser verificado?
 
@@ -214,7 +216,7 @@ Um canário fica numa posição que certas escritas entre um buffer e o retorno 
 
 Um **canário terminador**, em construções históricas, contém bytes que terminam operações de texto, como nulo e mudança de linha. Uma cópia que para no nulo não consegue transportar esse byte e continuar com o resto da entrada. A justificação depende da função: uma cópia binária com comprimento explícito pode transportar bytes nulos.
 
-Um **canário aleatório** depende de o valor ser imprevisível e não ser exposto. Uma fuga que o revele pode permitir reproduzi-lo numa escrita. Construções históricas XOR também ligam o valor protegido ao endereço de retorno. Nenhum tipo é sempre superior: especifica a primitiva de cópia, a informação disponível e a disposição da pilha. Implementações atuais podem combinar aleatoriedade com bytes terminadores.
+Um **canário aleatório** depende de o valor ser imprevisível e não ser exposto. Uma fuga que o revele pode permitir reproduzi-lo numa escrita. Uma leitura com formato controlado sobre a pilha é uma forma concreta de obter essa fuga nesta máquina de laboratório, por isso as duas secções analisam-se em conjunto. Construções históricas XOR também ligam o valor protegido ao endereço de retorno. Nenhum tipo é sempre superior: especifica a primitiva de cópia, a informação disponível e a disposição da pilha. Implementações atuais podem combinar aleatoriedade com bytes terminadores.
 
 ## Análise estática, dinâmica e taint
 

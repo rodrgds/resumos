@@ -1,80 +1,65 @@
-## Estruturas e avaliação
+## Estruturas
 
-Uma estrutura $\mathcal A$ tem domínio **não vazio** $A$ e interpreta todos os símbolos não lógicos:
+- Uma estrutura tem um domínio **não vazio** $A$ e interpreta todos os símbolos não lógicos. A igualdade, quando existe, compara objetos.
+- Com $A=\{a,b\}$ e $P^{\mathcal A}=\{a\}$: $\exists xP(x)$ é $T$ por causa de $a$; $\forall xP(x)$ é $F$ por causa de $b$.
 
-| Símbolo                      | Interpretação                              |
-| ---------------------------- | ------------------------------------------ |
-| Constante $a$                | Um objeto $a^{\mathcal A}\in A$            |
-| Função $f$ de aridade $n$    | Uma função total $f^{\mathcal A}:A^n\to A$ |
-| Predicado $R$ de aridade $n$ | Uma relação $R^{\mathcal A}\subseteq A^n$  |
+| Símbolo                      | Interpretação                          |
+| ---------------------------- | -------------------------------------- |
+| Constante $c$                | um objeto $c^{\mathcal A}\in A$        |
+| Função $f$ de aridade $n$    | função total $f^{\mathcal A}:A^n\to A$ |
+| Predicado $R$ de aridade $n$ | relação $R^{\mathcal A}\subseteq A^n$  |
 
-A atribuição $s$ escolhe objetos para as variáveis. Avalia termos de dentro para fora e depois verifica a pertença à relação atómica. A igualdade compara os próprios objetos; as conetivas usam as tabelas proposicionais.
+- A atribuição $s$ escolhe objetos para as variáveis. Os termos avaliam de dentro para fora; a igualdade compara objetos; as conetivas usam as tabelas.
+- $\mathcal A\models_s\forall x\varphi$ exige $\varphi$ para todo o $d\in A$ em $s[x\mapsto d]$. Para $\exists x\varphi$ basta um $d$.
+- Só as variáveis livres mudam o valor. Para uma fórmula fechada escreve $\mathcal A\models\varphi$.
 
-$\mathcal A\models_s\varphi$ significa que $\varphi$ é verdadeira com essa estrutura e atribuição. Nos quantificadores, muda só a variável quantificada:
+O exemplo usa $A=\mathbb N$ com $R^{\mathcal A}=\{(n,m):n<m\}$:
 
-$$
-\begin{aligned}
-\mathcal A\models_s\forall x\varphi
-&\Longleftrightarrow\forall d\in A,\ \mathcal A\models_{s[x\mapsto d]}\varphi,\\
-\mathcal A\models_s\exists x\varphi
-&\Longleftrightarrow\exists d\in A,\ \mathcal A\models_{s[x\mapsto d]}\varphi.
-\end{aligned}
-$$
+- $\forall x\exists y\,R(x,y)$ é $T$; para cada $x$ serve $y=x+1$.
+- $\exists y\forall x\,R(x,y)$ é $F$; para cada $y$, $x=y$ dá $y<y$ falso.
 
-Só as variáveis livres podem alterar a verdade por mudança de atribuição. Para fórmulas fechadas, basta escrever $\mathcal A\models\varphi$.
+## Validade
 
-Num domínio finito completamente listado, o universal calcula uma conjunção e o existencial uma disjunção. Com $A=\{a,b\}$ e $P^{\mathcal A}=\{a\}$, $\exists xP(x)$ é verdadeira e $\forall xP(x)$ é falsa.
+- Uma fórmula é válida quando é $T$ em **todas** as estruturas e atribuições.
+- É satisfazível quando é $T$ em alguma. É insatisfazível quando é $T$ em nenhuma.
+- Para refutar $\Gamma\models\varphi$ dá uma estrutura completa, com atribuição se houver livres, onde as premissas são $T$ e a conclusão é $F$.
 
-## Validade e contraestruturas
+A verdade numa estrutura não é a validade. A frase $\forall x\exists y\,R(x,y)$ acima é $T$ na estrutura com $A=\mathbb N$ e $R^{\mathcal A}=\{(n,m):n<m\}$, mas falha na estrutura ${\mathcal B}$ com domínio $\{u\}$ e $R^{\mathcal B}=\emptyset$, onde nenhum par satisfaz $R$. O símbolo binário $R$ mantém-se; só muda a interpretação.
 
-- Uma fórmula válida é verdadeira em **todas** as estruturas e atribuições.
-- É satisfazível se alguma estrutura e atribuição a tornam verdadeira; insatisfazível se nenhuma serve.
-- Um modelo de proposições satisfaz todas elas na mesma estrutura.
+- Uma validade de primeira ordem pode não ser uma tautologia. A fórmula $(a=b\land b=c)\to a=c$ vale pela igualdade; a abstração $(p\land q)\to r$ admite $p=q=T,r=F$, que não corresponde a objetos com essas igualdades.
 
-Para refutar $\Gamma\models\varphi$, descreve uma estrutura completa e, se necessário, uma atribuição que satisfaçam todas as premissas e falsifiquem a conclusão.
-
-Uma verdade nos naturais não é automaticamente lógica. $\forall x\exists y(x<y)$ vale na interpretação habitual de $<$ em $\mathbb N$, mas $\forall x\exists yR(x,y)$ falha num domínio de um objeto com $R=\emptyset$.
-
-Uma validade de primeira ordem pode não ser uma tautologia proposicional. $(a=b\land b=c)\to a=c$ vale pela igualdade; a abstração $(p\land q)\to r$ admite $p=q=T,r=F$, que não corresponde a objetos com essas igualdades.
-
-## Equivalências quantificadas
-
-$$
-\forall x(\varphi\land\psi)\Leftrightarrow
-(\forall x\varphi)\land(\forall x\psi),
-$$
-
-$$
-\exists x(\varphi\lor\psi)\Leftrightarrow
-(\exists x\varphi)\lor(\exists x\psi).
-$$
-
-As outras distribuições falham em geral. Com $A=\{u,v\}$, $P=\{u\}$ e $Q=\{v\}$:
+O contraexemplo usa $B=\{u,v\}$ com $P^{\mathcal B}=\{u\}$ e $Q^{\mathcal B}=\{v\}$:
 
 | Fórmula                               | Valor |
 | ------------------------------------- | ----- |
-| $\forall x(P(x)\lor Q(x))$            | T     |
-| $(\forall xP(x))\lor(\forall xQ(x))$  | F     |
-| $(\exists xP(x))\land(\exists xQ(x))$ | T     |
-| $\exists x(P(x)\land Q(x))$           | F     |
+| $\forall x(P(x)\lor Q(x))$            | $T$   |
+| $(\forall xP(x))\lor(\forall xQ(x))$  | $F$   |
+| $(\exists xP(x))\land(\exists xQ(x))$ | $T$   |
+| $\exists x(P(x)\land Q(x))$           | $F$   |
 
-Se $x$ **não ocorre livre em $\psi$**, para $Q\in\{\forall,\exists\}$ e $\circ\in\{\land,\lor\}$:
+## Equivalências
+
+- $\forall x(\varphi\land\psi)\Leftrightarrow(\forall x\varphi)\land(\forall x\psi)$.
+- $\exists x(\varphi\lor\psi)\Leftrightarrow(\exists x\varphi)\lor(\exists x\psi)$.
+- As outras distribuições falham; as testemunhas podem diferir, como acima.
+
+Se $x$ não ocorre livre em $\psi$, com $Q\in\{\forall,\exists\}$ e $\circ\in\{\land,\lor\}$:
 
 $$
 (Qx\varphi)\circ\psi\Leftrightarrow Qx(\varphi\circ\psi).
 $$
 
-Estas equivalências pressupõem domínio não vazio. Pela implicação, a posição importa: $(\forall x\varphi)\to\psi\Leftrightarrow\exists x(\varphi\to\psi)$, ainda com a condição de não captura.
+Pela implicação, a posição conta: $(\forall x\varphi)\to\psi\Leftrightarrow\exists x(\varphi\to\psi)$, ainda sem captura. As regras usam um domínio não vazio.
 
 ## Forma prenexa
 
-Uma forma prenexa tem todos os quantificadores no início e uma matriz sem quantificadores. Para a obter:
+Uma forma prenexa tem todos os quantificadores à frente e matriz sem quantificadores.
 
-1. Elimina implicações e abreviaturas.
-2. Renomeia variáveis ligadas para evitar repetições e conflitos com livres.
-3. Leva negações para dentro, trocando universais e existenciais.
-4. Transporta quantificadores para fora, conferindo a ausência de captura em cada passo.
+1. Elimina as implicações e as abreviaturas.
+2. Renomeia as ligadas para evitar choques com livres.
+3. Leva as negações para dentro, trocando $\forall$ e $\exists$.
+4. Transporta os quantificadores para fora, conferindo a ausência de captura em cada passo.
 
-Não ordenes os quantificadores por tipo. A ordem tem de resultar de equivalências válidas, preservando dependências e variáveis livres.
+Não ordenes por tipo. A ordem tem de vir de equivalências válidas.
 
 [Exemplo completo de transformação prenexa](/cadeiras/md/semantica-primeira-ordem/#forma-normal-prenexa).

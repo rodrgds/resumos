@@ -1,30 +1,28 @@
-## Refatoração e contrato
+## Refatoração e diagnóstico
 
-**Refactoring** altera a estrutura interna preservando comportamento observável: resultados, efeitos, erros e ordem relevante. Corrigir um defeito muda um comportamento; é uma operação distinta. Testes detetam diferenças, mas não provam equivalência geral.
+**Refactoring** muda a estrutura preservando resultados, efeitos, erros e ordem relevante. Corrigir defeito é outra operação. Testes detetam diferenças, não provam equivalência.
 
-1. Identifica o contrato e corre os testes existentes.
-2. Acrescenta casos relevantes em falta antes de transformar.
-3. Faz uma transformação pequena, compila e testa.
-4. Confere efeitos, exceções e estado partilhado que os testes não cobrem; depois continua.
+1. Fixa o contrato e corre os testes.
+2. Acrescenta casos em falta antes de mexer.
+3. Transforma em passos pequenos, compilando e testando cada um.
+4. Confere efeitos e exceções que os testes não cobrem.
 
-## Diagnosticar o smell
+Smell é sinal, não veredicto. Cinco famílias: inchado, abusos de OO, entraves à mudança, dispensável, acoplamento.
 
-Um smell é um sinal para investigar. O número de linhas ou de chamadas não decide sozinho a responsabilidade.
+| Dificuldade                                  | Transformação                            |
+| -------------------------------------------- | ---------------------------------------- |
+| Método com intenções misturadas              | Extract Method com nomes de intenção.    |
+| Classe muda por razões independentes         | Extract Class.                           |
+| Regra dispersa por vários sítios             | Reunir num responsável comum.            |
+| Operação vive dos dados de outro objeto      | Move Method, se a regra pertence lá.     |
+| Valores viajam juntos; primitivos com regras | Parameter Object ou tipo do domínio.     |
+| Subclasse recusa promessas da base           | Rever hierarquia, considerar composição. |
 
-| Dificuldade observada                                                    | Transformação a considerar                                   |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Um método mistura intenções e níveis de detalhe.                         | Extract Method, com nomes que explicam cada intenção.        |
-| Uma classe muda por razões independentes, Divergent Change.              | Extract Class, separando essas razões.                       |
-| Uma regra exige edições em muitos locais, Shotgun Surgery ou duplicação. | Reunir a regra num responsável comum.                        |
-| Uma operação protege sobretudo regras de outro objeto, Feature Envy.     | Move Method, se esse objeto deve conhecer a regra.           |
-| Valores viajam juntos ou primitivos têm regras próprias.                 | Parameter Object ou tipo do domínio que valida essas regras. |
-| Uma subclasse recusa promessas da base, Refused Bequest.                 | Rever a hierarquia e considerar composição.                  |
+Serializador que lê muitos atributos não se move por contagem de chamadas: formato e domínio são responsabilidades distintas. `a.getB().getC().getX()` expõe estrutura interna. Intermediário que esconde fronteira fica; código morto e abstração especulativa saem.
 
-Um serializador consultar muitos atributos não obriga a movê-lo para a entidade: formato e domínio são responsabilidades diferentes. Cadeias como `arena.getHeroi().getPosicao().getX()` expõem a estrutura interna. Um intermediário só merece desaparecer se não esconder uma fronteira útil. Remove código morto e abstrações especulativas sem eliminar contratos necessários.
+## A tarifa preservada
 
-## Preservar a tarifa
-
-Para quantidades de **0 a 1000**, as primeiras cinco unidades custam 200 cêntimos cada e as restantes 150:
+0 a 1000 unidades; primeiras cinco a 200 cêntimos, restantes a 150:
 
 ```java
 static int calcular(int n) {
@@ -34,14 +32,12 @@ static int calcular(int n) {
 }
 ```
 
-Confere `0 → 0`, `5 → 1000`, `6 → 1150` e `1000 → 150250`, em cêntimos; `-1` e `1001` continuam a lançar a mesma exceção e mensagem. Cobrar 150 por **todas** as seis unidades daria 900, mudando a regra.
+Confere `0 → 0`, `5 → 1000`, `6 → 1150`, `1000 → 150250`; `-1` e `1001` lançam a mesma exceção e mensagem. Cobrar 150 em todas as seis daria 900: outra regra. Passos: extrai tal como está, move para `Tarifa`, só depois simplifica. [Transformação completa](/cadeiras/ldts/smells-refactoring/#exemplo-extrair-a-regra-do-preço).
 
-Separa os passos: extrai o cálculo com o corpo original, move-o para `Tarifa`, depois simplifica. [Transformação completa](/cadeiras/ldts/smells-refactoring/#exemplo-extrair-a-regra-do-preço).
+## Condições de cada transformação
 
-## Pré-condições das transformações
-
-- Extract Variable preserva o número e momento das avaliações quando há efeitos ou estado variável.
-- Guard Clauses conserva a ordem que decide qual erro acontece primeiro.
-- Move Method pode começar com delegação no local antigo, preservando clientes.
-- Encapsulate Collection distingue cópia de vista não modificável; a vista ainda acompanha alterações da origem.
-- Replace Conditional with Polymorphism exige alternativas com contrato comum útil. Não serve para eliminar todas as condições.
+- Extract Variable conserva número e momento de avaliações com efeitos.
+- Guard Clauses conservam a ordem que escolhe o primeiro erro.
+- Move Method começa delegando no local antigo.
+- Encapsulate Collection: vista acompanha a origem, cópia separa a coleção.
+- Replace Conditional with Polymorphism exige contrato comum útil; não elimina todas as condições.

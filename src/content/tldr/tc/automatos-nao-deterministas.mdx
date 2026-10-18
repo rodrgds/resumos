@@ -2,45 +2,39 @@ import AutomataLab from '../../../components/AutomataLab.astro';
 
 ## NFA e aceitação
 
-Num **NFA**, $\delta(q,a)$ é um conjunto de destinos, possivelmente vazio. Aceita se **existe** um percurso que consome toda a palavra e termina num final. Outros ramos podem bloquear ou terminar fora dos finais.
+Num NFA, $\delta(q,a)$ é um **conjunto** de destinos, possivelmente vazio. O NFA aceita quando **existe** um percurso que consome toda a palavra e termina num final.
 
-A simulação guarda todos os estados possíveis. Depois de ler $a$ a partir de $S$:
-
-$$
-S'=\bigcup_{q\in S}\delta(q,a).
-$$
-
-Para reconhecer o sufixo $01$, um estado $p$ repete $0,1$ e pode escolher $p\xrightarrow{0}q\xrightarrow{1}r$, sendo $r$ final e sem saídas. Em $001$, os conjuntos são $\{p\},\{p,q\},\{p,q\},\{p,r\}$: aceita. Em $0010$, o conjunto final é $\{p,q\}$: rejeita.
+- Simula com conjuntos de estados possíveis: desde o conjunto atual $S$ e a letra $a$, o conjunto seguinte é $S'=\bigcup_{q\in S}\delta(q,a)$.
+- Para o sufixo $01$: $p$ repete $0,1$ e pode saltar $p\xrightarrow{0}q\xrightarrow{1}r$ ($r$ final, sem saídas). Em $001$: $\{p\},\{p,q\},\{p,q\},\{p,r\}$. Em $0010$: conjunto final $\{p,q\}$, rejeita.
 
 ## Fecho-ε
 
-Uma transição **ε** muda de estado sem consumir entrada. $E(S)$ contém os estados alcançáveis de $S$ com zero ou mais dessas transições, incluindo o próprio $S$.
+Uma transição ε muda de estado sem consumir entrada. Para um conjunto $S$, o fecho $E(S)$ reúne os estados alcançáveis desde $S$ com zero ou mais transições ε.
 
-1. Começa com $S$ e segue apenas saídas ε.
-2. Explora cada estado novo uma vez, usando visitados. Ciclos vazios não impedem terminar.
-3. Inicia a simulação em $E(\{q_0\})$ e, para cada letra, calcula:
+1. Começa com o conjunto $S$ e segue só saídas ε, visitando cada estado novo uma vez.
+2. A simulação começa em $E(\{q_0\})$. Para cada letra $a$ desde o conjunto atual $S$, calcula $S'=E(\bigcup_{q\in S}\delta(q,a))$.
+3. No fim da palavra, aceita quando $S\cap F\ne\emptyset$. Os conjuntos guardados já estão fechados.
 
-$$
-S'=E\left(\bigcup_{q\in S}\delta(q,a)\right).
-$$
-
-Aceita no fim se $S\cap F\ne\emptyset$. Os conjuntos guardados já estão fechados; um conjunto arbitrário precisa também de fecho antes da leitura.
-
-No laboratório, compara $aab$ com $abba$. A máquina de $a^*b^*$ começa em $\{p,q\}$; depois de um $b$, só pode continuar a ler $b$. Um $a$ posterior leva ao conjunto vazio. A entrada vazia é aceite porque o fecho inicial contém $q$, final.
+Na máquina de $a^*b^*$, o fecho inicial é $E(\{p\})=\{p,q\}$, por isso $\varepsilon$ é aceite. Depois de ler um $b$, ler um $a$ leva ao conjunto vazio.
 
 <AutomataLab
   preset="epsilon-a-star-b-star"
   examples={['epsilon-a-star-b-star', 'nfa-suffix-01']}
 />
 
-## Determinização e complemento
+## Determinização
 
-- Cada subconjunto alcançável torna-se um estado do DFA. Começa no conjunto inicial, calcula todas as saídas e repete até não aparecer nenhum conjunto novo.
-- Um subconjunto é final se contém **pelo menos um** final do NFA. O vazio, se alcançável, é um poço.
-- Com $n$ estados, podem surgir até $2^n$ subconjuntos. Só precisas dos alcançáveis.
-- Para eliminar ε sem determinizar, fecha antes e depois da letra em cada transição; torna $q$ final quando $E(\{q\})$ intersecta $F$.
-- Para complementar, **determiniza, completa e troca os finais do DFA**. Trocar finais num NFA falha porque uma palavra pode ter simultaneamente um ramo final e outro não final.
+1. Começa com uma lista de trabalho desde o conjunto inicial, com fecho-ε quando a máquina tem transições ε.
+2. Para cada subconjunto e cada letra, calcula a união dos destinos e depois o fecho.
+3. Um subconjunto é final quando contém um estado final do NFA. O conjunto vazio, quando alcançável, funciona como poço.
+4. Um NFA com $n$ estados tem no máximo $2^n$ subconjuntos; só os alcançáveis desde o início interessam.
 
-DFA, NFA e ε-NFA reconhecem exatamente as linguagens regulares. O não determinismo pode reduzir a descrição, sem aumentar o poder.
+Eliminar ε sem determinizar: $\delta'(q,a)=E(\bigcup_{p\in E(\{q\})}\delta(p,a))$, com $q$ final quando $E(\{q\})\cap F\ne\emptyset$.
+
+## Complemento
+
+Trocar finais num NFA **não** complementa: uma palavra pode ter um ramo final e outro não final. Determiniza, completa, troca finais no DFA.
+
+Os DFA, NFA e ε-NFA descrevem a mesma classe das linguagens regulares. O não determinismo reduz a descrição, não aumenta o poder.
 
 [Tabela completa da determinização](/cadeiras/tc/automatos-nao-deterministas/#determinizar-com-fechos).

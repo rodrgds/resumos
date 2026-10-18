@@ -251,3 +251,28 @@ Distingue o tempo de vida do objeto, a disposição do alocador e o intervalo de
 A leitura por `q` é use-after-free: copiar o ponteiro não prolonga a vida do objeto. Não haver crash não torna o acesso válido. O alocador pode reutilizar a região, mas o mesmo tamanho não garante essa escolha. No vetor, um índice negativo passa `indice < 5`; a condição completa é `0 <= indice && indice < 5`. O índice 5 já está fora do vetor e deve ser negado.
 </div>
 </Exercise>
+
+<Exercise
+  revision={1}
+  id="formato-fuga-canario"
+  title="Ler a pilha antes de escrever"
+  explanation="/cadeiras/fsi/programacao-defensiva/#format-strings-o-formato-é-uma-instrução"
+  answer={{ kind: 'self', checklist: [
+    'Identifica formato controlado como leitura potencial de posições da pilha nesta máquina.',
+    'Explica que o valor revelado pode ser reutilizado na escrita.',
+    'Separa corrigir a fuga de formato de confiar apenas no canário.',
+  ] }}
+>
+
+Um serviço imprime com `printf(entrada)` texto externo e protege a pilha com um canário aleatório. Um atacante envia uma entrada com especificadores `%x` e observa os valores impressos. Depois envia um overflow que inclui um desses valores na posição do canário. Explica por que a segunda etapa pode passar a verificação e que correção atua na causa.
+
+<div slot="hint">
+O que é que os valores impressos revelam sobre a pilha?
+</div>
+<div slot="solution">
+A entrada controla o formato e pode levar a implementação a ler posições da pilha nesta máquina de laboratório, o que pode expor o próprio canário. Com o valor conhecido, o atacante escreve-o na posição esperada e a verificação antes do retorno não deteta a alteração. Em C, esse comportamento é indefinido e depende de ABI e ambiente, sem garantia portátil. A correção é tratar a entrada como dado, com formato literal, em vez de confiar apenas no canário: um valor imprevisível deixa de proteger quando existe uma primitiva de leitura.
+</div>
+<div slot="mistakes">
+Não afirmar que um canário impede a leitura da pilha por outra vulnerabilidade.
+</div>
+</Exercise>

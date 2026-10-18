@@ -11,7 +11,9 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import ConvexHull from '../../aed/ConvexHull.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Imagina pregos espetados num quadro e um elástico esticado à volta de todos eles: o elástico forma o contorno mais apertado que contém os pregos. A **envolvente convexa** é o menor conjunto convexo que contém todos os pontos. Um conjunto é convexo quando o segmento entre quaisquer dois dos seus pontos fica dentro dele. O elástico mostra a **fronteira** desse conjunto, sem reentrâncias nem dentes para dentro; em duas dimensões, essa fronteira é um polígono quando existem pelo menos três pontos não colineares, isto é, que não estão todos sobre a mesma reta.
+Imagina pregos espetados num quadro e um elástico esticado à volta de todos eles. O elástico forma o contorno mais apertado que contém os pregos. A **envolvente convexa** é o menor conjunto convexo que contém todos os pontos.
+
+Um conjunto é convexo quando o segmento entre quaisquer dois dos seus pontos fica dentro dele. O elástico mostra a **fronteira** desse conjunto, sem reentrâncias. Em duas dimensões, essa fronteira é um polígono quando existem pelo menos três pontos não colineares.
 
 Com um único ponto ou só pontos colineares, a fronteira degenera, por isso fixa se queres todos os pontos da fronteira ou apenas os vértices extremos; esta página conserva apenas extremos.
 
@@ -23,7 +25,7 @@ $$\operatorname{cross}(p,q,r)=(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x).$$
 
 Um resultado positivo é uma curva para a esquerda, negativo para a direita e zero significa colinearidade. O módulo é duas vezes a área do triângulo. Para `(0,0)`, `(2,0)`, `(2,2)`, o resultado é 4; trocar os dois últimos pontos muda o sinal.
 
-O produto exige espaço numérico suficiente. Se cada coordenada inteira tem módulo no máximo $10^6$, cada diferença tem módulo no máximo $2\cdot10^6$ e a diferença dos produtos cabe em `long long`. Converte os operandos para o tipo largo antes de multiplicar, porque converter só depois não evita overflow. Coordenadas reais exigem uma política para erros numéricos, que este exemplo inteiro evita.
+O produto exige espaço numérico suficiente. Se cada coordenada inteira tem módulo no máximo $10^6$, cada diferença tem módulo no máximo $2\cdot10^6$ e a diferença dos produtos cabe em `long long`. Converte os operandos para o tipo largo antes de subtrair, porque com coordenadas maiores a subtração em `int` transborda antes de chegares à multiplicação. Coordenadas reais exigem uma política para erros numéricos, que este exemplo inteiro evita.
 
 ## Graham com uma pilha
 
@@ -33,7 +35,7 @@ Percorre a sequência ordenada e conserva a fronteira parcial numa pilha. Antes 
 
 O invariante é que a pilha representa a cadeia convexa dos pontos processados, por ordem angular, com curvas estritas para a esquerda. Uma curva para a direita põe o vértice do meio no interior da nova cadeia, por isso retirá-lo conserva os extremos necessários. Na colinearidade, o mais próximo já não é um extremo da aresta. E a ordenação angular impede voltar a necessitar de um vértice retirado.
 
-No quadrado `(0,0)`, `(2,0)`, `(2,2)`, `(0,2)`, acrescenta `(1,0)` e `(1,1)`. O ponto `(1,0)` sai quando chega `(2,0)` porque são colineares. O ponto `(1,1)` sai quando um ponto seguinte mostra que está no interior. Os quatro cantos permanecem.
+No quadrado `(0,0)`, `(2,0)`, `(2,2)`, `(0,2)`, acrescenta `(1,0)` e `(1,1)`. O ponto `(1,0)` está na fronteira, sobre a aresta de `(0,0)` para `(2,0)`, e sai quando chega `(2,0)` porque são colineares. O ponto `(1,1)` é interior e sai quando um ponto seguinte mostra que está no interior. Os quatro cantos permanecem.
 
 Traço da pilha com pivô `(0,0)` e ordem angular `(1,0)`, `(2,0)`, `(1,1)`, `(2,2)`, `(0,2)`:
 
@@ -83,7 +85,11 @@ Não assumes que os três primeiros pontos são distintos e não colineares sem 
 
 ## Pesquisar um ponto no polígono
 
-Depois de construíres a envolvente, podes testar muitos pontos sem percorrer todas as arestas. Assume um polígono convexo com `h>=3` vértices extremos distintos, em ordem anti-horária `v[0],…,v[h-1]`. Os segmentos de `v[0]` para os outros vértices dividem o polígono em triângulos com direções ordenadas. A pergunta «a direção de `p` já passou a de `v[i]`?» responde-se com orientação, sem calcular ângulos.
+Depois de construíres a envolvente, podes testar muitos pontos sem percorrer todas as arestas.
+
+Os pressupostos: um polígono convexo com `h>=3` vértices extremos distintos, em ordem anti-horária `v[0],…,v[h-1]`. Os segmentos de `v[0]` para os outros vértices dividem o polígono em triângulos com direções ordenadas.
+
+A ideia: a pergunta «a direção de `p` já passou a de `v[i]`?» responde-se com orientação, sem calcular ângulos. Primeiro localiza o setor de `p` por bisseção e depois testa-o contra a aresta exterior desse setor.
 
 Primeiro verifica as duas direções extremas. Se `cross(v[0],v[1],p)<0` ou `cross(v[0],v[h-1],p)>0`, o ponto está fora. Se um desses produtos for zero, testa se `p` pertence ao **segmento** correspondente, incluindo os extremos: além de ser colinear, cada coordenada tem de ficar entre as coordenadas dos dois extremos. Estar na mesma reta não chega.
 

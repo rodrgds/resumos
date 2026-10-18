@@ -42,7 +42,7 @@ Uma soma separada calcula PC+4 e outra calcula PC+d para o branch. `PCSrc=Branch
 | sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
 | beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
 
-Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2, enquanto ALUSrc=1 escolhe o imediato; MemRead habilita a leitura de dados. MemtoReg escolhe o dado da memória se 1 e o resultado da ALU se 0; RegWrite e MemWrite autorizam alterações de estado, por isso têm de estar a 0 quando a instrução não escreve nesse destino.
+Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2; ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados. MemtoReg escolhe o dado da memória se 1 e o resultado da ALU se 0. RegWrite e MemWrite autorizam alterações de estado: têm de estar a 0 quando a instrução não escreve nesse destino.
 
 <Bracket label="Ideia-chave">
 
@@ -62,9 +62,9 @@ Segue `beq x5,x6,-8` em PC=`0x00400010`. A ALU subtrai x6 a x5 e produz Zero; se
 
 ## Seguir um load completo
 
-Suponhamos `lw x5,12(x8)` em PC=`0x00400020`, x8=`0x10010000`, e memória em `0x1001000C` contendo 42. O fetch lê a instrução; o banco entrega x8 e o gerador entrega 12. ALUSrc=1 faz a ALU somar e produzir `0x1001000C`.
+Suponhamos `lw x5,12(x8)` em PC=`0x00400020`, x8=`0x10010000`, e memória em `0x1001000C` contendo 42. O fetch lê a instrução. O banco entrega x8 e o gerador entrega 12. Com ALUSrc=1, a ALU soma e produz `0x1001000C`.
 
-MemRead=1 lê 42. MemtoReg=1 coloca 42 na entrada de escrita; RegWrite=1 guarda-o em x5 no flanco. Branch=0 seleciona `0x00400024` como PC seguinte. O resultado escrito é **42**, não o endereço calculado.
+Com MemRead=1, a memória devolve 42. Com MemtoReg=1, os 42 chegam à entrada de escrita; com RegWrite=1, o flanco guarda-os em x5. Com Branch=0, o PC seguinte é `0x00400024`. O registo recebe **42**, não o endereço calculado.
 
 Num `sw x5,12(x8)`, a mesma soma calcula o endereço, mas o dado de escrita vem da segunda leitura do banco, x5. RegWrite=0 evita alterar registos; MemWrite=1 altera memória.
 
@@ -72,7 +72,7 @@ No branch, a ALU usada para comparar não calcula o destino: esse caminho usa o 
 
 ## Falhas e extensões
 
-Se MemtoReg ficar preso em 0, um load escreve o endereço em vez do conteúdo. Para o detetar, escolhe um teste em que endereço e conteúdo diferem. Se PCSrc ficar sempre em 0, só falham os branches que deveriam ser tomados. Um beq falso não prova que o caminho de salto funciona.
+Se MemtoReg ficar preso em 0, um load escreve o endereço em vez do conteúdo. Para o detetar, escolhe um teste em que endereço e conteúdo diferem: com o mesmo valor nos dois lados, a falha seria invisível. Se PCSrc ficar sempre em 0, só falham os branches que deveriam ser tomados. Um teste só com branches falsos nunca exercita o caminho de salto.
 
 Se RegWrite ficar em 0, operações R e loads deixam de escrever. Stores e branches ainda podem funcionar. Se o bit alto de ALUOp ficar em 0, instruções R passam a pedir ADD: add ainda pode estar correto, mas sub, and e or precisam de testes que produzam resultados diferentes da soma.
 

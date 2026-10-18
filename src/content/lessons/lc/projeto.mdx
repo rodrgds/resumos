@@ -113,9 +113,11 @@ O tick é aplicado ao estado que resulta da tecla, fora do `switch`. Assim, `ENT
 
 ## Filas, ordem e ritmo
 
-Se chegam vários bytes ou eventos antes de os tratares, usa uma fila, com limite e política de overflow. Uma variável com o último evento não guarda toda a sequência. Quando os eventos são movimentos absolutos, por vezes podes substituir uma posição antiga pela mais recente; quando são cliques ou deltas, essa substituição muda o comportamento.
+Se chegam vários eventos antes de os tratares, usa uma fila, com limite e política de overflow. Uma variável com o último evento não guarda toda a sequência. Quando os eventos são posições absolutas, por vezes podes substituir uma posição antiga pela mais recente; quando são cliques ou deltas, essa substituição muda o comportamento.
 
-A ordem também muda resultados. Se `PAUSE` e `TICK` estão prontos na mesma iteração, decide qual aplicar primeiro. Num jogo com tempo limite, essa escolha determina se o último tick conta. Conserva a mesma regra em testes, execução local e protocolo remoto.
+Há duas ordens diferentes. Dentro de cada `struct input`, a aplicação usa a regra fixada na secção anterior: primeiro a tecla, depois o tick aplicado ao estado resultante. Entre eventos, a fila conserva a ordem de chegada e a aplicação retira pela mesma ordem. Uma tecla que chegue depois de um tick não passa à frente dele; cada elemento é aplicado quando sai da fila.
+
+A perda sem fila depende da representação. Se duas interrupções do timer chegarem antes de o processo as atender, o kernel entrega um só bit ativo: garantes pelo menos um tick, não dois. Se o programa guardar só a última tecla numa variável, uma tecla anterior perde-se. Já uma notificação com bits de dispositivos diferentes conserva ambos, desde que o despacho teste cada máscara com um `if` independente.
 
 Atualiza a lógica ao receber entradas e desenha a um ritmo escolhido. Por exemplo, desenhar a cada dois ticks de um timer de 60 Hz dá 30 frames/s, sem redesenhar o ecrã inteiro por cada byte de scancode.
 

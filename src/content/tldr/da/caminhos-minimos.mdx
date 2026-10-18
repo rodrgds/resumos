@@ -1,53 +1,24 @@
-import Manim from '../../../components/Manim.astro';
+## Relaxação
 
-## Relaxação e escolha do algoritmo
+$d[s]=0$, restantes $+\infty$. Relaxar $u\to v$ testa $d[u]+w<d[v]$ com $d[u]$ finito. Cada valor finito é custo de caminho conhecido, um limite superior. Atualiza predecessor só em melhoria estrita.
 
-Inicializa $d[s]=0$ e os outros valores a $+\infty$. Para uma aresta $u\to v$ de peso $w$, com $d[u]$ finito, se $d[u]+w<d[v]$, atualiza $d[v]$ e `pai[v]=u`. Um valor finito é o custo de um caminho encontrado, um limite superior para a distância mínima.
+## Escolher o método
 
-Reconstrói o caminho seguindo pais do destino até à origem e invertendo a ordem. Um destino inalcançável não tem caminho; a origem tem o caminho de zero arestas.
+| Situação                        | Método           | Hipótese                                                               | Custo                                       |
+| ------------------------------- | ---------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| Pesos não negativos, uma origem | Dijkstra         | Fixa menor provisório; prova usa não negatividade do resto             | $O((n+m)\log n)$; denso $O(n^2)$ com matriz |
+| Pesos arbitrários, uma origem   | Bellman-Ford     | $n-1$ passagens; extra com melhoria denuncia ciclo negativo alcançável | $O(nm)$                                     |
+| DAG, uma origem                 | Ordem topológica | Todos antecessores antes; admite negativos                             | $O(n+m)$                                    |
+| Todos os pares, denso           | Floyd-Warshall   | $k$ exterior; diagonal negativa denuncia ciclo                         | $\Theta(n^3)$, $\Theta(n^2)$ espaço         |
+| Todos os pares, esparso         | Johnson          | Sem ciclos negativos; repesa com $h$                                   | $O(nm+n(n+m)\log n)$                        |
 
-| Situação                                           | Método                                  | Tempo, com $n$ vértices e $m$ arestas |
-| -------------------------------------------------- | --------------------------------------- | ------------------------------------- |
-| Pesos não negativos, uma origem                    | Dijkstra com heap e `decreaseKey`       | $O((n+m)\log n)$                      |
-| Pesos negativos, uma origem                        | Bellman-Ford                            | $O(nm)$                               |
-| DAG, mesmo com pesos negativos                     | Ordem topológica e relaxação das saídas | $O(n+m)$                              |
-| Todos os pares, matriz                             | Floyd-Warshall                          | $\Theta(n^3)$                         |
-| Todos os pares, grafo esparso sem ciclos negativos | Johnson com heaps binárias              | $O(nm+n(n+m)\log n)$                  |
+## Condições que decidem
 
-## Dijkstra e Bellman-Ford
+- Dijkstra fixa cedo demais com $s\to a=2$, $s\to b=5$, $b\to a=-4$: fixa 2 e perde 1. Ausência de ciclo negativo **não chega**.
+- Bellman-Ford: $n-1$ passagens contemplam todos os caminhos com até $n-1$ arestas; a versão in-place pode antecipar melhorias na mesma passagem. Uma passagem extra com melhoria desde a origem denuncia ciclo negativo alcançável.
+- Ciclo negativo alcançável deixa pares sem mínimo finito; não devolvas cadeia como caminho mínimo.
+- DAG: não somes infinito de vértices antes da origem.
+- Floyd: $D^{(k)}[i,j]=\min(D^{(k-1)}[i,j],D^{(k-1)}[i,k]+D^{(k-1)}[k,j])$. Inicializa com menor paralelo e autoaresta negativa. Guarda `next` para reconstruir.
+- Johnson: $w'=w+h(u)-h(v)\ge0$ com $h$ de Bellman-Ford desde $q$; recupera $\delta=\delta'-h(s)+h(t)$. Somar constante a todas as arestas **não** preserva mínimos.
 
-**Dijkstra** fixa o vértice não definitivo com menor distância provisória e relaxa as suas saídas. Os pesos não negativos garantem que um caminho ainda não processado não pode baixar essa distância.
-
-Com entradas repetidas numa heap, ignora pares cuja distância já ficou antiga. Essa variante pode guardar $O(m)$ entradas e custa $O(n+m\log(m+1))$. Com matriz e escolha linear, o custo é $O(n^2)$.
-
-<Manim
-  animation="da-aresta-negativa"
-  title="Uma aresta negativa invalida a escolha"
-  description="Com s para a de peso 2, s para b de peso 5 e b para a de peso -4, Dijkstra fixa a em 2, mas o caminho por b custa 1. Não é necessário um ciclo negativo para a regra falhar."
-/>
-
-**Bellman-Ford** relaxa todas as arestas até $n-1$ vezes; pode parar se uma passagem não alterar nada. Sem ciclos negativos alcançáveis, um caminho mínimo simples usa no máximo $n-1$ arestas.
-
-Uma passagem adicional com melhoria a partir de um vértice alcançável deteta um ciclo negativo alcançável. O ciclo e todos os destinos que alcança não têm distância mínima finita. Um ciclo inalcançável da origem não afeta essa origem. A memória auxiliar é $O(n)$.
-
-## Floyd-Warshall
-
-$D^{(k)}[i,j]$ admite apenas $1,\ldots,k$ como vértices intermédios. Inicializa infinito, diagonal zero e o mínimo dos pesos de arestas paralelas, preservando autoarestas negativas.
-
-$$
-D^{(k)}[i,j]=\min\left(D^{(k-1)}[i,j],D^{(k-1)}[i,k]+D^{(k-1)}[k,j]\right).
-$$
-
-O ciclo de $k$ é o **exterior**. Sem ciclos negativos, atualiza a mesma matriz; evita somas com infinito. Espaço: $\Theta(n^2)$.
-
-Guarda o primeiro passo `next[i][j]`; numa melhoria por $k$, usa `next[i][k]`. Se $D[k,k]<0$, todos os pares que conseguem chegar a $k$ e sair para o destino são afetados por ciclo negativo.
-
-## Johnson
-
-1. Acrescenta uma origem com arestas zero para todos. Bellman-Ford dá potenciais $h(v)$ ou deteta um ciclo negativo.
-2. Repondera com $w'(u,v)=w(u,v)+h(u)-h(v)\ge0$.
-3. Corre Dijkstra de cada origem e recupera $\delta(s,t)=\delta'(s,t)-h(s)+h(t)$.
-
-Os potenciais internos cancelam-se num caminho. A alteração depende apenas dos extremos, conservando a ordem dos custos. Somar uma constante a todas as arestas não tem essa propriedade. Guardar todas as respostas exige $\Theta(n^2)$ espaço.
-
-[Execuções e reconstrução completas](/cadeiras/da/caminhos-minimos/).
+[Execução e reconstrução](/cadeiras/da/caminhos-minimos/).

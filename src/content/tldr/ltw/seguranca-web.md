@@ -1,56 +1,36 @@
-## Dados e instruções
+## Regra de ouro
 
-Validar decide se a entrada é permitida. Preparar SQL separa dados da consulta. Escapar a saída impede interpretação indevida naquele contexto. São controlos diferentes.
+Validar decide se a entrada é permitida. SQL preparado separa dados da consulta. Escape impede interpretação no contexto de saída. Cada fronteira tem a sua defesa.
 
-| Risco                     | Defesa principal                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| Injeção SQL               | Valores em consultas preparadas; identificadores escolhidos numa lista fixa                |
-| XSS                       | Destino de texto ou escape adequado ao contexto; sanitização própria se HTML for permitido |
-| CSRF                      | Token imprevisível ligado à sessão e verificado nas alterações                             |
-| Acesso a registos alheios | Autorização no servidor sobre o registo concreto                                           |
-| Travessia de caminhos     | Identificadores mapeados para caminhos fixos e autorização de leitura                      |
+| Atacante controla   | Defesa                                    |
+| ------------------- | ----------------------------------------- |
+| Texto da consulta   | Valores preparados; colunas de lista fixa |
+| HTML apresentado    | Escape do contexto; `textContent` no DOM  |
+| Pedido entre sítios | Token CSRF ligado à sessão                |
+| ID no pedido        | Autorização sobre o registo e a sessão    |
+| Caminho pedido      | IDs mapeados para caminhos fixos          |
+| Tráfego de rede     | HTTPS (não corrige as linhas acima)       |
 
-## SQL e XSS
+## Injeção e XSS
 
-Concatenar `$nome = "' OR 1=1 -- "` numa consulta pode transformar a condição numa verdade e comentar o resto. `prepare` e `execute` fazem essa string ser um valor literal. Um marcador não substitui uma coluna de `ORDER BY`.
-
-XSS pode ser persistente, refletido ou baseado no DOM. Para texto HTML no servidor, usa `htmlspecialchars` com `ENT_QUOTES | ENT_SUBSTITUTE` e UTF-8. No cliente, prefere `textContent` a `innerHTML`.
-
-- Atributos com URLs também exigem validar esquemas; escape HTML não torna `javascript:` seguro.
-- JavaScript e CSS têm outros contextos. Evita construir código com entrada.
-- Remover `<script>` com regex não sanitiza HTML. Usa uma biblioteca com regras explícitas se aceitares marcação.
-- CSP é defesa adicional. `HttpOnly` impede ler o cookie, mas XSS ainda pode executar pedidos autenticados.
+- `"' OR 1=1 -- "` concatenado vira condição sempre verdadeira e comenta o resto. Com `prepare` + `execute`, a mesma string é um nome literal.
+- Para texto HTML: `htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`. URLs em atributos exigem ainda validar esquemas (`javascript:` continua perigoso). JavaScript e CSS têm contextos próprios.
+- XSS persistente (guardado), refletido (devolvido) e de DOM (`innerHTML` com entrada). Sanitizar HTML permitido pede biblioteca com regras, nunca regex a apagar `<script>`.
+- `HttpOnly` esconde o cookie de scripts, mas o ataque continua a fazer pedidos autenticados. CSP limita, não corrige o destino.
 
 ## CSRF e autorização
 
-Credenciais podem seguir automaticamente num pedido iniciado por outra página. **POST e CORS não comprovam intenção** nem impedem todos esses envios.
+- Sessão no cookie pode seguir num pedido nascido noutra página. POST e CORS não provam intenção.
+- Token imprevisível por sessão, enviado no formulário e exigido na ação. Na verificação: método POST, esperado existente e não vazio, recebido string, `hash_equals`. `hash_equals('', '')` aceitaria vazio contra vazio: nunca normalizes ausências para `''`.
+- `SameSite` e `Origin` reforçam. XSS na origem lê o token: CSRF não dispensa XSS. Alterações nunca em GET.
+- Autorização em cada ação: `... WHERE id = :r AND utilizador_id = :u`, com o utilizador da sessão. Confirma que a linha existia. Botão escondido não protege endpoint.
 
-O servidor envia um token imprevisível associado à sessão e, na ação, exige método correto, token esperado existente e não vazio, token recebido string e comparação com `hash_equals`. Comparar ausências como `hash_equals('', '')` aceita indevidamente.
+## Segredos e ficheiros
 
-`SameSite` e verificação de `Origin` podem reforçar. XSS na própria origem pode obter o token. Não coloques alterações em GET.
+- `password_hash` guarda (salt incluído, público, automático); `password_verify` confirma. Nunca SHA-1/256 simples. Salt igual não se repete: a mesma palavra-passe dá resumos distintos. Fraca continua fraca: limita tentativas.
+- `password_needs_rehash` atualiza parâmetros após login. Sessão: regenera o ID ao autenticar; cookies `Secure`, `HttpOnly`, `SameSite`.
+- `readfile($_GET['f'])` com `../../x` sai do conjunto. Mapa de IDs para caminhos fixos, fora da raiz pública, mais autorização. Cópia pública anula o endpoint.
+- Upload: tamanho, formato real e nome do servidor, fora de pastas executáveis. Extensão declarada não prova conteúdo.
+- HTTPS: cifra e autentica o servidor por certificado. Sítio malicioso também pode tê-lo.
 
-Uma sessão válida não concede acesso a qualquer reserva. Restringe a operação ao registo e ao utilizador da sessão:
-
-```sql
-UPDATE reserva SET quantidade = :q
-WHERE id = :reserva AND utilizador_id = :utilizador;
-```
-
-Todos os valores são preparados; confirma que existia um registo autorizado. Ocultar botões não protege o endpoint.
-
-## Palavras-passe e sessões
-
-- Usa `password_hash` e `password_verify`, não SHA-1 ou SHA-256 simples. Salt e parâmetros ficam no resumo; o salt pode ser público e é gerado automaticamente.
-- A mesma palavra-passe normalmente dá resumos diferentes. O salt dificulta pré-cálculo, mas não salva uma palavra-passe fraca.
-- Limita tentativas; `password_needs_rehash` permite atualizar parâmetros após login válido.
-- Regenera o identificador ao autenticar ou mudar privilégios. Usa HTTPS e cookies `Secure`, `HttpOnly` e `SameSite` adequado.
-
-## Ficheiros e HTTPS
-
-Não passes um caminho arbitrário a `readfile`. Um mapa de IDs para caminhos fixos limita a seleção, mas continua a precisar de autorização. Guarda ficheiros privados fora da raiz pública: uma cópia pública pode contornar o endpoint protegido.
-
-Uploads exigem limites, verificação do formato real e nomes escolhidos pelo servidor, fora de pastas executáveis. Tipo e extensão declarados pelo cliente não provam o conteúdo.
-
-HTTPS protege confidencialidade e integridade do tráfego e autentica o servidor através de certificados. Não corrige SQL injection, XSS ou falta de autorização; um sítio malicioso também pode usar HTTPS.
-
-[Revisão do percurso de uma ação](/cadeiras/ltw/seguranca-web/#https-e-revisão-de-uma-ação).
+[Explicação completa](/cadeiras/ltw/seguranca-web/#https-e-revisão-de-uma-ação).

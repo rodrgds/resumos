@@ -1,72 +1,57 @@
 import Estados from '../../aed/Estados.astro';
 
-## Ordem, estabilidade e custos
+## Que algoritmo custa o quê
 
-Ordenar tem de produzir uma sequência ordenada **com os mesmos elementos**. Uma ordenação estável preserva a ordem relativa de registos com chaves equivalentes.
+| Algoritmo          | Quando é bom                   | Pior caso         | Memória extra    | Mantém empates |
+| ------------------ | ------------------------------ | ----------------- | ---------------- | -------------- |
+| Seleção            | Trocas caras e auxiliar $O(1)$ | $\Theta(n^2)$     | $O(1)$           | Não            |
+| Inserção           | Entrada quase ordenada         | $\Theta(n^2)$     | $O(1)$           | Sim            |
+| Bubble com paragem | Entrada ordenada               | $\Theta(n^2)$     | $O(1)$           | Sim            |
+| Mergesort          | Garantia em todos os casos     | $\Theta(n\log n)$ | $O(n)$           | Sim            |
+| Quicksort          | Caso médio rápido              | $\Theta(n^2)$     | Pilha até $O(n)$ | Não            |
 
-| Algoritmo          | Melhor            | Pior              | Auxiliar habitual          | Estável nesta versão? |
-| ------------------ | ----------------- | ----------------- | -------------------------- | --------------------- |
-| Seleção            | $\Theta(n^2)$     | $\Theta(n^2)$     | $O(1)$                     | Não                   |
-| Inserção           | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$                     | Sim                   |
-| Bubble com paragem | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$                     | Sim                   |
-| Mergesort em vetor | $\Theta(n\log n)$ | $\Theta(n\log n)$ | $O(n)$                     | Sim                   |
-| Quicksort Lomuto   | $\Theta(n\log n)$ | $\Theta(n^2)$     | $O(n)$ na recursão ingénua | Não                   |
+- Seleção faz sempre `n(n-1)/2` comparações. Em `[2A,2B,1]` troca o 1 para a frente e inverte os 2.
+- Inserção custa $\Theta(n+I)$ com `I` inversões. Só desloca elementos estritamente maiores.
+- Bubble só é linear com paragem quando não há trocas.
 
-O modelo conta comparações de custo constante. Copiar e comparar registos pode acrescentar custo.
+## Intercalar sem falhar
 
-- **Seleção:** procura o mínimo do sufixo e coloca-o na posição seguinte. Sempre `n(n-1)/2` comparações, apenas $O(n)$ trocas. `[2A,2B,1]` passa a `[1,2B,2A]`, perdendo estabilidade.
-- **Inserção:** desloca elementos estritamente maiores para inserir no prefixo ordenado. Custo $\Theta(n+I)$, com `I` inversões. Deslocar iguais perderia estabilidade.
-- **Bubble:** troca vizinhos invertidos e leva o máximo para o fim. O melhor caso só é linear com paragem por ausência de trocas.
-
-## Mergesort
-
-Divide em duas metades, ordena-as e intercala comparando as frentes não consumidas. O prefixo da saída contém os menores elementos, ordenados. Quando uma metade acaba, copia a restante sem novas comparações de chaves. **Escolhe a esquerda na igualdade** para ser estável.
+Divide ao meio, ordena cada metade e junta pelas frentes. Na igualdade, tira da esquerda.
 
 <Estados
-  caption="O merge de duas metades ordenadas escolhe sempre a menor frente."
+  caption="Cada passo compara só as duas frentes disponíveis."
   steps={[
     {
       label: 'Metades',
       values: ['2, 6', '1, 5'],
-      note: 'Escolhe 1, depois 2, depois 5.',
+      note: '1 sai da direita, depois 2 da esquerda.',
     },
     {
       label: 'Resultado',
       values: ['1', '2', '5', '6'],
-      note: 'Copia o 6 restante. Três comparações nesta junção.',
+      note: 'Três comparações; o 6 final copia-se.',
     },
   ]}
 />
 
-A recorrência $T(n)=2T(n/2)+\Theta(n)$ dá $\Theta(n\log n)$ em todos os casos desta implementação. Reutiliza auxiliar de `n` posições; a pilha acrescenta $O(\log n)$.
+Recorrência $T(n)=2T(n/2)+\Theta(n)$ dá $\Theta(n\log n)$. Guarda um auxiliar de `n` e reutiliza-o. Em lista ligada, separa por ligações e intercala sem copiar valores; a pilha fica $O(\log n)$ e `std::list` ordena-se com `lista.sort()`.
 
-Em **listas ligadas**, separa por percurso, ordena cada metade e intercala alterando ligações. A divisão custa $\Theta(n)$ e a junção $O(n)$, dando $\Theta(n\log n)$. A lista temporária só guarda cabeça/tamanho, sem copiar nós; a pilha ocupa $O(\log n)$. Esquerda no empate conserva estabilidade. Para `std::list`, usa `lista.sort()`, pois `std::sort` exige acesso direto.
+## Partir para o quicksort
 
-## Quicksort
+Com pivô `p=v[r-1]` em `[l,r)`:
 
-Na partição de **Lomuto** em `[l,r)`, pivô `p=v[r-1]`:
+1. Varre `j` e mantém menores à esquerda de `i`.
+2. Troca para `i` quando encontra valor menor que `p`.
+3. Põe o pivô em `i` e resolve cada lado.
 
-1. Mantém `[l,i)` com valores `<p` e `[i,j)` com valores `>=p`.
-2. Percorre `j=l,…,r-2`; ao encontrar `<p`, troca com `v[i]` e avança `i`.
-3. Troca o pivô com `v[i]`. Resolve `[l,i)` e `[i+1,r)`.
+Em `[5,2,7,1,4]`, o pivô 4 termina em `[2,1,4,5,7]`. Equilíbrio dá $\Theta(n\log n)$; isolar um de cada vez dá $\Theta(n^2)$. Pivô aleatório com chaves distintas dá $O(n\log n)$ esperado. Todas iguais continuam quadráticas em Lomuto; separa três grupos para evitar esse caso. Hoare devolve fronteira, não posição final do pivô.
 
-`[5,2,7,1,4]` fica `[2,1,4,5,7]` após quatro comparações com 4. A partição fixa o pivô, sem ordenar os lados.
+## Quando não basta comparar
 
-- Partições equilibradas dão $\Theta(n\log n)$; isolar um elemento repetidamente dá $\Theta(n^2)$.
-- Com chaves distintas, pivô uniforme aleatório dá $O(n\log n)$ esperado, mantendo pior caso quadrático.
-- Lomuto com todas as chaves iguais continua quadrático, mesmo com pivô aleatório. Partição em menores/iguais/maiores evita repetir os iguais.
-- Recursar só no lado menor e iterar no maior limita a pilha a $O(\log n)$, mesmo com tempo quadrático.
-- Hoare devolve uma fronteira que pode não ser a posição final do pivô. Não reutilizes os intervalos recursivos de Lomuto.
+- Um comparador válido define uma ordem fraca estrita: `comp(x,x)` é falso, `comp` é transitiva e a equivalência induzida também é transitiva. `<=` e diferenças com overflow falham. Referência: https://eel.is/c++draft/alg.sorting.general .
+- `sort` garante $O(n\log n)$ comparações sem estabilidade. `stable_sort` conserva empates.
+- Comparar tem limite $\Omega(n\log n)$ no pior caso para chaves distintas.
+- Counting com chaves em `[0,k)`: conta, prefixa e distribui da direita para a esquerda. Custa $\Theta(n+k)$.
+- Radix LSD com `d` dígitos de base `b` lê do menos para o mais significativo, sempre com passagem estável. Custa $\Theta(d(n+b))$.
 
-## Comparadores e outros modelos
-
-Uma **ordem fraca estrita** exige `comp(x,x)==false`, transitividade da relação e da equivalência definida por nenhuma direção comparar antes. `<=`, subtração com overflow e tolerâncias não transitivas são inválidos.
-
-Ordenar por nome e depois **estavelmente por nota** conserva nomes ordenados nos empates. Um comparador por nota e depois nome obtém a mesma ordem sem exigir estabilidade.
-
-- `std::sort` em C++17 garante $O(n\log n)$ comparações de pior caso, sem estabilidade. `stable_sort` é estável, com $O(n\log n)$ comparações se tiver memória suficiente, podendo usar $O(n\log^2 n)$ sem ela.
-- Comparações de `n` chaves distintas têm limite inferior de pior caso $\Omega(n\log n)$, pois precisam de distinguir `n!` permutações.
-- **Counting sort**, chaves inteiras em `[0,k)`: conta, calcula prefixos e distribui. Com fronteiras finais, percorre a entrada da direita e reduz cada fronteira para preservar empates. Tempo e auxiliar $\Theta(n+k)$ na versão estável.
-- **Radix LSD:** ordena dígitos do menos para o mais significativo, com passagem estável. `d` dígitos de base `b` custam $\Theta(d(n+b))$. Negativos e comprimentos diferentes precisam de política explícita.
-
-[Traços e implementação completos](/cadeiras/aed/ordenacao/).
+[Exemplos completos](/cadeiras/aed/ordenacao/).

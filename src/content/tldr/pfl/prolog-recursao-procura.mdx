@@ -11,28 +11,29 @@ soma([], 0).
 soma([H|T], S) :- soma(T,R), S is H+R.
 ```
 
-Em `soma(+ListaDeNumeros,-Total)`, a lista é finita e os elementos são números conhecidos. `soma([1,2,3],S)` dá `S=6`; `soma([1,X],6)` não resolve `X`, pois chega a `is` com um operando livre.
+- Em `soma(+ListaDeNumeros,-Total)`, a lista é finita e os elementos são números conhecidos. `soma([1,2,3],S)` dá `S=6`; `soma([1,X],6)` não resolve `X`, pois chega a `is` com um operando livre.
+- `H+R` depois de `is` avalia; depois de `=` é o termo `+(H,R)` por avaliar.
 
-| Operação    | Contrato                                                                       |
-| ----------- | ------------------------------------------------------------------------------ |
-| `X = 2+3`   | Unifica `X` com o termo `+(2,3)`.                                              |
-| `X is 2+3`  | Avalia o lado direito e unifica com `5`.                                       |
-| `5 =:= 2+3` | Avalia ambos os lados e compara números.                                       |
-| `X == Y`    | Testa identidade atual dos termos sem ligar variáveis.                         |
-| `X \= Y`    | Testa se não podem unificar agora; duas variáveis livres fazem o teste falhar. |
+| Operação    | Contrato                                                            |
+| ----------- | ------------------------------------------------------------------- |
+| `X = 2+3`   | Unifica `X` com o termo `+(2,3)`.                                   |
+| `X is 2+3`  | Avalia o lado direito e unifica com `5`.                            |
+| `5 =:= 2+3` | Avalia ambos os lados e compara números.                            |
+| `X == Y`    | Testa a identidade atual dos termos, sem ligar variáveis.           |
+| `X \= Y`    | Testa se não podem unificar agora; com ambas livres, o teste falha. |
 
-Os operandos de `is` e das comparações aritméticas têm de estar conhecidos. `5 == 5.0` falha: inteiro e flutuante são termos diferentes. Uma restrição adiada como `dif/2` tem outro contrato; confirma a disponibilidade no motor usado.
+`5 == 5.0` falha: inteiro e flutuante são termos diferentes. Uma restrição adiada como `dif/2` tem outro contrato; confirma a disponibilidade no motor usado.
 
 ```prolog
 juntar([], Ys, Ys).
 juntar([X|Xs], Ys, [X|Zs]) :- juntar(Xs,Ys,Zs).
 ```
 
-`juntar([a],[b],Z)` constrói `[a,b]`; `juntar(X,Y,[a,b])` dá três divisões, incluindo prefixo e sufixo vazios. Uma relação pode funcionar em vários sentidos; `is` não oferece essa reversibilidade. `member(a,[a,b,a])` tem duas provas, uma por ocorrência.
+`juntar([a],[b],Z)` constrói `[a,b]`; `juntar(X,Y,[a,b])` dá três divisões: `X=[],Y=[a,b]`; `X=[a],Y=[b]`; `X=[a,b],Y=[]`. A mesma relação constrói e decompõe; `is` não oferece essa reversibilidade. `member(a,[a,b,a])` tem duas provas, uma por ocorrência: a base não é um conjunto sem repetições.
 
 ## Acumuladores e terminação
 
-Uma soma com acumulador usa `B is A+X` antes de recursar na cauda. A medida é o comprimento restante, que diminui numa lista finita de números. O acumulador altera a ordem do trabalho, não dispensa o modo esperado nem garante terminação com listas livres.
+Uma soma com acumulador transporta o total parcial com `B is A+X` antes de recursar na cauda. A medida é o comprimento restante, que diminui numa lista finita de números. O acumulador muda a ordem do trabalho; não dispensa o modo esperado nem garante terminação com listas livres.
 
 ## Corte e conjunto de respostas
 
@@ -40,8 +41,8 @@ Uma soma com acumulador usa `B is A+X` antes de recursar na cauda. A medida é o
 
 - `!` elimina escolhas criadas desde a entrada naquele predicado e as suas cláusulas alternativas. Os objetivos à direita ainda podem ter alternativas.
 - Um corte é **verde** se removê-lo conserva as respostas lógicas no contrato considerado; é **vermelho** se as altera.
-- Este máximo é verde para entradas numéricas conhecidas. Ambas as cláusulas têm testes e `maximo(7,5,5)` falha.
-- Se a segunda cláusula fosse apenas `maximo(_,Y,Y)`, remover o corte acrescentaria respostas e o corte seria vermelho. Além disso, `maximo(7,5,5)` poderia saltar a primeira cabeça e dar uma resposta errada.
+- O máximo desta lição é verde para entradas numéricas conhecidas. Ambas as cláusulas têm testes e `maximo(7,5,5)` falha.
+- Se a segunda cláusula fosse só `maximo(_,Y,Y)`, remover o corte acrescentaria respostas e o corte seria vermelho. Além disso, `maximo(7,5,5)` saltaria a primeira cabeça e daria uma resposta errada.
 
 A posição depois de um teste não basta para classificar o corte. Compara respostas com e sem corte e confere também saídas já instanciadas.
 
@@ -52,22 +53,20 @@ A posição depois de um teste não basta para classificar o corte. Compara resp
   alt="a liga a b, que liga a c e d; c e d ligam a e. A ordem dos factos faz explorar c antes de d."
 />
 
-Para procurar um caminho, gera um vizinho `Y`, exige `\+ member(Y,Visitados)` e recursa com `[Y|Visitados]`. Começa com o início já visitado. Neste grafo, DFS encontra `[a,b,c,e]` e depois `[a,b,d,e]`.
+Para procurar um caminho, gera um vizinho `Y`, exige `\+ member(Y,Visitados)` e recursa com `[Y|Visitados]`. Começa com o início já visitado. Neste labirinto, DFS encontra `[a,b,c,e]` e depois `[a,b,d,e]`.
 
-Com estados conhecidos num grafo finito e geração de vizinhos que termina, cada passo acrescenta um estado novo ao caminho, limitando o seu comprimento. A ordem dos factos decide qual caminho aparece primeiro, não qual é mais curto.
+Com estados conhecidos num grafo finito e geração de vizinhos que termina, cada passo acrescenta um estado novo ao caminho e limita o seu comprimento. A ordem dos factos decide qual caminho aparece primeiro, não qual é mais curto.
 
-`findall(T,G,L)` recolhe uma instância de `T` por prova de `G`, conservando repetições. Sem provas dá `[]`; para devolver a lista completa, a enumeração tem de terminar.
+`findall(T,G,L)` recolhe uma instância de `T` por prova de `G`, com repetições. Sem provas dá `[]`; para devolver a lista completa, a enumeração tem de terminar.
 
 O navegador usa SWI-Prolog; a cadeira usa SICStus. `write/1` e `nl/0` são formas de escrita portáteis; bibliotecas e extensões precisam de conferência.
 
 [Modos, aritmética e cortes](/cadeiras/pfl/prolog-recursao-procura/#modos-de-chamada-e-is).
 
-## Âmbito da negação e de «todos»
+## Negar com o candidato instanciado
 
-Para crianças sem irmãos: gera um candidato instanciado único e nega a existência de **qualquer progenitor partilhado com outra criança**. Gerar um progenitor antes da negação só testa aquele progenitor; pode aceitar uma criança que tem meio-irmãos ou repetir a resposta por cada progenitor.
+Para crianças sem irmãos: gera um candidato único e nega a existência de **qualquer progenitor partilhado com outra criança**. Gerar um progenitor antes da negação só testa aquele progenitor: aceita quem tem meio-irmãos ou repete a resposta por progenitor.
 
-Validar todos os ids de uma lista exige que cada um exista e seja permitido. Procurar violações só entre objetos existentes aceita erradamente um id desconhecido, que desaparece do gerador. Uma recursão que valida a cabeça antes da cauda impede isso. O caso vazio é sucesso universal, mas a verificação exterior pode ainda exigir um utilizador registado.
-
-Os contratos usados exigem listas próprias finitas, ids instanciados e enumerações finitas. Negação por falha depende dos factos disponíveis.
+Validar todos os ids de uma lista exige que cada um exista **e** seja permitido. Procurar violações só entre objetos existentes aceita erradamente um id desconhecido, que desaparece do gerador. Uma recursão que valida a cabeça antes da cauda impede isso. O caso vazio é sucesso universal, mas a verificação exterior pode exigir um utilizador registado.
 
 [Progenitor dentro da negação](/cadeiras/pfl/prolog-recursao-procura/#negar-a-existência-de-um-irmão) e [existência de todos os ids](/cadeiras/pfl/prolog-recursao-procura/#exigir-existência-em-cada-elemento-da-lista).

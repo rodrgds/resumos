@@ -1,17 +1,14 @@
 ## Threads e estado partilhado
 
-Uma thread tem a sua pilha de chamadas e pode partilhar objetos com outras threads do processo. Concorrência permite tarefas avançarem em períodos sobrepostos, sem garantir execução paralela.
-
-- `start()` inicia a thread que executará `run()`. Chamar `run()` diretamente executa na thread atual.
-- `join()` espera pelo fim; não inicia a thread. `sleep()` não prova que outra tarefa terminou.
-- `contador++` lê, soma e escreve. Se duas threads lerem 0 antes de escrever, ambas podem escrever 1, perdendo um incremento.
-- `synchronized` protege secções pelo **mesmo monitor** e estabelece visibilidade entre libertação e aquisição desse monitor. Locks distintos não protegem um campo partilhado entre si.
-
-Um método de instância sincronizado usa `this`; um método estático usa o objeto `Class`, pelo que incrementar e consultar o contador exigem uma coordenação coerente. `volatile` dá garantias de visibilidade, mas não torna `valor++` atómico; para um contador isolado, `AtomicInteger.incrementAndGet()` é uma alternativa.
+- Threads do mesmo processo partilham objetos, cada uma com a sua pilha. Concorrência é sobreposição possível, não paralelismo garantido.
+- `start()` executa `run()` noutra thread; chamar `run()` é uma chamada normal. `join()` espera o fim; `sleep()` não sincroniza nada.
+- `contador++` lê, soma e escreve: duas threads podem ler 0 e escrever 1, perdendo um incremento.
+- `synchronized` exclui só pelo **mesmo monitor** e publica alterações entre libertar e adquirir. Método de instância usa `this`, estático usa o `Class`; dois objetos não partilham lock.
+- `volatile` publica leituras e escritas, sem tornar `++` atómico. Para um contador isolado, `AtomicInteger.incrementAndGet()`.
 
 ## Espera e notificação
 
-Sob o monitor que protege a condição, espera enquanto ela não permite avançar:
+Espera sob o monitor que protege a condição:
 
 ```java
 synchronized int retirar() throws InterruptedException {
@@ -23,40 +20,32 @@ synchronized int retirar() throws InterruptedException {
 }
 ```
 
-Este método pertence a uma caixa cujo campo `Integer valor` é também alterado sob o mesmo monitor pelo produtor.
-
-- `wait()` liberta o monitor e suspende; antes de continuar, readquire-o.
-- `notifyAll()` acorda interessados, mas não liberta imediatamente o monitor nem reserva o valor.
-- Dois consumidores podem acordar para um único valor. Depois de o primeiro retirar, o segundo tem de voltar ao `while` e esperar. `if` deixá-lo-ia continuar com a caixa vazia.
-- Uma `BlockingQueue` costuma evitar implementar esta coordenação à mão.
-
-`interrupt()` pede interrupção, não termina à força. Se capturas `InterruptedException` sem a propagar, normalmente restaura o sinal com `Thread.currentThread().interrupt()` e termina coerentemente. Para evitar ciclos de deadlock entre vários locks, adquire-os numa ordem comum e evita operações bloqueantes enquanto os deténs.
+- `wait()` liberta o monitor e suspende; ao acordar, readquire-o. Outra thread pode agir primeiro, por isso o `while` volta a testar. Há também despertares sem notificação.
+- `notifyAll()` acorda interessados sem libertar o monitor nem reservar o valor. Dois consumidores para um valor: o segundo volta a esperar; com `if`, leria `null`.
+- Para este padrão pronto, prefere uma `BlockingQueue`.
+- `interrupt()` pede, não força. Sem propagar `InterruptedException`, repõe o sinal e termina de forma coerente. Vários locks adquirem-se sempre pela mesma ordem; secções curtas, sem I/O dentro.
 
 ## Bytes, texto e fecho
 
-| Tipos                          | Dados tratados                                  |
-| ------------------------------ | ----------------------------------------------- |
-| `InputStream` / `OutputStream` | Bytes.                                          |
-| `Reader` / `Writer`            | Texto.                                          |
-| `InputStreamReader`            | Descodifica bytes com uma codificação definida. |
-| `BufferedReader`               | Acrescenta buffer e leitura por linhas.         |
+| Tipo                           | Trata                                        |
+| ------------------------------ | -------------------------------------------- |
+| `InputStream` / `OutputStream` | Bytes.                                       |
+| `Reader` / `Writer`            | Texto.                                       |
+| `InputStreamReader`            | Bytes para texto, com codificação explícita. |
+| `BufferedReader`               | Buffer e leitura por linhas.                 |
 
-Escolhe UTF-8 explicitamente quando esse é o formato. `readLine()` devolve `null` no fim; uma linha vazia continua a ser uma string. `DataInputStream` lê um formato binário, não números em texto decimal.
-
-`try-with-resources` fecha também quando a leitura ou conversão falha. Fechar o leitor exterior fecha os recursos envolvidos. Recursos de `src/main/resources` podem estar num JAR: usa `getResourceAsStream` e verifica `null`, em vez de assumir um ficheiro normal.
+`readLine()` dá `null` no fim; linha vazia é string. `DataInputStream` lê formato binário, não texto decimal. `try-with-resources` fecha mesmo com exceção; fechar o exterior fecha os envolvidos. Recurso em JAR lê-se com `getResourceAsStream`, verificando `null`.
 
 ## Swing e EDT
 
-A **Event Dispatch Thread** processa eventos e alterações da interface. Um listener demorado bloqueia eventos e redesenho.
+A **Event Dispatch Thread** trata eventos e redesenho. Listener demorado congela a interface.
 
-| Momento            | Thread e tarefa                                                          |
-| ------------------ | ------------------------------------------------------------------------ |
-| Listener           | EDT: cria `SwingWorker`, chama `execute()` e termina.                    |
-| `doInBackground()` | Worker: faz I/O ou cálculo demorado, sem tocar em componentes Swing.     |
-| `done()`           | EDT: obtém o resultado com `get()`, trata falhas e atualiza componentes. |
+| Momento            | Onde   | Tarefa                                      |
+| ------------------ | ------ | ------------------------------------------- |
+| Listener           | EDT    | Cria o worker, `execute()`, termina.        |
+| `doInBackground()` | Worker | I/O ou cálculo, sem tocar em Swing.         |
+| `done()`           | EDT    | `get()`, trata falha, atualiza componentes. |
 
-Chamar `get()` no listener durante o trabalho volta a bloquear. `invokeLater` sozinho só adia o trabalho na EDT.
-
-Usa layout managers. Para desenho personalizado, redefine `paintComponent`, chama `super.paintComponent(g)` e desenha a partir do estado; pede atualização com `repaint()`. `getGraphics()` não mantém um desenho entre redesenhos.
+`get()` no listener bloqueia de novo; `invokeLater` sozinho só adia. Layout managers posicionam; desenho próprio redefine `paintComponent` com `super.paintComponent(g)`, a partir do estado, com `repaint()`. `getGraphics()` não persiste entre redesenhos.
 
 [Exemplos de threads, I/O e Swing](/cadeiras/ldts/java-concorrencia-io-swing/).

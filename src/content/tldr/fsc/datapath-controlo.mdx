@@ -1,20 +1,19 @@
 import Dot from '../../../components/Dot.astro';
 import cpu from '../../fsc/cpu-uniciclo.dot?raw';
 
-## Datapath uniciclo
+## Datapath
 
-O modelo didático suporta `add,sub,and,or,lw,sw,beq`. Cada instrução termina num período; a mais lenta determina o relógio.
+Subconjunto didático: `add,sub,and,or,lw,sw,beq`. Cada instrução termina num período; a mais lenta define o relógio.
 
 <Dot
   source={cpu}
-  alt="PC lê instrução; registos e imediato alimentam ALU; ALU ou memória fornecem o valor escrito no banco."
+  alt="PC lê a instrução; registos e imediato alimentam ALU; ALU ou memória fornecem o valor escrito no banco."
 />
 
-A ALU recebe rs1 e escolhe rs2 ou imediato. O resultado serve de dado para R ou de endereço para lw/sw. Um MUX de writeback escolhe resultado da ALU ou conteúdo da memória.
+- ALU recebe rs1 e escolhe rs2 ou imediato. O resultado escreve R ou endereça lw/sw. MUX de writeback: ALU ou memória.
+- PC seguinte: PC+4 ou **PC da instrução+d**. `PCSrc=Branch AND Zero`; somador separado calcula o alvo. O imediato já sai em bytes.
 
-O PC seguinte é PC+4 ou **PC da instrução+d**. Para beq, `PCSrc=Branch AND Zero`: a ALU compara por subtração enquanto um somador separado calcula o alvo. d já está em bytes.
-
-## Sinais de controlo
+## Sinais
 
 | Classe | RegWrite | ALUSrc | MemRead | MemWrite | MemtoReg | Branch | ALUOp |
 | ------ | -------- | ------ | ------- | -------- | -------- | ------ | ----- |
@@ -23,31 +22,16 @@ O PC seguinte é PC+4 ou **PC da instrução+d**. Para beq, `PCSrc=Branch AND Ze
 | sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
 | beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
 
-ALUSrc=1 escolhe imediato; MemtoReg=1 escolhe memória. X é indiferente porque RegWrite=0 impede escrita, mas uma habilitação de escrita não pode ser arbitrária.
+- ALUSrc=1 usa imediato; MemtoReg=1 usa memória. X onde RegWrite=0 impede a escrita; habilitações de escrita nunca arbitrárias.
+- ALUOp pede a operação (00 soma, 01 subtrai, 10 consulta f3/f7); **ALUControl** é a codificação interna (AND 0000, OR 0001, ADD 0010, SUB 0110).
 
-ALUOp=00 pede ADD, 01 pede SUB para comparar e 10 consulta f3/f7. **ALUOp não é ALUControl**, que neste modelo codifica AND=0000, OR=0001, ADD=0010 e SUB=0110.
+## Diagnóstico
 
-## Efeitos e diagnóstico
+`lw x5,12(x8)` com x8=`0x10010000` e 42 no destino: ALU dá `0x1001000C`, MemtoReg=1 escreve **42**.
 
-`lw x5,12(x8)`, com x8=`0x10010000` e memória contendo 42 no destino, calcula `0x1001000C` e escreve **42** em x5 no flanco. `sw` usa a mesma soma, mas escreve o dado da segunda leitura do banco.
+- MemtoReg preso em 0: load escreve o endereço. Testa com conteúdo diferente do endereço.
+- Leitura 2 presa: afeta R, sw, beq; lw não a usa. PCSrc preso em 0: só falha o branch tomado. RegWrite em 0: R e lw calam.
+- `addi`: ALUSrc=1, ALUOp=00, MemtoReg=0, RegWrite=1. `jalr` precisa de caminho para PC+4 e destino da ALU com bit 0 limpo.
+- CPI=1 não garante rapidez: o período é o do load.
 
-- MemtoReg preso em 0 faz lw escrever endereço. Um teste deve usar conteúdo diferente do endereço.
-- Segunda leitura presa em 0 pode afetar R, sw e beq; lw não usa essa leitura.
-- PCSrc preso em 0 só é detetado por um branch que deveria ser tomado.
-- RegWrite preso em 0 afeta R e lw; não impede necessariamente sw e beq.
-
-`addi` reutiliza os caminhos com ALUSrc=1, ALUOp=00, MemtoReg=0 e RegWrite=1. `jalr` exige caminhos para PC+4 no writeback e destino da ALU com bit 0 limpo.
-
-## Extensão para jalr
-
-A ALU soma rs1 antigo ao imediato I com sinal: ALUSrc=1, ALUOp=00. Acrescenta um MUX de writeback que seleciona PC+4 com Link=1 e um MUX de PC que seleciona a saída da ALU com bit 0 limpo com JumpReg=1.
-
-RegWrite=1; MemRead=MemWrite=Branch=0. MemtoReg e o PCSrc antigo são indiferentes, pois os novos MUX ignoram essas saídas. Nas instruções anteriores, Link=JumpReg=0 conserva os caminhos. ImmGen e o descodificador também têm de reconhecer jalr.
-
-Sem instruções comprimidas, o destino ainda tem de ser múltiplo de 4. Limpar bit 0 não limpa bit 1. [Ligações e controlo](/cadeiras/fsc/datapath-controlo/#acrescentar-jalr).
-
-## Período
-
-O load normalmente percorre instrução → banco → ALU → memória → setup. Soma atrasos em série e inclui MUX se tiverem atraso atribuído. CPI=1 não garante execução mais rápida se o período for longo.
-
-[Seguir um load completo](/cadeiras/fsc/datapath-controlo/#seguir-um-load-completo).
+[Load completo](/cadeiras/fsc/datapath-controlo/#seguir-um-load-completo).

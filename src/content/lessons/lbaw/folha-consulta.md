@@ -94,43 +94,54 @@ editorial:
 
 ## HTTP, arquitetura e segurança
 
-| Mecanismo                | Fixar                                                                                                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GET/HEAD                 | Seguros e idempotentes.                                                                                      |
-| PUT/DELETE               | Idempotentes; respostas repetidas podem diferir.                                                             |
-| POST/PATCH               | Idempotência não garantida pelo método.                                                                      |
-| 401 / 403                | Autenticação necessária / operação recusada.                                                                 |
-| 303 / 304                | Redirecionar para GET / representação em cache válida.                                                       |
-| no-cache / no-store      | Guardar com validação / pedir que não se guarde.                                                             |
-| Sessão                   | Identificador opaco no cliente; regenerar após autenticar.                                                   |
-| HttpOnly                 | Impede leitura do cookie por JavaScript; não impede todas as ações de XSS.                                   |
-| Origem                   | Esquema, host e porta. CORS não é autenticação nem proteção completa CSRF.                                   |
-| MVC                      | Controlador coordena; modelo representa dados; vista produz representação; middleware e policies participam. |
-| auth / policy / validate | Identidade / permissão sobre operação e objeto / domínio dos dados.                                          |
-| fillable                 | Atribuição em massa, não autorização.                                                                        |
-| N+1                      | Uma consulta inicial e uma por objeto; considerar eager loading.                                             |
-| PHP                      | Variável de função é local; global é explícito. fn captura variáveis exteriores por valor.                   |
-| SQL injection            | Parâmetros para valores; lista autorizada para identificadores.                                              |
-| XSS                      | Codificação por contexto ou sanitização de HTML permitido.                                                   |
-| CSRF                     | Token verificado no servidor e defesas complementares. POST sozinho não chega.                               |
-| Palavra-passe            | Hash próprio com salt e custo; password_verify, sem recuperar o original.                                    |
+| Mecanismo                | Fixar                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| GET/HEAD                 | Seguros e idempotentes.                                                                                            |
+| PUT/DELETE               | Idempotentes; respostas repetidas podem diferir.                                                                   |
+| POST/PATCH               | Idempotência não garantida pelo método.                                                                            |
+| 401 / 403                | Autenticação necessária / operação recusada.                                                                       |
+| 303 / 304                | Redirecionar para GET / representação em cache válida.                                                             |
+| no-cache / no-store      | Guardar com validação / pedir que não se guarde.                                                                   |
+| Sessão                   | Identificador opaco no cliente; regenerar após autenticar.                                                         |
+| HttpOnly                 | Impede leitura do cookie por JavaScript; não impede todas as ações de XSS.                                         |
+| Origem                   | Esquema, host e porta. CORS não é autenticação nem proteção completa CSRF.                                         |
+| MVC                      | Controlador coordena; modelo representa dados; vista produz representação; middleware e policies participam.       |
+| auth / policy / validate | Identidade / permissão sobre operação e objeto / domínio dos dados.                                                |
+| fillable                 | Atribuição em massa, não autorização.                                                                              |
+| N+1 / `@can` em ciclo    | Uma consulta inicial e uma por objeto; antecipa relações ou avalia a decisão fora do ciclo.                        |
+| PHP                      | Variável de função é local; global é explícito. fn captura variáveis exteriores por valor.                         |
+| SQL injection            | Parâmetros para valores; lista autorizada para identificadores.                                                    |
+| XSS                      | Codificação por contexto ou sanitização de HTML permitido.                                                         |
+| CSRF                     | Token verificado no servidor e defesas complementares. POST sozinho não chega; `Lax` não cobre escritas por `GET`. |
+| Palavra-passe            | Hash próprio com salt e custo; password_verify, sem recuperar o original.                                          |
 
 [HTTP](/cadeiras/lbaw/http-estado/), [Laravel](/cadeiras/lbaw/aplicacao-laravel/) e [segurança](/cadeiras/lbaw/seguranca-web/).
 
 ## Informação, cliente e NoSQL
 
-- Arquitetura de informação: organização, rótulos, navegação e pesquisa. Sitemap descreve estrutura; wireframe a página; wireflow liga esboços pelos controlos que iniciam transições; protótipo permite experimentar.
-- Navegação global, local e contextual. Personalização usa um modelo; customização dá controlo explícito.
-- Tab percorre focáveis, não todos os títulos. Rótulos, erros e foco têm de ser reconhecíveis.
-- Leitor de ecrã apresenta voz ou braille e navega pela estrutura semântica. nav, títulos e cabeçalhos de tabela transmitem papéis.
-- CSS: li.destaque é o próprio li com a classe; li .destaque é um descendente. Espaço, > e + significam descendente, filho e irmão seguinte.
-- JavaScript: var tem âmbito de função, let/const de bloco. Modo estrito recusa atribuir a nomes não declarados. const não congela objetos.
-- fetch pode resolver com erro HTTP; verificar ok/status. Respostas podem chegar fora de ordem.
-- AJAX atualiza partes da página sem recarga completa; HTML, JSON e XML são contratos possíveis. Escolher text()/json() pelo corpo.
-- Medir percurso completo. Latência e throughput diferem; média e percentis também.
-- NoSQL inclui modelos diferentes. Documentos embebidos aproximam leituras; referências evitam certas duplicações.
-- Atomicidade de um documento não implica atomicidade de vários. Verificar sistema e versão.
-- CAP: durante partição, há conflito entre as garantias definidas de consistência forte e disponibilidade; não é «escolher duas» sem contexto.
+| Conceito de IA         | Fixar                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| Organização            | Agrupar, rotular, navegar e pesquisar. Sitemap descreve a estrutura; wireframe, a página.     |
+| Wireflow               | Liga esboços pelos controlos que iniciam transições; protótipo permite experimentar.          |
+| Navegação              | Global, local e contextual. Personalização usa um modelo; customização dá controlo explícito. |
+| Teste com utilizadores | Observar tarefas reais; distinguir o que a pessoa diz do que consegue fazer.                  |
+
+| Cliente web    | Fixar                                                                                                                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Teclado        | Tab percorre focáveis, não todos os títulos. Rótulos, erros e foco têm de ser reconhecíveis.                                           |
+| Leitor de ecrã | Apresenta voz ou braille e navega pela estrutura semântica; nav e cabeçalhos transmitem papéis.                                        |
+| CSS            | `li.destaque` é o próprio li com a classe; `li .destaque` é um descendente. Espaço, `>` e `+` são descendente, filho e irmão seguinte. |
+| JavaScript     | `var` tem âmbito de função, `let`/`const` de bloco. Modo estrito recusa atribuir a nomes não declarados; `const` não congela objetos.  |
+| fetch          | Pode resolver com erro HTTP; verifica `ok`/estado. Respostas podem chegar fora de ordem.                                               |
+| AJAX           | Atualiza partes da página sem recarga completa; HTML, JSON e XML são contratos possíveis. Escolhe `text()`/`json()` pelo corpo.        |
+| Medição        | Mede o percurso completo. Latência e débito (throughput) diferem; média e percentis também.                                            |
+
+| Armazenamento NoSQL | Fixar                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Documentos          | Embebidos aproximam leituras; referências evitam certas duplicações.                                                                       |
+| Atomicidade         | A de um documento não implica a de vários. Verifica sistema e versão.                                                                      |
+| CAP                 | Durante partição, há conflito entre as garantias de consistência forte e disponibilidade; não é «escolher duas» sem contexto.              |
+| Cópia histórica     | Preço pago registado na compra permanece após mudança do preço atual; decide por campo se o valor acompanha mudanças ou preserva contexto. |
 
 [Informação](/cadeiras/lbaw/interfaces-acessiveis/), [desempenho](/cadeiras/lbaw/cliente-desempenho/) e [NoSQL](/cadeiras/lbaw/nosql/).
 

@@ -1,26 +1,13 @@
 import Typst from '../../../components/Typst.astro';
 import slicing from '../../p/slicing.typ?raw';
 
-## Herança pública e substituição
-
-`class Promocao : public Produto` inclui um subobjeto `Produto` e permite usar apontadores ou referências à base. A derivada tem de respeitar o contrato da base. Para uma relação "tem um", usa composição; partilhar código não basta para justificar herança.
-
-Membros privados da base continuam inacessíveis diretamente à derivada. Na herança pública, membros públicos continuam públicos e protegidos continuam protegidos. Herança privada ou protegida não oferece a mesma substituição pública.
-
-## Despacho virtual e slicing
-
-- O **tipo estático** vem da declaração, como `const Produto&`.
-- O **tipo dinâmico** é o do objeto concreto referido, como `Promocao`.
-- Uma chamada virtual pela base seleciona a implementação do tipo dinâmico. Sem `virtual`, usa a função correspondente ao tipo estático.
+## Referência ou cópia?
 
 ```cpp
 Promocao promocao(100.0, 0.25);
-const Produto& referencia = promocao;
-Produto copia = promocao;
-// referencia.total() dá 75; copia.total() dá 100.
+const Produto& referencia = promocao;  // total() = 75
+Produto copia = promocao;              // total() = 100, só a base
 ```
-
-O exemplo pressupõe preço não negativo e desconto entre `0` e `1`: `100 * (1 - 0.25) == 75`.
 
 <Typst
   source={slicing}
@@ -28,32 +15,31 @@ O exemplo pressupõe preço não negativo e desconto entre `0` e `1`: `100 * (1 
   alt="A promoção devolve 75. Uma referência Produto conserva esse resultado; uma cópia Produto contém só a base e devolve 100."
 />
 
-Construir ou passar por valor como base faz **slicing**, conservando só a parte base. `virtual` escolhe pelo objeto que existe; não recupera a parte cortada. `vector<Produto>` também guarda apenas objetos base. Para preservar objetos polimórficos, observa por referência ou apontador e possui através de donos polimórficos.
+- Tipo estático vem da declaração. Tipo dinâmico é o objeto concreto.
+- Virtual por referência ou apontador escolhe pelo tipo dinâmico.
+- Copiar para a base faz slicing. O `virtual` não recupera a parte cortada.
+- `vector<Produto>` guarda bases. Para polimorfismo, usa referências ou `vector<unique_ptr<Forma>>`.
 
-## override e classes abstratas
+Herança pública exige respeitar o contrato da base. Código comum não basta.
+Uma relação tem-um usa composição.
+
+## Assinaturas e destruição
 
 ```cpp
 class Forma {
 public:
     virtual ~Forma() = default;
-    virtual double area() const = 0;
+    virtual double area() const = 0;  // pura, classe abstrata
 };
 ```
 
-`= 0` declara uma virtual pura e torna a classe abstrata. Uma classe concreta implementa todas as operações puras necessárias.
+- `override` manda o compilador conferir. `double area()` não substitui `double area() const`.
+- Chamada qualificada `obj.Base::f()` escolhe a base.
+- Em construção e destruição, o despacho não alcança a parte ainda não construída ou já destruída.
+- Destruir derivada por `Base*` exige destrutor virtual. Vale para `unique_ptr<Base>`.
 
-Usa `override` nas derivadas para o compilador verificar a assinatura: `double area()` não substitui `double area() const`, e sem `override` pode criar outra função e deixar as chamadas pela base com o comportamento antigo. Sobrecarga escolhe assinaturas; substituição virtual escolhe implementações herdadas.
+A construção segue base, membros por declaração e corpo. A destruição corre
+o corpo do destrutor e depois destrói membros e bases pela ordem inversa.
+Exemplo de áreas: `3x4` mais quadrado `5` dá `12 + 25 = 37`.
 
-Uma chamada qualificada, como `promocao.Produto::total()`, escolhe a base. Durante construção e destruição, o despacho não chega a partes derivadas ainda não construídas ou já destruídas.
-
-## Propriedade e destruição
-
-`vector<unique_ptr<Forma>>` conserva as formas concretas e gere a sua vida. No exemplo, um retângulo `3 × 4` e um quadrado de lado `5` somam áreas `12 + 25 == 37`. O ciclo usa `const auto&` porque `unique_ptr` não se copia.
-
-Para destruir uma derivada através de `Base*`, a base precisa de destrutor virtual. Isto vale também para `unique_ptr<Base>` com o deleter habitual; sem essa condição, a destruição tem comportamento indefinido.
-
-A construção faz base, membros pela ordem de declaração e corpo da derivada. A destruição inverte essa ordem. A derivada inicializa a base pelo construtor da base.
-
-Um quadrado não substitui um retângulo cuja interface permite alterar largura e altura independentemente, pois tem de as manter iguais. Ambos podem implementar `Forma` conservando invariantes próprios.
-
-[Exemplo completo de formas](/cadeiras/p/heranca-polimorfismo/#classes-abstratas).
+[Formas completas](/cadeiras/p/heranca-polimorfismo/#classes-abstratas).

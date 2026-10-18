@@ -1,83 +1,97 @@
-## Fórmulas e conetivas
+import Typst from '../../../components/Typst.astro';
+import karnaughAbc from '../../md/karnaugh-abc.typ?raw';
 
-Uma proposição tem valor $T$ ou $F$. As fórmulas constroem-se a partir de variáveis proposicionais, negação e conetivas binárias. A conetiva principal é a última aplicada na árvore sintática.
+## Fórmulas
 
-A precedência é $\neg$, $\land$, $\lor$, $\to$. A implicação associa à direita: $p\to q\to r=p\to(q\to r)$.
+- Uma proposição vale $T$ ou $F$. Uma fórmula usa variáveis, $\neg$ e conetivas binárias. A conetiva principal é a última da árvore sintática.
+- Precedência: $\neg$, depois $\land$, depois $\lor$, depois $\to$. A implicação associa à direita: $p\to q\to r$ é $p\to(q\to r)$.
 
-| Conetiva             | Condição de verdade                          |
-| -------------------- | -------------------------------------------- |
-| $\neg p$             | $p$ é falsa                                  |
-| $p\land q$           | Ambas são verdadeiras                        |
-| $p\lor q$            | Pelo menos uma é verdadeira, incluindo ambas |
-| $p\to q$             | Só é falsa com $p=T,q=F$                     |
-| $p\leftrightarrow q$ | Os valores coincidem                         |
+| Conetiva             | Vale $T$ quando      |
+| -------------------- | -------------------- |
+| $\neg p$             | $p$ é $F$            |
+| $p\land q$           | ambas são $T$        |
+| $p\lor q$            | pelo menos uma é $T$ |
+| $p\to q$             | não tens $p=T,q=F$   |
+| $p\leftrightarrow q$ | os valores coincidem |
 
-- "$p$ só se $q$" é $p\to q$, com $q$ necessária para $p$.
-- "$p$ se $q$" é $q\to p$, com $q$ suficiente para $p$.
-- "Exatamente uma" é $(p\lor q)\land\neg(p\land q)$.
+A disjunção é inclusiva. A expressão "exatamente uma" precisa de $(p\lor q)\land\neg(p\land q)$.
 
-## Atribuições e consequência
+## Implicações derivadas
 
-Uma atribuição escolhe um valor para cada variável. Para $n$ variáveis distintas há $2^n$ atribuições, mesmo que alguma se repita na fórmula.
+Para $p\to q$, com $q$ necessária para $p$:
 
-| Classificação | Atribuições em que é verdadeira |
-| ------------- | ------------------------------- |
-| Tautologia    | Todas                           |
-| Satisfazível  | Pelo menos uma                  |
-| Contradição   | Nenhuma                         |
-| Contingente   | Algumas, mas não todas          |
+| Nome           | Forma             | Relação com a original |
+| -------------- | ----------------- | ---------------------- |
+| Recíproca      | $q\to p$          | não equivale           |
+| Inversa        | $\neg p\to\neg q$ | equivale à recíproca   |
+| Contrapositiva | $\neg q\to\neg p$ | equivale à original    |
 
-$\Gamma\models\varphi$ exige que **toda atribuição que satisfaz todas as premissas** satisfaça a conclusão. Um contraexemplo torna todas as premissas verdadeiras e a conclusão falsa. Para $p\to q,q\models p$, serve $p=F,q=T$.
+"Se" marca a condição suficiente; "só se" marca a condição necessária. Afirmar o consequente troca a original pela recíproca. Com $p$ para "há autorização" e $r$ para "a porta abre", ver a porta aberta não prova a autorização: outra abertura também satisfaz $p=F$, $r=T$.
 
-Premissas insatisfazíveis implicam semanticamente qualquer conclusão. Para $\Gamma$ finito, testa a insatisfazibilidade de $(\bigwedge_{\psi\in\Gamma}\psi)\land\neg\varphi$.
+## Atribuições
 
-Se $\Gamma\models\theta$ e $\Gamma\subseteq\Sigma$, então $\Sigma\models\theta$: acrescentar premissas reduz as atribuições relevantes. Retirar premissas ou intersectar dois conjuntos que implicam $\theta$ pode perder a consequência. $\{p\}$ e $\{q\}$ implicam $p\lor q$, mas a sua interseção vazia não implica.
+- Uma atribuição escolhe $T$ ou $F$ para cada variável. Com $n$ variáveis distintas há $2^n$ linhas.
+- Uma tautologia é $T$ em todas. Satisfazível é $T$ em alguma. Uma contradição é $F$ em todas. Contingente tem $T$ e $F$.
+- $\Gamma\models\varphi$ exige que toda a linha com todas as premissas $T$ dê conclusão $T$. Um contraexemplo tem as premissas $T$ e a conclusão $F$, por exemplo $p=F,q=T$ contra $p\to q,q\models p$.
+- Para $\Gamma$ finito, testa se $(\bigwedge_{\psi\in\Gamma}\psi)\land\neg\varphi$ é insatisfazível.
+- Juntar premissas preserva a consequência. Retirar premissas ou intersectar dois conjuntos que implicam $\theta$ pode perder $\theta$.
 
-## Equivalências
+## Equivalências úteis
 
-$\varphi\Leftrightarrow\psi$ significa igual valor em todas as atribuições. O bicondicional $\varphi\leftrightarrow\psi$ é uma fórmula, tautológica nesse caso.
+$\varphi\Leftrightarrow\psi$ compara valores em todas as linhas. $\varphi\leftrightarrow\psi$ é fórmula, tautológica nesse caso.
 
-$$
-p\to q\Leftrightarrow\neg p\lor q
-\Leftrightarrow\neg q\to\neg p.
-$$
-
-$$
-\neg(p\land q)\Leftrightarrow\neg p\lor\neg q,\qquad
-\neg(p\lor q)\Leftrightarrow\neg p\land\neg q.
-$$
-
-Conjunção e disjunção são comutativas, associativas e idempotentes; cada uma distribui-se sobre a outra. A absorção dá $p\land(p\lor q)\Leftrightarrow p$ e $p\lor(p\land q)\Leftrightarrow p$. A implicação não é comutativa.
+- $p\to q\Leftrightarrow\neg p\lor q\Leftrightarrow\neg q\to\neg p$.
+- $\neg(p\land q)\Leftrightarrow\neg p\lor\neg q$.
+- $\neg(p\lor q)\Leftrightarrow\neg p\land\neg q$.
+- Conjunção e disjunção são comutativas, associativas e idempotentes; distribuem-se uma sobre a outra.
+- Absorção: $p\land(p\lor q)\Leftrightarrow p$ e $p\lor(p\land q)\Leftrightarrow p$.
 
 ## Formas normais
 
-Um **literal** é uma variável ou a sua negação. Na forma normal negativa só usamos $\land,\lor,\neg$, com negações apenas em literais.
+Um literal é uma variável ou a sua negação.
 
-| Forma | Estrutura                           | Construção pela tabela                                        |
-| ----- | ----------------------------------- | ------------------------------------------------------------- |
-| FND   | Disjunção de conjunções de literais | Usa linhas verdadeiras. Cada termo é verdadeiro na sua linha. |
-| FNC   | Conjunção de disjunções de literais | Usa linhas falsas. Cada cláusula é falsa na sua linha.        |
+| Forma | Estrutura               | Como obter da tabela        |
+| ----- | ----------------------- | --------------------------- |
+| FND   | disjunção de conjunções | uma conjunção por linha $T$ |
+| FNC   | conjunção de disjunções | uma cláusula por linha $F$  |
 
-Na FND, usa a variável quando a linha tem $T$ e a negação quando tem $F$. Na FNC, inverte esses sinais. Um literal sozinho também pode ser um termo ou cláusula.
+1. Na FND, cada termo usa a variável se a linha tem $T$ e a negação se tem $F$.
+2. Na FNC, inverte os sinais para a cláusula ser $F$ nessa linha.
+3. Um literal isolado também serve como termo ou cláusula.
 
-Exemplo:
+Exemplo para $\neg(p\to(q\land r))$:
 
 $$
-\neg(p\to(q\land r))\Leftrightarrow
-p\land(\neg q\lor\neg r)\Leftrightarrow
-(p\land\neg q)\lor(p\land\neg r).
+p\land(\neg q\lor\neg r)\Leftrightarrow(p\land\neg q)\lor(p\land\neg r).
 $$
 
-A expressão intermédia é FNC; a última é FND.
+A primeira é FNC; a segunda é FND. Uma FND com um termo sem literais opostos já é satisfazível. Uma FNC só é tautologia se cada cláusula tem $p$ e $\neg p$.
 
-- Uma FND é satisfazível se algum termo não contém literais opostos.
-- Uma FNC é tautológica se cada cláusula contém um literal e a sua negação.
-- Cláusulas satisfazíveis separadamente não garantem uma FNC satisfazível: $p\land\neg p$ falha.
+## Karnaugh
 
-## Completude de conetivas
+1. Ordena colunas em Gray, por exemplo $BC=00,01,11,10$. Células vizinhas diferem numa variável; bordas opostas contam como vizinhas.
+2. Marca $1$ nas linhas verdadeiras.
+3. Agrupa uns em retângulos de $1,2,4$ ou $8$ células.
+4. Cada grupo elimina as variáveis que mudam dentro dele.
 
-Um conjunto é completo se representa qualquer função de verdade. Há $2^{2^n}$ funções de $n$ variáveis.
+<Typst
+  source={karnaughAbc}
+  format="svg"
+  alt="Mapa de Karnaugh com linhas A 0 e 1 e colunas BC 00, 01, 11 e 10. Valores 1, 1, 0, 0 em cima e 1, 1, 0, 1 em baixo. Um bloco marca B igual a 0; um par marca A igual a 1 com C igual a 0, com vizinhança pela borda."
+/>
 
-$\{\neg,\land,\lor\}$ é completo pela FND. $\{\neg,\to\}$ também: $p\lor q\Leftrightarrow\neg p\to q$ e $p\land q\Leftrightarrow\neg(p\to\neg q)$. Só $\{\land,\lor\}$ não chega, pois todas as suas fórmulas dão $T$ com todas as variáveis em $T$.
+Aqui, $B=0$ dá um bloco de quatro células; $A=1,C=0$ dá o par $100,110$, vizinho pela borda, com sobreposição em $100$. O resultado é $\neg B\lor(A\land\neg C)$, com 2 NOT, 1 AND e 1 OR binários.
 
-[Tabelas, árvores sintáticas e formas normais](/cadeiras/md/logica-proposicional/).
+Um termo incompleto cobre várias linhas. O termo $\neg B\land\neg C$ cobre $000$ e $100$; só um mintermo com as três variáveis cobre uma linha.
+
+## Portas NAND
+
+$P\uparrow Q=\neg(P\land Q)$. Só $\uparrow$ chega para todas as funções:
+
+1. $\neg P\Leftrightarrow P\uparrow P$.
+2. $P\land Q\Leftrightarrow(P\uparrow Q)\uparrow(P\uparrow Q)$.
+3. $P\lor Q\Leftrightarrow(P\uparrow P)\uparrow(Q\uparrow Q)$.
+
+Para o exemplo acima, a forma explícita com três NAND binários é $B\uparrow(A\uparrow(C\uparrow C))$. A porta NOR com $P\downarrow Q=\neg(P\lor Q)$ também é completa sozinha.
+
+[Formas normais e mapas de Karnaugh](/cadeiras/md/logica-proposicional/#circuitos-mapas-de-karnaugh-e-portas-nand).

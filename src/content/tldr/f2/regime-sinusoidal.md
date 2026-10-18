@@ -1,6 +1,6 @@
 ## Fasores e impedâncias
 
-O regime permanente sinusoidal pressupõe circuito linear, invariante no tempo e transitório que decai. Usa uma frequência de cada vez.
+O regime permanente sinusoidal pressupõe circuito linear, invariante no tempo e transitório que decai. Um LC livre ideal com energia inicial oscila sem assentar; distingue resposta livre, resposta forçada e ressonância. Usa uma frequência de cada vez.
 
 Para $u(t)=U_m\cos(\omega t+\phi)$, o fasor de pico é $\underline U=U_me^{j\phi}$, com $j^2=-1$. Recupera $u(t)=\Re\{\underline Ue^{j\omega t}\}$. Um seno passa a cosseno subtraindo $\pi/2$ à fase; amplitude negativa passa a positiva acrescentando $\pi$.
 

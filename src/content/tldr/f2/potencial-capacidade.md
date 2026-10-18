@@ -32,7 +32,7 @@ $$
 W_C=\frac12Cu^2=\frac{q^2}{2C}=\frac12qu.
 $$
 
-Em série, $2$ e $3\,\mathrm{\mu F}$ a $10\,\mathrm V$ dão $C_{\rm eq}=1{,}2\,\mathrm{\mu F}$, carga $12\,\mathrm{\mu C}$ e tensões $6$ e $4\,\mathrm V$.
+Em série, $2$ e $3\,\mathrm{\mu F}$ a $10\,\mathrm V$ dão $C_{\rm eq}=1{,}2\,\mathrm{\mu F}$ e carga $12\,\mathrm{\mu C}$. [Ver associações](/cadeiras/f2/potencial-capacidade/#associações-e-energia).
 
 Ao passar de $d$ para $2d$, com área e dielétrico fixos e bordos desprezados, $C$ passa a $C/2$:
 

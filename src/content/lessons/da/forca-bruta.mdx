@@ -10,17 +10,15 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import programa from '../../da/subvetor.cpp?raw';
 
-No vetor `[-4, 3, -1, 5, -6, 2]`, queremos encontrar o bloco contíguo de maior soma. Podemos enumerar cada início e cada fim, calcular a soma e guardar o melhor. A **força bruta** compara todos os candidatos válidos; a prova de correção depende de nenhum ficar por gerar.
+No vetor `[-4, 3, -1, 5, -6, 2]`, o bloco contíguo de maior soma não é o conjunto dos positivos. Somar todos os positivos dá 10, mas esses elementos estão separados por negativos e não formam um intervalo. O melhor intervalo é `[3, -1, 5]`, com soma 7. Para garantir esse resultado por força bruta, enumeramos cada início e cada fim, calculamos a soma e guardamos o melhor.
 
-O custo depende da quantidade de candidatos e do trabalho para avaliar cada um. Enumerar intervalos dá custo polinomial; enumerar todos os subconjuntos dá $2^n$ candidatos. Em entradas pequenas, a enumeração também serve para conferir um algoritmo mais rápido.
+A **força bruta** compara todos os candidatos válidos. A prova de correção tem duas partes: mostrar que nenhum candidato fica por gerar e mostrar que a validade é testada antes de comparar valores. O custo depende da quantidade de candidatos e do trabalho para avaliar cada um. Enumerar intervalos dá um custo polinomial. Enumerar todos os subconjuntos dá $2^n$ candidatos. Em entradas pequenas, a mesma enumeração serve para conferir um algoritmo mais rápido.
 
 ## Subvetor de soma máxima
 
-Dado um vetor $A$ de $n$ inteiros, procuramos um intervalo **contíguo e não vazio** $A[i..j]$ de soma máxima. Não podemos saltar elementos. Esta condição distingue o problema de escolher um subconjunto.
+Dado um vetor $A$ com $n$ inteiros, procuramos um intervalo **contíguo e não vazio** $A[i..j]$ de soma máxima. A condição de contiguidade distingue este problema de escolher um subconjunto qualquer.
 
-No vetor `[-4, 3, -1, 5, -6, 2]`, o intervalo `[3, -1, 5]` tem soma 7. Somar apenas os positivos daria 10, mas esses elementos não formam um intervalo contíguo.
-
-Há $n(n+1)/2$ intervalos. Se recalcularmos cada soma com um terceiro ciclo, o custo é $\Theta(n^3)$. Fixando o início $i$, podemos começar `soma=0` e acrescentar $A[j]$ à medida que avançamos o fim $j$. Cada intervalo passa a ser avaliado com uma adição:
+Há $n(n+1)/2$ intervalos, um por cada par $i\le j$. A forma direta recalcula cada soma com um terceiro ciclo e custa $\Theta(n^3)$. Podemos fixar o início $i$, começar com `soma=0` e acrescentar $A[j]$ à medida que o fim $j$ avança. Cada intervalo passa a ser avaliado com uma adição:
 
 ```text
 melhor = A[0]
@@ -32,9 +30,9 @@ para i = 0 até n-1:
             guardar soma, i e j
 ```
 
-O custo passa a $\Theta(n^2)$ e a memória auxiliar é $\Theta(1)$. Antes de avaliar $j$, `soma` é a soma de $A[i..j]$, e como os dois ciclos visitam todos os pares $i\le j$, nenhum intervalo fica por avaliar.
+Antes de avaliar $j$, `soma` é a soma de $A[i..j]$. Como os dois ciclos visitam todos os pares $i\le j$, nenhum intervalo fica por avaliar. O custo passa a $\Theta(n^2)$ tempo e $\Theta(1)$ memória auxiliar.
 
-O programa lê `n` e os elementos, devolvendo soma e extremos com índices a partir de zero. Em empate conserva o primeiro intervalo visitado. Aceita de 1 a 2000 valores, cada um entre menos um milhão e um milhão.
+O programa lê `n` e os elementos, e devolve soma e extremos com índices a partir de zero. Em empate conserva o primeiro intervalo visitado. Aceita de 1 a 2000 valores, cada um entre menos um milhão e um milhão.
 
 <CodePlayground
   language="cpp"
@@ -43,13 +41,13 @@ O programa lê `n` e os elementos, devolvendo soma e extremos com índices a par
   input={'6\n-4 3 -1 5 -6 2'}
 />
 
-Experimenta `3\n-8 -2 -5`: a resposta deve ser $-2$, intervalo $[1,1]$. Inicializar o melhor a zero devolveria um intervalo vazio que o problema não permite. Mais adiante resolveremos o mesmo problema por [divisão e conquista](/cadeiras/da/divisao-conquista/#subvetor-que-atravessa-o-meio) e por [programação dinâmica](/cadeiras/da/programacao-dinamica/#o-subvetor-m%C3%A1ximo-em-tempo-linear).
+Experimenta `3\n-8 -2 -5`. A resposta deve ser $-2$, intervalo $[1,1]$. Inicializar o melhor a zero devolveria um intervalo vazio que o enunciado não permite. O mesmo problema reaparece por [divisão e conquista](/cadeiras/da/divisao-conquista/#subvetor-que-atravessa-o-meio) e por [programação dinâmica](/cadeiras/da/programacao-dinamica/#o-subvetor-m%C3%A1ximo-em-tempo-linear), com estados diferentes e custos menores.
 
 ## Subconjuntos e mochila 0-1
 
-Com $n$ objetos, cada um tem duas decisões: incluir ou excluir. Existem $2^n$ subconjuntos, incluindo o vazio. Na mochila 0-1, um candidato é válido quando a soma dos pesos não excede $W$; o objetivo é maximizar a soma dos valores. Cada objeto pode aparecer uma única vez.
+Com $n$ objetos, cada objeto tem duas decisões: incluir ou excluir. Existem $2^n$ subconjuntos, incluindo o vazio. Na mochila 0-1, um candidato é válido quando a soma dos pesos não excede a capacidade $W$. O objetivo é maximizar a soma dos valores. Cada objeto pode aparecer uma única vez.
 
-Considera capacidade 7 e objetos $A=(2,3)$, $B=(3,4)$, $C=(4,5)$ e $D=(5,8)$, onde cada par é `(peso, valor)`. Alguns candidatos são:
+Considera capacidade 7 e objetos $A=(2,3)$, $B=(3,4)$, $C=(4,5)$ e $D=(5,8)$, onde cada par é `(peso, valor)`:
 
 | Subconjunto | Peso | Valor | Válido?    |
 | ----------- | ---- | ----- | ---------- |
@@ -60,34 +58,36 @@ Considera capacidade 7 e objetos $A=(2,3)$, $B=(3,4)$, $C=(4,5)$ e $D=(5,8)$, on
 | $C,D$       | 9    | 13    | Não        |
 | $A,B,C$     | 9    | 12    | Não        |
 
-Uma máscara de $n$ bits representa um subconjunto; a recursão com peso e valor acumulados representa o mesmo conjunto sem recalcular somas. A máscara facilita a correspondência com índices, a recursão facilita a poda por capacidade e a reconstrução incremental. Percorrer $2^n$ máscaras e somar os $n$ possíveis objetos para cada uma custa $\Theta(n2^n)$. Uma recursão que mantém peso e valor acumulados faz duas extensões de custo constante por nó e visita $2^{n+1}-1$ nós, portanto custa $\Theta(2^n)$ antes de eventuais cópias das soluções. Guardar a melhor seleção pode acrescentar $O(n)$ por cópia, por isso podemos guardar só a melhor máscara.
+A tabela mostra o erro típico: $C,D$ tem valor 13, mas excede a capacidade e não pode ser escolhido. Validar antes de comparar evita guardar um candidato impossível.
+
+Uma máscara de $n$ bits representa um subconjunto. A máscara facilita a correspondência com índices. Uma recursão com peso e valor acumulados representa o mesmo conjunto sem recalcular somas, facilita a poda por capacidade e a reconstrução incremental. Percorrer $2^n$ máscaras e somar os $n$ objetos em cada uma custa $\Theta(n2^n)$. Uma recursão que mantém os acumulados faz duas extensões de custo constante por nó e visita $2^{n+1}-1$ nós, com custo $\Theta(2^n)$ antes de copiar soluções. Guardar a melhor seleção pode acrescentar $O(n)$ por cópia, por isso guarda apenas a melhor máscara quando só o valor final interessa.
 
 Não uses `1 << n` sem respeitar a largura do tipo. Deslocar por um número de bits igual ou superior à largura do inteiro não é uma enumeração válida em C++.
 
 ## Soma de subconjuntos
 
-Na soma de subconjuntos, o objetivo é decidir se algum subconjunto soma exatamente $T$. Para valores $[2,5,7,9]$ e $T=14$, há as soluções $5+9$ e $2+5+7$. Devolver uma delas satisfaz uma tarefa de existência; enumerar todas é outra tarefa.
+Aqui o objetivo é decidir se algum subconjunto soma exatamente $T$. Para valores $[2,5,7,9]$ e $T=14$, existem duas soluções: $5+9$ e $2+5+7$. Devolver uma delas resolve a tarefa de existência. Enumerar todas é outra tarefa, com saída maior.
 
-Uma recursão `procura(i, soma)` decide incluir ou excluir o elemento $i$. Quando $i=n$, aceita se `soma == T`. Para reconstruir, mantém as escolhas e copia-as quando encontra uma solução. O pior caso visita $\Theta(2^n)$ nós e usa $O(n)$ memória para a pilha e a seleção atual.
+Uma recursão `procura(i, soma)` decide incluir ou excluir o elemento $i$. Quando $i=n$, aceita se `soma == T`. Para reconstruir, mantém as escolhas no caminho atual e copia-as quando encontra uma solução. O pior caso visita $\Theta(2^n)$ nós e usa $O(n)$ memória para a pilha e a seleção atual.
 
-Se todos os valores forem não negativos, `soma > T` permite parar esse ramo. Com negativos, a poda é inválida: $8+(-3)=5$ pode atingir um alvo de 5 depois de o ultrapassar. A condição matemática deve acompanhar a melhoria: o [retrocesso](/cadeiras/da/retrocesso-ramificacao/#soma-de-subconjuntos-com-duas-podas) mostra as duas podas que tornam essa rejeição segura.
+Se todos os valores forem não negativos, `soma > T` permite parar esse ramo, porque acrescentar mais valores nunca reduz a soma. Com negativos, essa poda é inválida: $8+(-3)=5$ atinge um alvo de 5 depois de o ultrapassar. A condição dos valores tem de acompanhar a poda. O [retrocesso](/cadeiras/da/retrocesso-ramificacao/#soma-de-subconjuntos-com-duas-podas) mostra as duas podas que tornam essa rejeição segura.
 
 ## Trocos com stock
 
-Para denominações $c_i$ e stocks $s_i$, cada decisão é uma quantidade $q_i\in\{0,\ldots,s_i\}$. Um candidato paga $T$ quando $\sum q_i c_i=T$; queremos minimizar $\sum q_i$.
+Para denominações $c_i$ e stocks $s_i$, cada decisão é uma quantidade $q_i\in\{0,\ldots,s_i\}$. Um candidato paga $T$ quando $\sum q_i c_i=T$. O objetivo é minimizar $\sum q_i$.
 
-Com moedas de 1, 3 e 4, stocks 2, 2 e 1 e alvo 6, podemos pagar com duas moedas de 3 ou com uma de 4 e duas de 1. A solução ótima usa duas moedas. Escolher a maior que cabe produz três, embora encontre uma solução válida.
+Com moedas de 1, 3 e 4, stocks 2, 2 e 1, e alvo 6, há duas formas válidas: duas moedas de 3, ou uma de 4 com duas de 1. A solução ótima usa duas moedas. Escolher sempre a maior que cabe produz três moedas, embora encontre uma solução válida. O exemplo separa encontrar uma solução de provar que é mínima.
 
-O número de combinações de quantidades é $\prod_i(s_i+1)$, limitado por $(S+1)^n$ se $S$ é o stock máximo. Recalcular soma e contagem em cada folha acrescenta um fator $n$; manter totais durante a recursão evita esse recálculo. A pilha usa $O(n)$ memória, sem guardar todos os candidatos.
+O número de combinações de quantidades é $\prod_i(s_i+1)$, limitado por $(S+1)^n$ quando $S$ é o stock máximo. Recalcular soma e contagem em cada folha acrescenta um fator $n$. Manter os totais durante a recursão evita esse recálculo. A pilha usa $O(n)$ memória, sem guardar todos os candidatos.
 
 ## Caixeiro-viajante
 
-No TSP, procuramos um circuito que visita cada vértice uma vez e regressa ao início com custo mínimo. Fixar a cidade inicial remove rotações da mesma sequência. Restam $(n-1)!$ permutações, cada uma com $n$ arestas para avaliar; o custo direto é $\Theta(n!)$.
+No TSP, procuramos um circuito que visita cada vértice uma vez e regressa ao início com custo mínimo. Fixar a cidade inicial remove rotações da mesma sequência. Restam $(n-1)!$ permutações. Cada uma tem $n$ arestas para avaliar, pelo que o custo direto é $\Theta(n!)$.
 
-Numa instância não dirigida e simétrica, uma rota e a sua inversa têm o mesmo custo. Podemos eliminar essa duplicação com uma regra, por exemplo exigir que a segunda cidade tenha menor identificador que a última. Num grafo dirigido, essa regra pode eliminar a solução ótima, porque inverter a rota muda os custos e pode usar arestas inexistentes.
+Numa instância não dirigida e simétrica, uma rota e a sua inversa têm o mesmo custo. Podemos eliminar essa duplicação com uma regra explícita, por exemplo exigir que a segunda cidade tenha menor identificador que a última. Num grafo dirigido, essa regra pode eliminar a solução ótima, porque inverter a rota muda os custos e pode usar arestas inexistentes. A regra de simetria pertence ao modelo não dirigido.
 
-A existência de um percurso barato entre duas cidades não resolve o TSP: precisamos de uma visita a **todas** e do regresso. Não confundas circuito hamiltoniano, que visita vértices, com circuito euleriano, que visita arestas.
+A existência de um percurso barato entre duas cidades não resolve o TSP. É preciso visitar **todas** e regressar. Não confundas circuito hamiltoniano, que visita vértices, com circuito euleriano, que visita arestas.
 
 ## O que a enumeração prova
 
-Para uma prova, descreve uma correspondência entre soluções e candidatos gerados. Depois justifica o teste de viabilidade e o registo do melhor. Num algoritmo de otimização, atualizar o melhor antes de testar a capacidade pode guardar uma solução impossível. Num algoritmo de existência, devolver falso só é correto depois de esgotar todos os ramos que ainda poderiam produzir uma solução.
+Para provar um algoritmo de força bruta, descreve a correspondência entre soluções e candidatos gerados. Depois justifica o teste de validade e o registo do melhor. Num problema de otimização, atualizar o melhor antes de testar a capacidade guarda uma solução impossível. Num problema de existência, devolver falso só é correto depois de esgotar todos os ramos que ainda poderiam produzir uma solução.

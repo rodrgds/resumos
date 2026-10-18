@@ -3,76 +3,47 @@ import cadeia from '../../fsi/cadeia.typ?raw';
 
 ## Primitivas e chaves
 
-| Mecanismo              | Objetivo e limite                                                                                        |
-| ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| Cifra simétrica        | Chave partilhada protege confidencialidade; cifrar sozinho não garante autenticidade nem frescura.       |
-| Cifra de chave pública | Cifra com a pública do destinatário; só a privada correspondente decifra. Não identifica o remetente.    |
-| Hash criptográfico     | Compara com uma referência confiável. Se o atacante troca mensagem e hash, a comparação não autentica.   |
-| MAC                    | Chave partilhada dá integridade e autenticidade entre os seus detentores; não dá prova pública do autor. |
-| Assinatura             | `Sign` com a privada do autor; `Verify` com a pública confiável. Não esconde o conteúdo.                 |
+| Mecanismo | Regra e limite |
+| --- | --- |
+| Cifra simétrica | Chave partilhada protege confidencialidade; sem autenticação não garante origem nem frescura. |
+| Cifra de chave pública | Cifra com a pública do destinatário; só a privada correspondente decifra. Não identifica o remetente. |
+| Hash | Compara com referência confiável; se o atacante troca mensagem e hash, não autentica. |
+| MAC | Chave partilhada dá integridade entre detentores; sem prova pública de autor. |
+| Assinatura | `Sign` com a privada do autor; `Verify` com a pública confiável. Não esconde conteúdo. |
 
-Uma assinatura não é definida como "cifrar com a privada". Atribuí-la à pessoa exige associação correta da chave e proteção da privada; uma chave roubada também permite assinar.
+Assinatura não é cifrar com a privada. Atribuição à pessoa exige chave associada e privada protegida; chave roubada também assina. Sistema híbrido usa acordo ou encapsulamento para chave de sessão com cifra autenticada; o estabelecimento precisa de autenticação.
 
-Num sistema híbrido, acordo ou encapsulamento estabelece uma chave de sessão para proteger os dados com cifra simétrica autenticada. O estabelecimento precisa de autenticação.
+Para provar a origem do texto em claro, assina o original e cifra depois: quem decifra verifica sobre esse texto. Cifrar e assinar o criptograma autentica o criptograma e permite verificar sem decifrar. As duas ordens existem; a escolha depende do objeto autenticado. Ver [ordem](/cadeiras/fsi/criptografia/#ordem-entre-assinar-e-cifrar).
 
-## Hash e cifras clássicas
+## Hash, César e aleatoriedade
 
-- **Pré-imagem:** dado o hash, encontrar uma entrada correspondente.
-- **Segunda pré-imagem:** dada uma entrada, encontrar outra com o mesmo hash.
-- **Colisão:** escolher duas entradas distintas com o mesmo hash. Para saída ideal de $n$ bits, pesquisa genérica custa cerca de $2^{n/2}$ tentativas.
-- Um hash não esconde entradas de baixa entropia: dez possibilidades conhecidas podem ser calculadas e comparadas.
-- Mais entradas do que $2^n$ resumos tornam colisões inevitáveis; não tornam fácil encontrar uma.
-
-César usa $y=(x+k)\bmod26$ para maiúsculas ASCII `A=0` até `Z=25`; recupera com $x=(y-k)\bmod26$. `ZEBRA` com $k=3$ dá `CHEUD`. Há só 26 deslocamentos. Substituição monoalfabética tem $26!$ chaves, mas conserva padrões e frequências. Ambas são cifras de estudo.
-
-## Aleatoriedade e segurança
-
-A distribuição do gerador determina a entropia. Escolher uniformemente entre 256 strings de 128 bits dá oito bits de entropia; a aparência de uma amostra não permite comparar geradores.
-
-$b$ bits de segurança descrevem trabalho da ordem de $2^b$ operações no modelo de ataque, não obrigatoriamente comprimento da chave. Hash ideal de 256 bits tem resistência genérica a colisões da ordem de 128 bits. Kerckhoffs exige proteção mesmo com desenho conhecido, conservando os segredos necessários.
+- **Pré-imagem:** dado o resumo, achar entrada correspondente. **Segunda pré-imagem:** dada uma entrada, achar outra com o mesmo resumo. **Colisão:** escolher duas entradas distintas com o mesmo resumo; custo genérico cerca de $2^{n/2}$ para saída de $n$ bits.
+- Hash não esconde entradas de baixa entropia; dez hipóteses conhecidas calculam-se e comparam-se.
+- César em maiúsculas ASCII com $y=(x+k)\bmod26$: só 26 deslocamentos. Substituição com $26!$ chaves conserva frequências. Cifras de estudo.
+- Entropia depende do gerador: 256 escolhas uniformes dão oito bits, mesmo em strings de 128 bits. $b$ bits de segurança indicam trabalho da ordem de $2^b$ operações no modelo. Kerckhoffs exige proteção com desenho conhecido.
 
 ## RSA de brinquedo
 
-$u\equiv v\pmod n$ significa que $u-v$ é múltiplo de $n$. O inverso de $e$ módulo $t$ existe se e só se $\gcd(e,t)=1$.
+$u\equiv v\pmod n$ quando $u-v$ é múltiplo de $n$. Inverso de $e$ módulo $t$ existe se $\gcd(e,t)=1$.
 
-Para primos distintos $p,q$:
+Para primos distintos $p,q$: $n=pq$, $\varphi(n)=(p-1)(q-1)$. Escolhe $e$ coprimo com $\varphi(n)$ e $d$ com $ed\equiv1\pmod{\varphi(n)}$. Pública é $(n,e)$; privada inclui $d$. Para $0\le m<n$: $c=m^e\bmod n$, $m=c^d\bmod n$.
 
-$$n=pq.$$
+Exemplo: $p=3,q=11,e=3,d=7$ dá $n=33$, $m=5$, $c=26$. Aritmética sem codificação, insegura para uso real; RSA real usa OAEP e PSS. Usa pares distintos por titular.
 
-$$\varphi(n)=(p-1)(q-1).$$
+Sem codificação, mensagens pequenas testam-se pela pública, e escolher $s$ com $m=s^e\bmod n$ cria par aceite sem privada. Ver [ataques](/cadeiras/fsi/criptografia/#dois-ataques-ao-rsa-sem-codificação).
 
-Escolhe $e$ coprimo com $\varphi(n)$ e $d$ tal que:
+## Chaves, certificados e revogação
 
-$$ed\equiv1\pmod{\varphi(n)}.$$
-
-A pública é $(n,e)$; a privada inclui $d$. Para inteiro $0\le m<n$:
-
-$$c=m^e\bmod n,\qquad m=c^d\bmod n.$$
-
-Com $p=3,q=11,e=3,d=7$, temos $n=33$, $\varphi(n)=20$, $m=5$, $c=26$ e $26^7\bmod33=5$. Isto é aritmética sem codificação, **insegura para uso real**. RSA real usa esquemas como OAEP e PSS.
-
-Sem codificação, testar mensagens possíveis pela pública distingue cifras determinísticas. Na assinatura crua, escolher $s$ e calcular $m=s^e\bmod n$ cria um par aceite sem privada, embora não assine uma mensagem arbitrária imposta.
-
-## Distribuição e conservação de chaves
-
-Com $N$ entidades e uma chave simétrica por par, partilhada nos dois sentidos:
-
-$$K=\frac{N(N-1)}2.$$
-
-Seis entidades precisam de 15 chaves; acrescentar a sétima exige seis novas. Com KDC adicional, cada entidade partilha uma chave duradoura com o centro: são $N$ dessas ligações, excluindo chaves de sessão e internas. O KDC distribui segredos de sessão protegidos pelas chaves duradouras, mas concentra confiança e dependência.
-
-Gera, distribui autenticamente, protege, limita uso e revoga chaves. Rotação não desfaz exposições antigas. Sal de palavra-passe e nonce não são, em geral, segredos; os requisitos dependem da construção.
-
-## Certificados e revogação
+- Pares simétricos: $K=N(N-1)/2$; seis entidades precisam de 15. Com KDC, $N$ ligações duradoura ao centro, mais chaves de sessão à parte.
+- Gera, distribui com autenticação, protege, limita uso e revoga. Rotação não desfaz exposição antiga. Sal e nonce não são segredos em geral.
+- Aceita certificado após cadeia, nome esperado, datas, usos e estado segundo a política. Nome errado ou raiz não instalada chumba.
 
 <Typst
   source={cadeia}
   format="svg"
-  alt="Raiz instalada como âncora de confiança assina a intermédia, que assina o certificado do servidor. A autoassinatura não estabelece confiança na raiz."
+  alt="Raiz instalada como âncora assina a intermédia, que assina o servidor."
 />
 
-Para aceitar um certificado, verifica cadeia, datas, **nome esperado**, restrições, usos e estado/revogação segundo a política. Um certificado válido de outra loja não serve; um certificado não prova que o serviço é honesto.
+- CRL lista revogados no seu âmbito; confirma emissor, assinatura, âmbito e atualidade. Datas válidas não anulam revogação; ausência em lista antiga não prova aceitação.
 
-Uma CRL assinada lista certificados revogados no seu âmbito. Confirma emissor, assinatura, âmbito e atualidade, incluindo `thisUpdate` e `nextUpdate`. A série só identifica o certificado com o emissor. Datas válidas não anulam revogação; ausência numa CRL antiga não prova aceitação. Define o que fazer se o estado exigido não puder ser obtido.
-
-[Contas RSA e verificações completas](/cadeiras/fsi/criptografia/#rsa-de-brinquedo).
+[Contas e verificações completas](/cadeiras/fsi/criptografia/#rsa-de-brinquedo).

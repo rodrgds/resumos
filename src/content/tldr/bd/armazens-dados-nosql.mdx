@@ -4,11 +4,11 @@ import CodeSnippet from '../../../components/CodeSnippet.astro';
 import Typst from '../../../components/Typst.astro';
 import estrela from '../../bd/estrela.typ?raw';
 
-## OLTP, grão e dimensões
+## Do operacional ao analítico
 
-**OLTP** suporta operações atuais com transações curtas e integridade. Um **armazém de dados** integra fontes, assuntos e histórico para análise; pode ter latência de carregamento. "Não volátil" significa relativamente estável, não impossível de corrigir.
+**OLTP** serve operações correntes (reservar, criar, atualizar) com transações curtas e dados atuais. Um **armazém de dados** integra fontes por assunto, com histórico, para análise; carrega em lotes e pode estar atrasado. "Não volátil" quer dizer relativamente estável, não incorrigível nem isento de transações.
 
-O **grão** define uma linha do facto. Na loja, é um produto numa encomenda. A tabela de factos guarda medidas e referências a dimensões, como produto, tempo e cliente.
+O **grão** fixa o que é uma linha do facto; na loja, **um produto numa encomenda**. A tabela de factos guarda medidas e referências a dimensões (produto, tempo, cliente).
 
 <Typst
   source={estrela}
@@ -16,65 +16,61 @@ O **grão** define uma linha do facto. Na loja, é um produto numa encomenda. A 
   alt="FactoVenda, no grão encomenda/produto, guarda quantidade e valor e referencia dimensões Tempo, Produto e Cliente."
 />
 
-Não mistura totais de encomenda com linhas de produto, e para analisar a cidade do cliente na altura da venda conserva versões históricas em vez de substituir todos os valores antigos pela cidade atual.
+Não mistures totais de encomenda com linhas de produto na mesma medida. Para analisar a cidade à data da compra, conserva versões históricas em vez de reescrever o passado.
 
-## Medidas e esquemas
+## Medir sem pesar mal
 
-| Medida      | Agregação válida                                                                          |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| Aditiva     | Quantidade ou valor de vendas podem somar-se nas dimensões, com unidades compatíveis.     |
-| Semiaditiva | Saldos somam-se entre contas na mesma data, mas não entre dias para obter o saldo mensal. |
-| Não aditiva | Percentagens e razões precisam de cálculo próprio, frequentemente a partir dos totais.    |
+| Medida      | Como agregar sem errar                                                         |
+| ----------- | ------------------------------------------------------------------------------ |
+| Aditiva     | Soma por produto, cliente ou tempo, com unidades compatíveis.                  |
+| Semiaditiva | Saldos somam entre contas na mesma data; nunca somes saldos ao longo do tempo. |
+| Não aditiva | Percentagens e razões calculam-se dos totais, não de médias de médias.         |
 
-Nas quatro linhas da loja, há 7 unidades e 37000 cêntimos vendidos. O preço médio por unidade é $37000/7$ cêntimos, cerca de 52,86 euros. A média simples dos quatro preços, 68,75 euros, dá pesos errados às quantidades.
+Na loja: 7 unidades e 37000 cêntimos. O preço médio é $37000/7$ (cerca de 52,86 euros); a média simples dos quatro preços (68,75) pesa mal as quantidades. O grão decide o que cada soma significa.
 
-- **Estrela:** factos ligados diretamente a dimensões, frequentemente desnormalizadas.
-- **Floco de neve:** normaliza parte das dimensões, reduzindo repetições e acrescentando junções.
-- **Constelação:** factos diferentes partilham dimensões. Agrega cada facto ao nível comum antes de juntar, para evitar multiplicar medidas.
+- **Estrela:** facto ligado direto a dimensões, em geral desnormalizadas.
+- **Floco de neve:** normaliza dimensões, com mais junções.
+- **Constelação:** factos partilham dimensões; agrega cada um ao nível comum antes de juntar, para não multiplicar medidas.
 
-**ETL** extrai, transforma e carrega. Reconcilia ids entre fontes, converte unidades e define histórico antes de somar. Um **data mart** foca um assunto ou grupo; é dependente se deriva de um armazém central, independente se recolhe fontes próprias.
+**ETL** extrai, transforma (ids, unidades, histórico) e carrega por ordem das referências. Um **data mart** foca um assunto; dependente deriva do armazém, independente integra fontes próprias.
 
-## OLAP
+## Operar o cubo
 
-| Operação     | Efeito                                      |
-| ------------ | ------------------------------------------- |
-| Roll-up      | Agrega detalhe, como dias em meses.         |
-| Drill-down   | Desce ao detalhe existente.                 |
-| Slice        | Fixa uma dimensão.                          |
-| Dice         | Seleciona subconjuntos em várias dimensões. |
-| Pivot        | Muda a disposição dos eixos.                |
-| Drill-across | Compara factos por dimensões compatíveis.   |
+| Operação     | Efeito sobre o detalhe                    |
+| ------------ | ----------------------------------------- |
+| Roll-up      | Agrega, como dias em meses.               |
+| Drill-down   | Desce ao detalhe existente.               |
+| Slice        | Fixa uma dimensão.                        |
+| Dice         | Recorta subconjuntos em várias dimensões. |
+| Pivot        | Rearranja eixos, sem mudar factos.        |
+| Drill-across | Compara factos por dimensões compatíveis. |
 
-`ROLLUP(ano, categoria)` agrega pelos dois, só ano e total. `CUBE` acrescenta só categoria, incluindo todos os subconjuntos. SQLite não implementa estes comandos; podem construir-se níveis com `UNION ALL`. Nos motores que oferecem `GROUPING`, distingue nulos de subtotal de valores desconhecidos.
+`ROLLUP(ano, categoria)` dá (ano,categoria), ano e total; `CUBE` junta só categoria. SQLite não os tem: constrói níveis com `UNION ALL`. Com `GROUPING`, distingue nulos de subtotal de desconhecidos.
 
-## Modelos NoSQL e distribuição
+## Escolher armazenamento e distribuir
 
-| Família             | Dados e acesso                                               |
-| ------------------- | ------------------------------------------------------------ |
-| Chave-valor         | Acesso ao valor pela chave, como sessões e caches.           |
-| Documentos          | Objetos com campos e arrays, consultáveis pelo conteúdo.     |
-| Famílias de colunas | Linhas por chave com colunas flexíveis e acesso distribuído. |
-| Grafos              | Nós e arestas para percursos e relações.                     |
+| Família             | Serve para                                               |
+| ------------------- | -------------------------------------------------------- |
+| Chave-valor         | Valor pela chave: sessões, caches.                       |
+| Documentos          | Objetos com campos e arrays, consultados por conteúdo.   |
+| Famílias de colunas | Linhas por chave, colunas flexíveis, acesso distribuído. |
+| Grafos              | Nós e arestas para percursos e relações.                 |
 
-Famílias de colunas não são o mesmo que armazenamento colunar analítico. NoSQL não implica ausência de validação ou de transações ACID; as garantias dependem do produto e da operação.
+Famílias de colunas não são armazenamento colunar analítico. NoSQL não significa sem validação nem sem ACID: as garantias são por produto e operação.
 
-**Replicação** guarda cópias; **sharding** divide dados por chave. Uma distribuição desigual pode concentrar carga.
+**Replicação** copia; **sharding** parte por chave. Chave desigual concentra carga. Sob partição de rede, **CAP** impede consistência linearizável e disponibilidade total em simultâneo; não é a consistência de invariantes do ACID. Consistência eventual converge quando a comunicação permite, com regras de conflito; BASE é orientação, não garantia.
 
-Durante uma partição de rede, **CAP** impede garantir simultaneamente consistência linearizável e disponibilidade para todas as operações no modelo do teorema. A consistência CAP não é a consistência de invariantes de ACID. A consistência eventual procura convergência quando cessam alterações e a comunicação permite propagá-las; precisa de regras para conflitos. BASE descreve uma orientação, não uma garantia única.
+## Consultar documentos
 
-## MongoDB
-
-Estes comandos são para **mongosh**, não para SQLite:
+Comandos de **mongosh**, não SQLite:
 
 <CodeSnippet language="javascript" code={produtosMongodb} />
 
-Filtra preço acima de 30 e devolve nome/preço por ordem decrescente. A projeção de inclusão só admite a exceção de exclusão de `_id`. `"detalhes.layout"` acede a um campo aninhado; `{ categorias: "entrada" }` testa um elemento do array.
+Preço acima de 30, nome e preço por ordem decrescente. Inclusão não se mistura com exclusão, exceto `_id`. `"detalhes.layout"` lê aninhado; `{ categorias: "entrada" }` testa elemento do array.
 
-- `$set` muda campos; `$inc` incrementa. `updateOne` altera no máximo um documento; `updateMany` altera todos os correspondentes. Substituir o documento inteiro pode apagar campos omitidos.
-- `distinct` devolve valores distintos; `countDocuments` conta documentos do filtro. Um filtro por `null` pode incluir campos ausentes.
+- `$set` altera campos, `$inc` incrementa; `updateOne` toca um documento, `updateMany` todos os correspondentes. Substituir o documento apaga omitidos. Filtro por `null` pode apanhar documentos sem o campo.
+- `distinct` lista valores; `countDocuments` conta documentos do filtro.
 
-Num pipeline, `$match` filtra, `$project` escolhe/calcula, `$unwind` cria uma saída por elemento do array, `$group` agrega e `$sort` ordena. Teclado com duas categorias e Rato com uma geram três ocorrências: não são três produtos. Elementos repetidos também contam, salvo deduplicação explícita.
-
-`$lookup` acrescenta correspondências **num array**; sem correspondência, fica vazio e a linha exterior mantém-se. `$facet` executa subpipelines independentes sobre a mesma entrada e devolve um documento com um array por saída.
+No pipeline, `$match` filtra, `$project` escolhe/calcula, `$unwind` desdobra arrays, `$group` agrega, `$sort` ordena. Teclado (duas categorias) mais Rato (uma) dão três ocorrências, não três produtos. `$lookup` junta correspondências **num array** (vazio sem correspondência, sem eliminar a linha). `$facet` corre subpipelines independentes e devolve um array por saída.
 
 [Exemplos de pipelines e contagens](/cadeiras/bd/armazens-dados-nosql/#pipelines-de-agregação).

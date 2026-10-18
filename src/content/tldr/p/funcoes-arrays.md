@@ -1,68 +1,79 @@
-## Contratos e passagem de argumentos
+## Que passagem escolho?
 
-Uma função declara entradas, alterações permitidas e resultado. `return` devolve ao chamador e termina a chamada; não imprime. A declaração tem de estar visível antes da chamada e a definição tem de entrar na ligação.
+| Preciso de               | Declara           |
+| ------------------------ | ----------------- |
+| Ler um número pequeno    | `int n`           |
+| Alterar o original       | `T& objeto`       |
+| Consultar sem copiar     | `const T& objeto` |
+| Endereço que pode faltar | `T* objeto`       |
 
-| Parâmetro         | Efeito                                          |
-| ----------------- | ----------------------------------------------- |
-| `T valor`         | Recebe um objeto próprio, copiado do argumento  |
-| `T& objeto`       | Pode alterar o original                         |
-| `const T& objeto` | Consulta sem copiar nem alterar por esse acesso |
-| `T* objeto`       | Recebe um endereço, possivelmente nulo          |
+`return` devolve e termina. Não imprime. Declara antes de chamar.
 
 ```cpp
-void copia(int x) { ++x; }
-void original(int& x) { ++x; }
-// Com n = 4: copia(n) deixa 4; original(n) deixa 5.
+void copia(int x) { ++x; }      // n = 4 continua 4
+void original(int& x) { ++x; }  // n = 4 passa a 5
 ```
 
-Copiar um apontador conserva o acesso ao mesmo objeto; passar por valor não implica uma cópia profunda.
+- `int& r = a; r = b;` copia `b` para `a`. A referência não muda de destino.
+- `const T&` não congela o objeto. Outro acesso pode alterá-lo.
+- Devolver endereço de local deixa acesso pendente.
+- Sobrecargas distinguem-se pelos parâmetros. O retorno sozinho não chega.
 
-Uma referência tem de ser inicializada e não muda de destino. Em `int& r = a; r = b;`, copia-se o valor de `b` para `a`. `const T&` não impede que outro acesso altere o original. Devolver por valor é seguro; devolver referência ou endereço de uma variável local deixa acesso pendente.
+## Arrays e índices
 
-Sobrecargas distinguem-se pelos parâmetros, não só pelo retorno. Argumentos por defeito permitem omitir os últimos argumentos e têm de ser conhecidos no ponto da chamada.
-
-## Arrays e intervalos
-
-- `int v[4]` tem quatro elementos contíguos, com índices `0` a `3`. Não cresce.
-- Num parâmetro, `const int v[]` é ajustado para `const int* v`: passa também o tamanho. `sizeof(v)` nessa função mede o apontador.
-- Uma função que lê `n` elementos exige um intervalo válido e resultados representáveis no tipo usado. Para `n == 0`, não deve desreferenciar o início.
+- `int v[4]` tem índices `0` a `3`. Não cresce.
+- Em parâmetro, `const int v[]` vira `const int* v`. Passa o tamanho à parte.
+- `sizeof(v)` dentro da função mede o apontador.
+- Com `n == 0`, não desreferencies o início.
 
 ```cpp
+// {4, -2, 7, 1}: soma(v, 4) = 10; soma(v + 1, 2) = 5; soma(nullptr, 0) = 0
+// Mantém n dentro do array e a soma representável em int.
 int soma(const int* valores, std::size_t n) {
     int total = 0;
     for (std::size_t i = 0; i < n; ++i) total += valores[i];
     return total;
 }
-// Para {4, -2, 7, 1}: soma(v, 4) dá 10; soma(v + 1, 2) dá 5.
-// soma(nullptr, 0) dá 0, sem leitura pelo apontador.
 ```
 
-`std::size_t` é sem sinal, por isso numa contagem descendente evita `size() - 1` no vazio e a condição `i >= 0`. Usa `i = size()`, testa `i > 0` e lê a posição `i - 1`.
+Para descer com `size_t`, que não representa negativos, decrementa primeiro e lê `v[i]`:
 
-`for (int x : v)` copia cada elemento; `for (int& x : v)` permite alterá-lo. Um apontador isolado não fornece o tamanho para este percurso. `std::array<T, N>` conserva tamanho fixo; `std::vector<T>` gere tamanho variável.
+```cpp
+for (std::size_t i = n; i > 0; ) {
+    --i;
+    std::cout << v[i] << '\n';
+}
+```
 
-Em `int matriz[2][3]`, a última dimensão é contígua. O parâmetro `const int matriz[][3]` precisa da dimensão interior para localizar linhas; não equivale a `int**`.
+Com `n = 3`, `i` visita `2`, `1`, `0`. Com `n = 0`, o corpo não corre. Em alternativa, lê `v[i - 1]` e só depois decrementa. `i >= 0` é sempre verdade num tipo sem sinal, por isso não serve como condição de paragem.
 
-Num array de saída, distingue capacidade reservada do prefixo válido devolvido pela função. Para conservar todas as ocorrências repetidas pela ordem original, cada índice procura outro índice diferente com igual valor, incluindo à esquerda. Em `4,9,4,2,9,7`, a saída é `4,9,4,9`, com tamanho 4. A versão de ciclos custa `O(n²)`; exige entrada válida, destino suficiente e sem sobreposição, e não acede aos apontadores no vazio.
+| Percurso           | Efeito                         |
+| ------------------ | ------------------------------ |
+| `for (int x : v)`  | Copia cada elemento            |
+| `for (int& x : v)` | Altera o elemento              |
+| Apontador isolado  | Sem tamanho para este percurso |
 
-[Contrato e percurso do filtro](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída).
+`int matriz[2][3]` precisa da dimensão interior no parâmetro. Não equivale a `int**`.
 
-## Tipos compostos e texto
+Saída num array do chamador: capacidade é espaço reservado, prefixo válido é o que a função devolveu. Em `4,9,4,2,9,7`, conservar repetidos dá `4,9,4,9`. Custo quadrático, memória constante além do destino.
 
-Uma `struct` reúne campos; `p.x` acede ao campo. Tem acesso público por defeito, enquanto `class` tem privado. Padding pode tornar `sizeof(struct)` diferente da soma dos campos. `enum class` cria valores nomeados com um tipo próprio.
+[Filtro de ocorrências repetidas](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída).
 
-- `std::string` gere armazenamento; `size()` conta unidades `char`, não letras Unicode visuais.
-- `at(i)` verifica limites. Os elementos de texto têm índices inferiores a `size()`; o terminador nessa posição não é outro elemento de texto.
-- `find` devolve posição ou `npos`; `substr` extrai uma parte. Em `"azul,verde"`, a vírgula está em `4`, e `substr(5)` dá `"verde"`.
-- Depois de ler um número com `>>`, descarta o resto dessa linha antes do `getline`. `std::ws` também elimina espaços iniciais e linhas vazias, o que muda o formato aceite.
-- A string de C `"Ana"` precisa de quatro posições, incluindo `\0`. `strlen` exige terminador válido; `strcpy` não verifica capacidade. `==` entre arrays convertidos em apontadores compara endereços; `strcmp` compara texto.
+## Texto e recursão
 
-Para a diferença simétrica das 26 letras básicas, marca a presença em cada texto, juntando maiúscula/minúscula e ignorando outros caracteres. Copia alfabeticamente apenas as letras presentes num dos textos. Frequências diferentes não incluem uma letra presente nos dois. O destino precisa de 27 posições, sem sobreposição; escreve `\0` mesmo no vazio. O número devolvido não conta o terminador. A implementação da lição exige strings de C válidas com até 1000 unidades.
+- `string::size()` conta unidades `char`. `at(i)` verifica limites.
+- `find` devolve a posição ou `npos`. Numa variável `std::string par`
+  com `"azul,verde"`, `par.find(',')` dá `4`.
+- Depois de `>>` número, descarta o fim dessa linha antes de `getline`.
+- String C `"Ana"` ocupa 4 posições com `\0`. `==` entre arrays compara endereços.
 
-[Presença de letras em dois textos](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).
+Diferença simétrica de letras, alfabeto `a` a `z`:
 
-## Recursão
+1. Marca presença em cada texto, sem distinguir maiúscula.
+2. Ignora o resto dos caracteres.
+3. Escreve por ordem alfabética as letras presentes em exatamente um texto.
+4. Destino com 27 posições, terminado com `\0`. O número devolvido exclui o terminador.
 
-Exige um caso base e progresso até ele. Para `n >= 0`, `soma(0) = 0` e `soma(n) = n + soma(n - 1)` dão `soma(3) = 6`, se as somas forem representáveis. Cada chamada conserva estado próprio; muitas chamadas podem esgotar a pilha.
+Recursão: caso base mais medida que diminui. `soma(0) = 0`, `soma(n) = n + soma(n - 1)` para `n > 0`. Entrada negativa nunca chega à base.
 
-[Leitura de número e linha](/cadeiras/p/funcoes-arrays/#strings-e-linhas).
+[Leitura de número e linha](/cadeiras/p/funcoes-arrays/#strings-e-linhas). [Conjuntos de letras](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).

@@ -1,40 +1,27 @@
 import Typst from '../../../components/Typst.astro';
 import modeloCaixa from '../../ltw/modelo-caixa.typ?raw';
 
-## Seletores
+## Seletores: ler antes de contar
 
-Uma regra associa um seletor a declarações `propriedade: valor`. A folha externa é ligada por `link` no `head`.
+- Espaço é descendente; `>` é filho direto; `+` é o irmão seguinte; `~` são os posteriores. A vírgula separa alternativas.
+- `p.ativo` é o próprio parágrafo; `p .ativo` é um descendente.
+- `:nth-child` conta todos os elementos filhos; `:nth-of-type` só os do tipo. A contagem começa em 1 e ignora texto.
+- `[href^="https"]`, `[href$=".pdf"]`, `[href*="livro"]`: início, fim, parte. `[class~="x"]` procura palavra em lista; `[lang|="pt"]` aceita `pt` ou `pt-...`.
+- `:not` exclui, `:is` reúne, `:has` testa relação com outros elementos. `&` é o seletor exterior em regras aninhadas.
+- Pseudo-classe (`:checked`) testa o elemento; pseudo-elemento (`::before`, com `content`) representa parte gerada.
 
-| Seletor                                                | Escolhe                                                   |
-| ------------------------------------------------------ | --------------------------------------------------------- |
-| `p.ativo`                                              | O próprio `p` com classe `ativo`                          |
-| `p .ativo`                                             | Descendentes de `p` com essa classe                       |
-| `.livro > p`                                           | Filhos diretos `p`                                        |
-| `h2 + p`, `h2 ~ p`                                     | Irmão `p` imediatamente seguinte, ou todos os posteriores |
-| `p:first-child`                                        | `p` que é o primeiro elemento filho                       |
-| `p:first-of-type`                                      | Primeiro `p` entre os irmãos                              |
-| `li:nth-child(2n)`                                     | `li` em posição par entre todos os elementos filhos       |
-| `[href^="https"]`, `[href$=".pdf"]`, `[href*="livro"]` | Início, fim ou parte do atributo                          |
-| `input:checked`, `a:focus-visible`                     | Estado do elemento                                        |
-| `p::before`                                            | Pseudo-elemento, normalmente com `content`                |
+## Cascata em quatro passos
 
-Posições começam em 1 e contam elementos, não texto. A vírgula separa alternativas. `:not` exclui, `:is` reúne alternativas e `:has` testa uma relação com outros elementos. `&` representa o seletor exterior em regras aninhadas.
+1. Confirma que ambas atingem o elemento.
+2. Compara origem, importância e camadas. Regras sem camada vencem as com camada; nas importantes, a ordem inverte-se. Camada posterior vence anterior.
+3. No mesmo nível, compara `(IDs, classes/atributos/pseudo-classes, elementos)` da esquerda para a direita.
+4. Em empate, ganha a posterior.
 
-## Cascata e herança
+`(1,1,3)` vence `(1,1,0)` na terceira coluna. Um ID vence qualquer número de classes. `*` e combinadores não contam; `:where` vale zero; `:is`, `:not` e `:has` usam o maior argumento. `!important` muda importância, não especificidade. Estilo em linha vence regras normais do autor.
 
-1. Confirma que as declarações atingem o elemento.
-2. Compara origem, importância e camadas antes da especificidade.
-3. No mesmo nível, compara `(IDs, classes/atributos/pseudo-classes, elementos/pseudo-elementos)` da esquerda para a direita.
-4. Se empatarem, ganha a declaração posterior.
+Herança é outro mecanismo: declaração direta no filho vence valor herdado. `color` herda; margem, borda e padding não. `inherit` pede ao pai; `initial` pede o inicial; `unset` herda quando a propriedade é herdada.
 
-`(1,1,3)` ganha a `(1,1,0)`; dez classes não vencem um ID. `*` e combinadores não contam. `:where` tem especificidade zero; `:is`, `:not` e `:has` usam a maior dos seus argumentos.
-
-- Estilos em linha vencem regras normais da folha do autor. `!important` altera importância, não especificidade.
-- Para declarações normais, camadas posteriores vencem anteriores; regras sem camada vencem as com camada. A ordem das camadas inverte-se nas importantes.
-- Uma declaração direta no filho vence um valor herdado. `color` costuma herdar; margem, padding e borda não.
-- `inherit` usa o valor do pai; `initial` usa o inicial da propriedade; `unset` herda nas propriedades herdadas e usa o inicial nas restantes.
-
-## Caixa e unidades
+## Caixa: onde fica cada medida
 
 <Typst
   source={modeloCaixa}
@@ -42,45 +29,27 @@ Posições começam em 1 e contam elementos, não texto. A vírgula separa alter
   alt="Com width de 240px, padding de 12px, borda de 2px e margem de 10px por lado: content-box ocupa 288px; border-box ocupa 260px e tem conteúdo de 212px. Margem fica sempre fora de width."
 />
 
-Em `content-box`, `width` mede conteúdo. Em `border-box`, inclui padding e borda, mas exclui margem. Para a caixa da figura:
+- `content-box`: `width` mede só o conteúdo; soma padding e borda. `border-box`: já os inclui. Margem fica sempre fora.
+- `padding: a b c d` segue cima, direita, baixo, esquerda; dois valores dão vertical e horizontal.
+- Margens verticais de blocos em fluxo podem colapsar (16px com 24px dão 24px). Padding nunca colapsa.
+- `rem` usa a raiz; `em` em `font-size` usa o pai, nas restantes usa o próprio elemento. `vw`/`vh` usam o viewport.
 
-$$
-\begin{aligned}
-W_{\text{content-box}} &= 240+24+4+20=288\text{ px},\\
-W_{\text{border-box}} &= 240+20=260\text{ px}.
-\end{aligned}
-$$
+## Posicionar e distribuir
 
-- Quatro valores de `padding` seguem cima, direita, baixo, esquerda; dois dão vertical e horizontal.
-- Margens verticais positivas de blocos em fluxo normal podem colapsar: 16px e 24px dão 24px, não 40px. Padding não colapsa.
-- `rem` usa a letra da raiz. `em` em `font-size` usa a letra do pai; nas outras propriedades usa a do próprio elemento. Percentagens dependem da propriedade; `vw` e `vh` usam o viewport.
-- `max-width` limita uma largura flexível; `overflow: auto` permite deslocar o conteúdo que não cabe.
+| Valor      | Conserva lugar?        | Referência                                             |
+| ---------- | ---------------------- | ------------------------------------------------------ |
+| `static`   | Sim, fluxo normal      | Nenhuma (`top`/`left` ignorados)                       |
+| `relative` | Sim, desloca o desenho | Posição original                                       |
+| `absolute` | Não                    | Antepassado posicionado (ou transformado) mais próximo |
+| `fixed`    | Não                    | Normalmente o viewport                                 |
+| `sticky`   | Sim, até prender       | Limite definido no scroll                              |
 
-## Fluxo e posicionamento
+- `display: none` retira a caixa; `visibility: hidden` guarda o espaço. `transform` redesenha sem reservar lugar. `z-index` só compara dentro do mesmo contexto de empilhamento.
+- Flexbox: `justify-content` no eixo principal, `align-items` no transversal. `flex: 1 1 200px` é crescimento, redução e base, não largura fixa. `margin-top: auto` empurra o botão para o fundo do cartão.
+- Grid: `1fr` reparte o que sobra depois de fixos e gaps. `grid-column: 1 / 3` ocupa duas colunas. `minmax(0, 1fr)` deixa a coluna encolher abaixo do mínimo do conteúdo.
 
-| Valor      | Efeito habitual                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `static`   | Fluxo normal, sem deslocação por `top`/`left`                                                    |
-| `relative` | Desloca o desenho e conserva o lugar original                                                    |
-| `absolute` | Sai do fluxo; usa uma caixa de referência, frequentemente o antepassado posicionado mais próximo |
-| `fixed`    | Sai do fluxo e usa normalmente o viewport                                                        |
-| `sticky`   | Mantém-se no fluxo e prende-se ao limite definido durante o scroll                               |
+## Conta de `fr` (720px, fixa 120px, gaps 30px)
 
-Um antepassado transformado também pode criar a referência, incluindo para `fixed`. `z-index` compara dentro de contextos de empilhamento. `display: none` retira a caixa; `visibility: hidden` conserva espaço. `transform` muda o desenho sem reservar outro lugar.
+Sobra `720 - 120 - 60 = 540`; com 1fr + 2fr dá 180px e 360px. Um item `2 / 4` atravessa colunas e gap interior: `180 + 30 + 360 = 570px`. `fr` não é percentagem do contentor.
 
-## Flexbox e grid
-
-- Flexbox organiza principalmente num eixo. `justify-content` alinha no eixo principal; `align-items` no transversal. `flex: 1 1 200px` dá crescimento, redução e base, não largura fixa.
-- Grid define linhas e colunas. `grid-column: 1 / 3` ocupa duas colunas. `gap` separa itens; `minmax(0, 1fr)` permite reduzir uma coluna abaixo do mínimo automático do conteúdo.
-- Num cartão flex em coluna, `margin-top: auto` no botão absorve espaço livre e alinha botões no fundo de cartões com a mesma altura.
-- Media queries adaptam ao ambiente. Testa texto longo, zoom e largura pequena; uma query não elimina uma largura mínima excessiva.
-
-[Catálogo responsivo](/cadeiras/ltw/css-estilo-layout/#flexbox-e-grid).
-
-## Calcular fr e um intervalo de linhas
-
-Desconta colunas fixas e gaps antes de repartir o resto pelas frações. Conteúdo 720px, coluna fixa 120px e dois gaps de 30px deixam 540px: com 1fr e 2fr, dão 180px e 360px. O item `grid-column: 2 / 4` ocupa ambos e o gap interior, somando 570px.
-
-Estas contas usam tracks `minmax(0,...)` sem outras restrições. Um mínimo automático imposto pelo conteúdo pode mudar a distribuição; fr não é uma percentagem fixa do contentor inteiro.
-
-[Distribuição do espaço e hipóteses](/cadeiras/ltw/css-estilo-layout/#repartir-o-espaço-com-fr).
+[Explicação completa](/cadeiras/ltw/css-estilo-layout/#repartir-o-espaço-com-fr).

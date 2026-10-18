@@ -18,13 +18,13 @@ Um guia ensina abrir a reserva, escolher Cancelar e confirmar. Uma referência r
 
 ## Ajuda contextual
 
-A etiqueta identifica o campo, a instrução explica a restrição e o erro descreve o problema ocorrido. Um tooltip só com rato não serve para informação essencial. A ajuda deve estar disponível, ser precisa e consistente, sem tapar a tarefa ou roubar foco.
+| Elemento  | Função                     | Erro comum                                     |
+| --------- | -------------------------- | ---------------------------------------------- |
+| Etiqueta  | Identifica o campo         | Placeholder como substituto                    |
+| Instrução | Explica a restrição antes  | Tooltip só com rato para informação essencial  |
+| Erro      | Descreve o problema depois | Tapar o campo ou roubar foco durante a escrita |
 
-Para uma reserva às 15h com cancelamento até 30 minutos antes:
-
-- Antes da ação, mostra "Podes cancelar até às 14h30" junto da reserva.
-- Às 14h50, explica que o prazo terminou e indica apenas apoio realmente disponível. Não promete uma exceção ou reembolso inexistente.
-- Avalia se a pessoa encontra e interpreta o prazo e compreende o caso fora dele. Ter uma página de Ajuda não demonstra utilidade.
+Para reserva às 15h com cancelamento até 30 minutos antes: mostra "Podes cancelar até às 14h30" junto da reserva; às 14h50 explica que o prazo terminou e indica só apoio realmente disponível. Avalia se a pessoa encontra e interpreta o prazo. Ter página de Ajuda não demonstra utilidade.
 
 ## Manutenção
 

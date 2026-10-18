@@ -15,13 +15,13 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Estados from '../../aed/Estados.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Em `[6,9,9,2]`, a nota máxima é 9, mas há duas posições possíveis. Se o pedido for a primeira ocorrência, a resposta é 1, com índices a partir de zero. Um algoritmo tem de fixar estes empates antes de podermos provar que está correto.
+Em `[6,9,9,2]`, a nota máxima é 9, mas há duas posições possíveis. Se o pedido for a primeira ocorrência, a resposta é 1, com índices a partir de zero. Um algoritmo tem de fixar estes empates antes de podermos provar que está correto. Ordenar todas as notas para descobrir um único máximo faz trabalho que um percurso evita.
 
-Percorrer o vetor guardando a maior nota vista é um **algoritmo**, uma sequência finita de passos para transformar a entrada no resultado pedido. Além de justificar esse resultado, precisamos de contar tempo e memória. Ordenar todas as notas para descobrir um único máximo faz trabalho que um percurso evita.
+Percorrer o vetor guardando a maior nota vista é um **algoritmo**: uma sequência finita de passos para transformar a entrada no resultado pedido. Além de justificar esse resultado, precisamos de contar tempo e memória.
 
 ## Contrato e invariante
 
-O **contrato** separa a pré-condição, que o chamador garante, da pós-condição, que o algoritmo garante. Para procurar o máximo, o vetor tem pelo menos um elemento, a resposta é um valor presente no vetor e nenhum elemento é maior. Se também pedires a posição, tens de decidir o que acontece num empate.
+O **contrato** separa a pré-condição, que o chamador garante, da pós-condição, que o algoritmo garante. Para procurar o máximo, o vetor tem pelo menos um elemento. A resposta é um valor presente no vetor e nenhum elemento é maior. Se também pedires a posição, tens de decidir o que acontece num empate.
 
 Considera este pseudocódigo, que devolve a primeira posição do máximo num vetor não vazio:
 
@@ -33,16 +33,16 @@ Considera este pseudocódigo, que devolve a primeira posição do máximo num ve
 
 </Bracket>
 
-1. **Inicialização:** antes da primeira iteração, `i=1`. O prefixo só contém `v[0]`, e `melhor=0` satisfaz a propriedade.
-2. **Manutenção:** se `v[i]` for maior, a posição `i` é o novo máximo. Se for menor ou igual, manter a posição antiga conserva o máximo e o primeiro empate. Depois de aumentar `i`, a propriedade vale para o prefixo seguinte.
-3. **Conclusão:** ao sair, `i=n`. O prefixo é o vetor inteiro, logo a propriedade implica a pós-condição.
+1. **Inicialização:** antes da primeira iteração, `i=1`. O prefixo só contém `v[0]`. `melhor=0` satisfaz a propriedade.
+2. **Manutenção:** se `v[i]` for maior, a posição `i` passa a ser o novo máximo. Se for menor ou igual, manter a posição antiga conserva o máximo e o primeiro empate. Depois de aumentar `i`, a propriedade vale para o prefixo seguinte.
+3. **Conclusão:** ao sair, `i=n`. O prefixo é o vetor inteiro. A propriedade implica a pós-condição.
 4. **Terminação:** a quantidade inteira não negativa `n-i` diminui em cada passo. O ciclo não pode continuar indefinidamente.
 
-As três primeiras etapas dão **correção parcial**: se terminar, o resultado é correto. Com a terminação, tens **correção total**. Uma propriedade como «o máximo ainda existe» é demasiado fraca para justificar a posição devolvida. E usar `>=` conserva o máximo, mas passa a escolher a última ocorrência.
+As três primeiras etapas dão **correção parcial**: se terminar, o resultado é correto. Com a terminação, tens **correção total**. Uma propriedade como «o máximo ainda existe» é demasiado fraca para justificar a posição devolvida. Usar `>=` conserva o máximo, mas passa a escolher a última ocorrência.
 
 ## Contar operações
 
-Escolhe uma operação representativa, como comparações de chaves, e conta-a em função do tamanho `n`. O máximo anterior faz exatamente `n-1` comparações. Não precisa de ordenar, porque isso acrescentaria trabalho sem melhorar uma única consulta.
+Escolhe uma operação representativa, como comparações de chaves, e conta-a em função do tamanho `n`. O máximo anterior faz exatamente `n-1` comparações. Não precisa de ordenar, porque isso acrescentaria trabalho sem melhorar uma única consulta. A tabela seguinte distingue os dois casos que mais se confundem: ciclos seguidos somam, e ciclos encaixados com interior independente multiplicam; o caso triangular soma `1+…+n`.
 
 | Fragmento de ciclo                       | Número de execuções do corpo         | Ordem apertada   |
 | ---------------------------------------- | ------------------------------------ | ---------------- |
@@ -53,7 +53,7 @@ Escolhe uma operação representativa, como comparações de chaves, e conta-a e
 | `i=1; i<n; i*=2`                         | $\lceil\log_2 n\rceil$, para $n\ge1$ | $\Theta(\log n)$ |
 | ciclo linear seguido de ciclo quadrático | $n+n^2$                              | $\Theta(n^2)$    |
 
-No primeiro programa, o segundo ciclo começa depois de terminar o primeiro. No segundo, o ciclo interior repete-se em cada iteração exterior. Por isso somamos custos no primeiro e multiplicamos contagens no segundo.
+No primeiro programa, o segundo ciclo começa depois de terminar o primeiro. No segundo, o ciclo interior executa `n` vezes em cada iteração exterior, independentemente de `i`. Por isso somamos custos no primeiro e multiplicamos contagens no segundo; quando o interior depende do exterior, conta por soma, como no caso triangular.
 
 ```cpp
 long long s = 0;
@@ -69,7 +69,7 @@ for (int i = 0; i < n; ++i)
 
 Com `n=0`, ambos fazem zero iterações. Com `n=1000`, o primeiro faz cerca de 2000 adições e o segundo cerca de 1 000 000. Chamar «independentes» aos dois casos esconde esta diferença: o que importa é se um ciclo está dentro do outro. E não classifiques todos os ciclos encaixados como quadráticos: se o exterior duplica `i` e o interior executa `i` vezes, a soma é $1+2+4+\cdots<2n$, ou seja, $\Theta(n)$. Um índice que apenas avança ao longo de todo o programa pode justificar uma soma linear, mesmo dentro de outro ciclo.
 
-O modelo costuma tratar operações sobre inteiros de dimensão fixa e acesso a uma posição de array como constantes. Comparar duas strings com comprimento máximo `L` pode custar $O(L)$. Copiar um vetor de `n` posições custa $\Theta(n)$, mesmo que a chamada pareça uma única instrução.
+O modelo costuma tratar operações sobre inteiros de dimensão fixa e acesso a uma posição de array como constantes. Comparar duas strings com comprimento máximo `L` pode custar $O(L)$. Copiar um vetor de `n` posições custa $\Theta(n)$, mesmo que a chamada pareça uma única instrução. Juntar strings com `+=` repetido recopia o resultado parcial em cada passo, por isso `n` junções podem custar $\Theta(n^2)$ no total: conta a operação repetida, não só o comprimento final.
 
 ## Limites assintóticos
 

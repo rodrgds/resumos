@@ -22,7 +22,7 @@ Esta folha reúne condições e sequências para consultar depois das lições. 
 | Biblioteca estática             | `ar rcs libname.a a.o`; ligar objetos antes da biblioteca                         |
 | Apontador para função           | `int (*f)(int)`, assinatura compatível                                            |
 
-Com char 1/1, short 2/2 e int 4/4 em tamanho/alinhamento, a struct com char[10], int e short ocupa 20 bytes; a union ocupa 12. As contas dependem da ABI, não apenas da largura dos endereços. [Layout explicado](/cadeiras/lc/memoria-funcoes/#calcular-o-tamanho-com-alinhamento).
+- ABI char 1/1, short 2/2, int 4/4: struct com `char[10]`, `int`, `short` ocupa 20 bytes, com campos em 0, 12 e 16; union ocupa 12, e três unions ocupam 36. As contas dependem da ABI, não apenas da largura dos endereços. [Layout explicado](/cadeiras/lc/memoria-funcoes/#calcular-o-tamanho-com-alinhamento).
 
 [Tipos e compilação](/cadeiras/lc/c-estruturado/), [memória e funções](/cadeiras/lc/memoria-funcoes/).
 
@@ -34,12 +34,22 @@ Com char 1/1, short 2/2 e int 4/4 em tamanho/alinhamento, a struct com char[10],
 | Todos os bits de `m`    | `(r & m) == m`                             |
 | Ligar, limpar, inverter | `r \| m`, `r & ~m`, `r ^ m`                |
 | Substituir campo        | `(r & ~mask) \| ((value << shift) & mask)` |
+| Nomear o bit `n`        | `BIT(n)`, ou `(1u << (n))`                 |
 | Máscara da notificação  | `1u << bit_pedido`, não `1u << IRQ`        |
 | Vários bits pendentes   | `if` independentes, sem `else if`          |
 
-Portas de timer, i8042 e UART pertencem ao espaço de I/O. Framebuffer é memória mapeada. No PIC, máscara a 1 bloqueia IRQ; na notificação Minix, bit a 1 indica pedido. Guardar bit pedido antes de `sys_irqsetpolicy`; usar hook devolvido nas restantes kernel calls. Receber, conferir notificação, origem HARDWARE e máscara. Limpar recursos também após falha parcial.
+- Portas de timer, i8042 e UART pertencem ao espaço de I/O; framebuffer é memória mapeada.
+- No PIC, máscara a 1 bloqueia IRQ; na notificação Minix, bit a 1 indica pedido.
+- Guardar o bit pedido antes de `sys_irqsetpolicy`; usar o hook devolvido nas restantes kernel calls.
+- Receber, conferir notificação, origem HARDWARE e máscara, com `if` independentes por dispositivo.
+- Limpar recursos também após falha parcial, pela ordem inversa da aquisição.
 
-Ler e escrever a mesma porta pode aceder a registos diferentes. No L3223 fictício, 0x23 lê estado e escreve controlo; reservados ficam zero. Timer 1, alarme e milissegundos dão 0x51, sem preservar o estado lido por OR. [Contrato e sequência](/cadeiras/lc/falar-com-hardware/#um-endereço-não-garante-um-registo-legível).
+- No L3223 fictício, `0x23` lê estado e escreve controlo; reservados ficam zero.
+- Timer 1, alarme e milissegundos dão `0x51`, sem preservar o estado lido por OR.
+- 500 ms escrevem `0xF4` e depois `0x01` na porta `0x21`; a contagem usa a unidade configurada, não `TIMER_FREQ / intervalo`.
+- Estado `0x05` indica pedidos dos timers 0 e 2; IRQ partilhada exige consultar a causa, não escolher o timer pela notificação.
+
+[Contrato e sequência](/cadeiras/lc/falar-com-hardware/#um-endereço-não-garante-um-registo-legível).
 
 [Registos](/cadeiras/lc/falar-com-hardware/#testar-e-alterar-campos), [hooks](/cadeiras/lc/interrupcoes/#hook-e-máscara-de-notificação).
 
@@ -72,6 +82,8 @@ Ler e escrever a mesma porta pode aceder a registos diferentes. No L3223 fictíc
 | Comando de rato               | `D4` em porta `64`, byte em `60`, ACK `FA`                           |
 | Respostas                     | `FE` reenvio, `FC` erro; limitar tentativas                          |
 | Reporting                     | `F4` ativa, `F5` desativa; não misturar respostas e pacotes          |
+
+- Chegada de um byte: teclado envia, KBC guarda com OBF a 1, IRQ1 se ativa, programa lê estado e dados.
 
 [Teclado](/cadeiras/lc/teclado/#make-break-e-prefixos), [pacotes](/cadeiras/lc/rato/#reconstruir-nove-bits), [comandos](/cadeiras/lc/rato/#enviar-um-comando).
 
@@ -114,6 +126,9 @@ Ler e escrever a mesma porta pode aceder a registos diferentes. No L3223 fictíc
 
 ## Aplicação e diagnóstico
 
-Driver recolhe dados; parser produz eventos; aplicação muda estado; desenho apresenta um frame. Processar todos os eventos antes de voltar a bloquear. Definir ordem para eventos simultâneos, recursos adquiridos e limpeza inversa. Para depurar, escolher uma entrada mínima, prever o resultado e testar uma hipótese de cada vez.
+- Driver recolhe dados; parser produz eventos; aplicação muda estado; desenho apresenta um frame.
+- Processar todos os eventos antes de voltar a bloquear; definir ordem para eventos simultâneos.
+- Recursos adquiridos pedem limpeza inversa; modo de vídeo só se repõe se foi alterado.
+- Para depurar: escolher uma entrada mínima, prever o resultado e testar uma hipótese de cada vez.
 
 [Máquinas de estados](/cadeiras/lc/projeto/#máquinas-de-estados), [debugging](/cadeiras/lc/projeto/#debugging-como-experiência).

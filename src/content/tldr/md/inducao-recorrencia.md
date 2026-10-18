@@ -1,18 +1,16 @@
-## Indução simples e forte
+## Indução
 
-Para provar $P(n)$ para todo inteiro $n\ge n_0$:
+Para $P(n)$ com $n\ge n_0$:
 
 1. Prova a base $P(n_0)$.
-2. Toma $k\ge n_0$ arbitrário e assume $P(k)$.
+2. Toma um $k\ge n_0$ arbitrário e assume $P(k)$.
 3. Deduz $P(k+1)$ sem assumir essa conclusão.
 
-A indução forte permite assumir **todos** os casos $P(n_0),\ldots,P(k)$ no passo. Usa-a quando a decomposição pode pedir um caso anterior diferente de $k$, como os fatores de um número composto.
+A indução forte assume $P(n_0),\ldots,P(k)$ no passo; usa-a quando a decomposição pede um caso anterior a $k$.
 
-- Verificar exemplos não prova a afirmação universal.
-- Confere se o passo funciona imediatamente depois das bases. Para moedas de 3 e 5, provar todos os valores $n\ge8$ por acrescentar 3 exige bases 8, 9 e 10.
-- Numa desigualdade, justifica a direção e o intervalo em que cada comparação vale.
-
-## Reutilizar a hipótese
+- Exemplos isolados não provam a afirmação universal.
+- Confere se o passo funciona logo depois das bases. Para cobrir todos os valores $n\ge8$ com moedas de 3 e 5 por acrescentar 3, precisas das bases 8, 9 e 10.
+- Numa desigualdade, justifica a direção e o intervalo de cada comparação.
 
 Para somas, separa o termo novo. Para $n\ge0$:
 
@@ -20,25 +18,23 @@ $$
 \sum_{i=1}^{n}i^2=\frac{n(n+1)(2n+1)}6.
 $$
 
-A base usa a soma vazia igual a zero. No passo, substitui a soma até $k$ pela hipótese e acrescenta $(k+1)^2$ para obter a fórmula de $k+1$.
+A base usa a soma vazia igual a zero. No passo, substitui a soma até $k$ pela hipótese e acrescenta $(k+1)^2$.
 
-Para divisibilidade, torna explícito o múltiplo. Se $5^k-1=4q$, então $5^{k+1}-1=5(5^k-1)+4=4(5q+1)$. A base $n=0$ prova $4\mid(5^n-1)$ para todos os naturais.
+Para a divisibilidade, explicita o múltiplo. Se $5^k-1=4q$, então $5^{k+1}-1=5(5^k-1)+4=4(5q+1)$.
 
-Uma definição recursiva precisa de bases e de argumentos que diminuam. Para provar propriedades, usa as mesmas divisões em casos e a hipótese nos argumentos menores. A indução forte permite usar $n/2$ ou $n-1$, quando a definição os pede.
-
-Em grafos, constrói a passagem entre os tamanhos. Para $C_{2n}$ bipartido, a base é $C_4$. Num ciclo de $2n+2$ vértices, substitui $u-x-y-v$ por $uv$, aplica a hipótese ao ciclo menor e repõe $x,y$ com cores alternadas. Retirar um só vértice daria um ciclo ímpar, fora da hipótese.
+Em $C_{2n}$ bipartido, com base $C_4$: num ciclo de $2n+2$ vértices troca $u-x-y-v$ por $uv$, aplica a hipótese ao ciclo menor e repõe $x,y$ alternados. Um só vértice daria um ciclo ímpar, fora da hipótese.
 
 ## Recorrências
 
-Uma recorrência precisa das condições iniciais. A conjetura obtida de primeiros termos deve ser verificada nas bases e substituída na recorrência.
+Uma recorrência precisa das condições iniciais. Uma conjetura a partir dos primeiros termos verifica-se nas bases e na relação.
 
-Nas Torres de Hanói com três pinos, $n$ discos, um movimento por disco do topo e sem maior sobre menor:
+Nas Torres de Hanói, com $n$ discos e as regras habituais:
 
 $$
 H_0=0,\qquad H_n=2H_{n-1}+1,\qquad H_n=2^n-1.
 $$
 
-São os movimentos mínimos: as duas transferências dos $n-1$ menores e o movimento do maior impõem o mesmo limite que o algoritmo atinge.
+São os movimentos mínimos: as duas transferências dos $n-1$ discos menores e o disco maior impõem o mesmo limite que o algoritmo atinge.
 
 ## Primeira ordem
 
@@ -53,18 +49,17 @@ $$
 
 Por exemplo, $a_0=2$ e $a_n=3a_{n-1}+1$ dão $(5\cdot3^n-1)/2$. Confere o índice zero e a relação entre termos.
 
-## Segunda ordem homogénea
+## Segunda ordem
 
 Para coeficientes constantes e $n\ge2$:
 
 $$
-a_n=\alpha a_{n-1}+\beta a_{n-2},\qquad
-r^2-\alpha r-\beta=0.
+a_n=\alpha a_{n-1}+\beta a_{n-2},\qquad r^2-\alpha r-\beta=0.
 $$
 
-- Com raízes distintas **não nulas** $r_1,r_2$, usa $a_n=Ar_1^n+Br_2^n$.
-- Com raiz dupla **não nula** $r$, usa $a_n=(A+Bn)r^n$.
-- Determina $A,B$ pelas duas condições iniciais. Trata à parte raízes zero e recorrências não homogéneas.
+- As raízes distintas não nulas $r_1,r_2$ dão $a_n=Ar_1^n+Br_2^n$.
+- A raiz dupla não nula $r$ dá $a_n=(A+Bn)r^n$.
+- Determina $A$ e $B$ pelas duas condições iniciais. Trata à parte as raízes zero e os casos não homogéneos.
 
 Para $a_0=2,a_1=5$ e $a_n=3a_{n-1}-2a_{n-2}$, as raízes são 1 e 2. $A+B=2,A+2B=5$ dão $a_n=3\cdot2^n-1$.
 

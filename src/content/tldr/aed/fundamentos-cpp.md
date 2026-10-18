@@ -1,37 +1,37 @@
-## Vetores e intervalos
+## Posições válidas
 
-- `std::vector<int> v{4,7,2}` tem três elementos, nas posições 0 a 2. `size()` conta elementos; `capacity()` conta espaço disponível.
-- `reserve(10)` reserva espaço, sem criar elementos. `v[i]` exige `0<=i<v.size()`.
-- `push_back(x)` acrescenta; `pop_back()` retira sem devolver. `front()`, `back()` e `pop_back()` exigem não vazio.
-- **Intervalo semiaberto** `[l,r)` inclui `l`, exclui `r` e contém `r-l` posições. `[1,3)` contém 7 e 2; `[3,3)` é vazio.
+- `v{4,7,2}` ocupa as posições 0, 1 e 2. `size()` conta elementos. `capacity()` conta espaço reservado.
+- Lê `v[i]` só com `0<=i<size()`. `front()`, `back()` e `pop_back()` exigem vetor não vazio.
+- `reserve(10)` não cria elementos. `push_back` cria; `pop_back` retira sem devolver.
+- `[l,r)` tem `r-l` posições. `[1,3)` lê 7 e 2. `[3,3)` está vazio e é válido.
 
-`size()` usa `std::size_t`, um inteiro sem sinal. Evita subtrair 1 a zero num percurso inverso:
+Percorre para trás sem subtrair a zero sem sinal:
 
 ```cpp
 for (std::size_t i = v.size(); i > 0; --i)
     std::cout << v[i - 1];
 ```
 
-## Referências e iteradores
+## Cópia ou referência
 
-| Expressão                             | Efeito                                         |
-| ------------------------------------- | ---------------------------------------------- |
-| Parâmetro `std::vector<int> v`        | Copia o vetor; alterações ficam na cópia       |
-| Parâmetro `std::vector<int>& v`       | Permite alterar o vetor do chamador            |
-| Parâmetro `const std::vector<int>& v` | Lê sem copiar nem alterar por essa referência  |
-| `for (int x : v)`                     | Copia cada valor para `x`                      |
-| `for (int& x : v)`                    | `x` refere o elemento; uma atribuição altera-o |
+| Código                         | O que acontece        |
+| ------------------------------ | --------------------- |
+| `f(std::vector<int> v)`        | Trabalha sobre cópia  |
+| `f(std::vector<int>& v)`       | Altera o original     |
+| `f(const std::vector<int>& v)` | Lê sem copiar         |
+| `for (int x : v)`              | `x` é cópia           |
+| `for (int& x : v)`             | `x` altera o elemento |
 
-- `begin()` identifica o início e `end()` a posição depois do último. No vazio coincidem. **Nunca desreferencies `end()`**.
-- `std::find(v.begin(),v.end(),x)` devolve `end()` se não encontrar. Num vetor, `it-v.begin()` dá o índice e `it+k` permite acesso direto; numa lista ligada essas operações não existem.
-- `std::sort(v.begin(),v.end())` ordena o vetor inteiro. `find` e `sort` precisam de `<algorithm>`.
+- `end()` marca a posição a seguir ao último. Nunca uses `*end()`. No vazio, `begin()==end()`.
+- `find` devolve `end()` quando falta. Num vetor, `it-v.begin()` dá o índice. Numa lista, esse salto não existe.
+- `sort(v.begin(),v.end())` ordena tudo. Precisa de `<algorithm>`; `vector` precisa de `<vector>`.
 
-## Comparação, ausência e contas
+## Comparar, apontar e contar
 
-- Um comparador indica se `a` vem antes de `b`. `[](int a,int b){return a<b;}` é uma lambda sem capturas; `[p]` captura uma cópia de `p`. A comparação exige uma ordem fraca estrita, pelo que `<=` não serve.
-- `nullptr` representa apontador ausente. Só consulta `p->campo` com um apontador válido. Depois de `delete p`, as referências ao nó são inválidas.
-- `std::optional<T>` contém um valor ou ausência. Verifica `if (r)` antes de `*r`; zero pode ser um resultado válido e não deve representar erro sem contrato explícito.
-- A divisão inteira trunca: `7/2*8` dá 24; `7*8/2` dá 28. `1LL*a*b` alarga o tipo **antes** de multiplicar; converter depois de `a*b` não evita overflow prévio.
-- Uma chamada recursiva suspensa ocupa memória. Identifica caso base, redução do problema e trabalho local antes de analisar o custo.
+- Lambda `[](int a,int b){return a<b;}` não captura nada. `[p]` guarda cópia de `p`. Exige ordem fraca estrita; `<=` viola essa regra.
+- Só segue `p->campo` com `p` válido. `nullptr` marca ausência. Depois de `delete p`, o nó deixa de existir.
+- `optional<T>` distingue ausência de zero. Testa `if (r)` antes de `*r`.
+- Inteiros truncam: `7/2` vale 3. `7/2*8` dá 24 e `7*8/2` dá 28. Escreve `1LL*a*b` para alargar antes de multiplicar.
+- Recursão suspende a chamada. Fixa caso base e medida que diminui antes de contares o custo.
 
-[Regras de memória e invalidação de iteradores](/cadeiras/aed/tipos-abstratos/#memória-cópia-e-iteradores).
+[Contratos de memória e cópia](/cadeiras/aed/tipos-abstratos/#memória-cópia-e-iteradores).

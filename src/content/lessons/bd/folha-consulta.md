@@ -5,7 +5,7 @@ section: recursos
 studyKind: revision
 ---
 
-Esta folha reúne as regras e decisões já explicadas nas lições, para rever antes de resolver exercícios.
+Esta folha reúne as regras e decisões já explicadas nas lições, para rever antes de resolver exercícios. Cada secção indica o procedimento, as condições e os erros frequentes, com ligações para a explicação completa.
 
 ## Modelação e relações
 
@@ -18,11 +18,21 @@ Esta folha reúne as regras e decisões já explicadas nas lições, para rever 
 | Ternária      | Relação com os participantes. Multiplicidade num lado conta-o para um par fixo dos outros dois.         |
 | Generalização | Por classe, por tipo concreto ou tabela única. Confere completude e disjunção separadamente.            |
 
-A multiplicidade junto de uma classe conta objetos **dessa classe** por objeto da outra. Uma classe de associação não distingue várias ligações do mesmo par. Uma FK não impõe mínimos de participação no lado referenciado. [UML](/cadeiras/bd/modelo-conceptual-uml/#associações-e-multiplicidades) · [Mapeamento](/cadeiras/bd/mapeamento-relacional/#associações-um-para-muitos).
+A multiplicidade junto de uma classe conta objetos **dessa classe** por objeto da outra. Uma classe de associação não distingue várias ligações do mesmo par. Uma FK não impõe mínimos de participação no lado referenciado.
+
+Erro frequente: ler a multiplicidade do lado errado e concluir a participação inversa. Outro erro: usar `DISTINCT` para esconder uma junção errada em vez de escolher o id correto.
+
+[UML](/cadeiras/bd/modelo-conceptual-uml/#associações-e-multiplicidades) · [Mapeamento](/cadeiras/bd/mapeamento-relacional/#associações-um-para-muitos).
 
 ## Dependências e formas normais
 
-$X\to Y$ significa que concordar em X obriga a concordar em Y em todas as instâncias válidas. Para $X^+$, começa em X e aplica DFs cujas esquerdas já tens, até estabilizar. Superchave: fecho completo. Candidata: superchave mínima. Primo: pertence a alguma candidata. [Fechos e chaves](/cadeiras/bd/normalizacao/#fecho-de-um-conjunto-de-atributos).
+$X\to Y$ significa que concordar em X obriga a concordar em Y em todas as instâncias válidas.
+
+Para $X^+$, começa em X e aplica DFs cujas esquerdas já tens, até estabilizar. Superchave: fecho completo. Candidata: superchave mínima. Primo: pertence a alguma candidata.
+
+Erros frequentes: concluir uma DF a partir de uma amostra; separar a esquerda de $AB\to C$; testar redundância sem retirar a DF antes do fecho.
+
+[Fechos e chaves](/cadeiras/bd/normalizacao/#fecho-de-um-conjunto-de-atributos).
 
 | Forma | Critério                                                        |
 | ----- | --------------------------------------------------------------- |

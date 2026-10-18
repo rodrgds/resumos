@@ -2,7 +2,7 @@
 title: Ciclos, ordem topológica e conetividade
 description: Tempos de descoberta, low-link, componentes fortes, pontes e pontos de articulação.
 section: conteudo
-order: 13
+order: 11
 practices:
   - aed/praticar-grafos-aplicacoes
 ---
@@ -13,7 +13,9 @@ import Dot from '../../../components/Dot.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma DFS regista a descoberta e o fim de cada chamada. Uma aresta para uma chamada ainda ativa fecha um ciclo dirigido; uma aresta para uma chamada terminada pode apenas ligar dois ramos. Para distinguir os casos, guardamos mais informação do que um conjunto de visitados.
+Uma DFS regista a descoberta e o fim de cada chamada. Uma aresta para uma chamada ainda ativa fecha um ciclo dirigido. Uma aresta para uma chamada terminada pode apenas ligar dois ramos. Para distinguir os casos, guardamos mais informação do que um conjunto de visitados.
+
+Assume as representações e a marcação na descoberta da página anterior. A novidade são os tempos e valores low que identificam ciclos, ordem e pontos críticos.
 
 ## Ciclos dirigidos e não dirigidos
 
@@ -33,7 +35,7 @@ O algoritmo de **Kahn** guarda os graus de entrada e uma fila dos vértices de g
 
 Para as arestas `0->2`, `1->2`, `2->3`, `1->4`, começa com a fila `[0,1]`. Retirar 0 deixa o grau de 2 igual a 1. Retirar 1 liberta 2 e 4. A ordem com esta fila é `[0,1,2,4,3]`. `[1,0,4,2,3]` também é válida. Se acrescentares `3->1`, sobram vértices sem grau zero: existe um ciclo. Kahn devolve uma ordem completa se e só se retirar `V` vértices.
 
-Ambas as abordagens custam $O(V+E)$ e espaço auxiliar $O(V)$. Para escolheres sempre o menor vértice disponível, substitui a fila por uma min-heap; a escolha acrescenta um fator logarítmico nas operações de prioridade.
+Ambas as abordagens custam $O(V+E)$ e espaço auxiliar $O(V)$. Para escolheres sempre o menor vértice disponível, substitui a fila por uma fila de prioridade, como a [heap de um capítulo posterior](/cadeiras/aed/filas-prioridade-heaps/); a escolha acrescenta um fator logarítmico nas operações de prioridade.
 
 ## Unicidade da ordem topológica
 
@@ -60,13 +62,13 @@ No exemplo do programa abaixo, `0` e `1` alcançam-se mutuamente, tal como `2` e
 
 ## Tarjan e a pilha de componentes
 
-Tarjan faz uma DFS, guarda `disc[u]`, o tempo de descoberta, e `low[u]`, informação sobre o menor tempo que pode ligar a região de DFS ainda por atribuir a uma componente. Mantém uma pilha de vértices descobertos mas ainda não atribuídos a uma SCC.
+Tarjan faz uma DFS, guarda `disc[u]`, o tempo de descoberta, e `low[u]`, o menor tempo alcançável a partir de `u` sem sair da região ainda por atribuir a uma componente. Mantém uma pilha de vértices descobertos mas ainda não atribuídos a uma SCC.
 
-Ao entrar em `u`, define `disc[u]=low[u]` e empilha-o. Para cada `u->v`:
+Ao entrar em `u`, define `disc[u]=low[u]` e empilha-o. Para cada aresta `u->v`, decide pelo estado de `v`:
 
-- Se `v` não foi descoberto, visita-o e faz `low[u]=min(low[u],low[v])`.
-- Se `v` já foi descoberto e **continua na pilha de componentes**, faz `low[u]=min(low[u],disc[v])`.
-- Se `v` já pertence a uma componente terminada, ignora essa aresta para esta atualização.
+1. Se `v` ainda não foi descoberto, visita-o primeiro e depois propaga: `low[u]=min(low[u],low[v])`. O filho já resume o que a sua subárvore alcança.
+2. Se `v` já foi descoberto e **continua na pilha de componentes**, usa o tempo de descoberta: `low[u]=min(low[u],disc[v])`. Usa `disc[v]`, não o `low[v]` já calculado, que resume a exploração de outro ramo.
+3. Se `v` já pertence a uma componente terminada, ignora essa aresta: nada do que `v` alcança volta a `u` por dentro da mesma componente.
 
 Quando `low[u]==disc[u]`, `u` é a raiz de uma componente: retira da pilha até incluir `u`, atribuindo a mesma componente a todos. Os vértices retirados conseguem alcançar essa raiz pela informação acumulada; a raiz alcança-os pelos caminhos de descoberta. A condição impede que a componente fique ligada a um antepassado ainda pendente.
 

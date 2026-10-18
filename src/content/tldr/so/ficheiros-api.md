@@ -1,57 +1,32 @@
-## Fluxos e descritores
+## Interfaces
 
-| Biblioteca C      | POSIX           | Retorno e unidade                                   |
-| ----------------- | --------------- | --------------------------------------------------- |
-| `fopen`           | `open`          | `FILE *`, falha `NULL`; descritor `int`, falha `-1` |
-| `fread`, `fwrite` | `read`, `write` | Elementos completos; bytes com retorno `ssize_t`    |
-| `fseek`, `ftell`  | `lseek`         | Posição do fluxo; posição da descrição aberta       |
-| `fclose`          | `close`         | Fechar fluxo trata buffers da biblioteca            |
+| Biblioteca C      | POSIX           | Falha                                  |
+| ----------------- | --------------- | -------------------------------------- |
+| `fopen`           | `open`          | `NULL` / `-1`                          |
+| `fread`, `fwrite` | `read`, `write` | elementos / bytes (`ssize_t`)          |
+| `fseek`, `ftell`  | `lseek`         | posição do fluxo / da descrição aberta |
+| `fclose`          | `close`         | `fclose` descarrega buffers            |
 
-O descritor 0 é válido. `fread` com elementos de tamanho 1 conta bytes; uma leitura curta exige distinguir EOF e erro com `feof` e `ferror`. Não alternes operações C e POSIX na mesma abertura sem coordenar buffers e posição.
+- Descritor 0 é válido: testa `fd == -1`, não `!fd`.
+- Leitura curta: distingue EOF de erro com `feof`/`ferror`. Não mistures C e POSIX na mesma abertura sem coordenar buffer e posição.
 
-## Transferências e posição
+## Transferências completas
 
-Para `read` com quantidade positiva, retorno positivo é a quantidade lida, 0 é EOF e `-1` é erro. Testa o valor **com sinal** antes de converter para `size_t`.
+`write` pode entregar menos bytes. Para $n$ bytes, repete `write(fd, buf+feito, n-feito)` e soma só o aceite; trata `EINTR` e progresso nulo. Se 8 bytes dão 3, continua em `buf+3` com 5.
 
-1. Lê para um buffer e interpreta o retorno; repete a chamada interrompida com `EINTR`.
-2. Para escrever $n$ bytes, mantém uma contagem `feito`.
-3. Chama `write(fd, buf+feito, n-feito)` e soma só os bytes aceites.
-4. Repete até completar ou ocorrer erro; zero sem progresso também exige tratamento.
+- Destino de cópia: abre **sem truncar**, compara `st_dev`/`st_ino` via `fstat` (hard links contam), e só depois trunca.
+- Cada `open` tem posição própria; `dup` e herança de `fork` partilham a descrição aberta.
 
-Se oito bytes dão retorno 3, a tentativa seguinte começa em `buf+3` e pede 5. Reenviar os oito duplicaria o prefixo. Não é preciso `\0` para transferir quantidades de bytes.
+## Posição e linhas
 
-- Para criar ou substituir, `O_WRONLY | O_CREAT | O_TRUNC` requer modo, como `0666`, alterado pela `umask`. **Confirma que origem e destino não são o mesmo ficheiro antes de truncar**, incluindo hard links.
-- Cada `open` independente tem a sua posição. `dup` e descritores herdados por `fork` partilham a descrição aberta e a posição.
-- `lseek(fd, 0, SEEK_SET)` volta ao início de um ficheiro reposicionável e falha com `(off_t)-1`. Pipes não permitem essa operação.
+- `lseek` devolve a posição absoluta ou `(off_t)-1`. Para inverter bytes, visita `tamanho-1` até 0 com `SEEK_SET`; um recuo relativo após `read` relê o mesmo byte. EOF é retorno 0, não um byte.
+- `getline` (POSIX) reserva ou aumenta o buffer; inclui `\n` se existir. Liberta no fim; `-1` pode ser erro. Últimas $k$ linhas: duas passagens em ficheiro regular, fila circular em pipe.
+- `strstr` com sobreposição avança 1 byte após o início; sem ela, avança o padrão. Rejeita padrão vazio.
 
-## Reposicionamento
+## Metadados e tempo
 
-`lseek` devolve a nova posição absoluta ou `(off_t)-1`. `SEEK_SET`, `SEEK_CUR` e `SEEK_END` partem do início, posição atual e tamanho lógico; usa `off_t`.
+- Lê `struct stat` só após sucesso. `stat` segue links, `lstat` não, `fstat` usa abertura. `S_ISREG`/`S_ISDIR` para o tipo.
+- `d_name` não é caminho: junta o diretório ou usa `fstatat(dirfd(d), nome, &info, 0)`. Repõe `errno=0` antes de **cada** `readdir`.
+- `time_t` é civil; `CLOCK_MONOTONIC` mede durações. `localtime`: ano desde 1900, mês 0–11.
 
-Num ficheiro `abcde`, `lseek(fd, -2, SEEK_END)` põe a posição em 3; ler um byte dá `d` e avança para 4. Para inverter bytes, visita índices de `tamanho-1` até zero, reposicionando antes de cada leitura. Repetir apenas um recuo de um byte pode reler o mesmo byte porque `read` avança. EOF é retorno 0, não um carácter. Inverter bytes não preserva caracteres UTF-8.
-
-## Linhas e pesquisa
-
-`getline` é POSIX. Recebe um buffer que pode reservar ou aumentar; o retorno inclui newline, se existir, e exclui o terminador zero. Liberta o buffer no fim e distingue retorno `-1` por EOF de erro.
-
-- Para últimas $k$ linhas num ficheiro regular, conta $L$, volta ao início e imprime índices desde $\max(0,L-k)$, contando de zero.
-- Num pipe, usa uma fila circular das últimas $k$ linhas e comprimentos, porque não podes voltar atrás.
-- Conserva uma última linha sem newline. Bytes zero podem existir nos dados; funções de strings parariam cedo.
-- `getopt` processa opções e deixa `optind` no primeiro argumento restante. Define se contas bytes, caracteres ou palavras.
-- Em `strstr`, sobreposição pede avançar um byte após o início encontrado; sem sobreposição, avança o comprimento do padrão. Define ou rejeita padrão vazio.
-
-## Metadados e diretórios
-
-- Só usa a `struct stat` depois de sucesso. `st_size` é tamanho lógico em bytes; `st_blocks` usa unidades de 512 bytes nas interfaces UNIX usuais e pode diferir por ficheiros esparsos.
-- `stat` segue links simbólicos; `lstat` consulta o link; `fstat` consulta uma abertura. Usa `S_ISREG` e `S_ISDIR` para o tipo.
-- `opendir`, `readdir`, `closedir` gerem a travessia. `d_name` é só o nome: consulta com caminho completo ou `fstatat(dirfd(dir), nome, &info, 0)`.
-- Põe `errno=0` imediatamente antes de **cada** `readdir`. Ao receber `NULL`, distingue fim de erro.
-- Numa recursão, trata `.` e `..` e define se segues links para evitar ciclos.
-
-## Medir tempo
-
-`time_t` representa tempo civil; `localtime` usa ano relativo a 1900 e mês entre 0 e 11. Para duração, usa `CLOCK_MONOTONIC`, que evita correções do relógio civil. A diferença entre duas `timespec` é $(s_2-s_1)+(n_2-n_1)/10^9$ segundos.
-
-Tempo de CPU mede execução; tempo decorrido inclui espera. Um processo bloqueado pode ter grande duração e quase nenhum tempo de CPU.
-
-[Cópia com tratamento de escritas parciais](/cadeiras/so/ficheiros-api/#ler-e-escrever-todos-os-bytes).
+[Cópia robusta](/cadeiras/so/ficheiros-api/#ler-e-escrever-todos-os-bytes).

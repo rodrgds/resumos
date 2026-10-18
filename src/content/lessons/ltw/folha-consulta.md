@@ -6,42 +6,75 @@ studyKind: revision
 order: 0
 ---
 
-As ligações levam às explicações e aos exemplos. Para prever um resultado, confirma primeiro o contexto: árvore HTML, nível da cascata, tipo da entrada, ordem dos callbacks ou nó XPath.
+Confirma primeiro o contexto: árvore HTML, nível da cascata, tipo da entrada, ordem dos callbacks ou nó XPath. As ligações levam à explicação de cada regra.
 
-## HTML e CSS
+## HTML: o que o pedido contém
 
-- [Formulários](/cadeiras/ltw/html-estrutura/#formulários-e-dados-enviados): `id` liga à label; `name` identifica o parâmetro. Checkbox não marcada e `disabled` não enviam. `readonly` normalmente envia. `POST` não cifra; valida de novo no servidor.
-- [Seletores](/cadeiras/ltw/css-estilo-layout/#seletores): espaço = descendente; `>` = filho; `+` = irmão seguinte; `~` = irmãos posteriores. `nth-child` conta todos os elementos; `nth-of-type` só o tipo.
-- [Cascata](/cadeiras/ltw/css-estilo-layout/#cascata-e-herança): origem/importância e camadas antes de especificidade; posição desempata. Trio `(ID, classes/atributos/pseudo-classes, elementos/pseudo-elementos)`. Declaração no filho vence herança.
-- [Caixa](/cadeiras/ltw/css-estilo-layout/#medidas-e-modelo-de-caixa): `content-box` soma padding e border à largura; `border-box` já os inclui. Margin fica fora. `rem` usa a raiz; `em` depende da propriedade e do tamanho de letra relevante.
-- [Layout](/cadeiras/ltw/css-estilo-layout/#fluxo-e-posicionamento): `relative` conserva espaço; `absolute` e `fixed` saem do fluxo; `sticky` conserva. Flex organiza eixos; grid organiza linhas e colunas. `justify-content` segue o eixo principal.
+| Dado                                        | Para onde vai                      |
+| ------------------------------------------- | ---------------------------------- |
+| `id`                                        | À `label` (`for`), nunca ao pedido |
+| `name`                                      | Ao pedido, como nome do parâmetro  |
+| Sem `name`, `disabled`, checkbox por marcar | Não viaja                          |
+| `readonly`, checkbox marcada, botão usado   | Viaja (marcada sem `value`: `on`)  |
+| Fragmento `#...`                            | Fica no navegador                  |
 
-## PHP e JavaScript
+[Formulários](/cadeiras/ltw/html-estrutura/#formulários-e-dados-enviados) · POST não cifra; o servidor valida tudo de novo. Tabela usa `th` com `scope`; `rowspan`/`colspan` ocupam posições que não se repetem.
 
-- [PHP](/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido): entrada pode faltar ou ser array. Verifica tipo, valida e só depois converte. `===` distingue tipos; `isset` rejeita null; `empty` rejeita também `'0'`.
-- [PDO](/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas): `prepare` + `execute` para valores. Marcadores não substituem identificadores. `fetch` devolve linha ou false. Transação = commit conjunto ou rollback.
-- [Redirecionamento e sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação): `header` antes de saída; `Location` não pára o programa, por isso usa `exit`. Após POST, 303 permite GET. Sessão no servidor, identificador habitualmente no cookie.
-- [JavaScript](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões): `const` impede reatribuição, não mutação. `+` pode concatenar. `??` substitui null/undefined; `||` substitui valores falsos. `map` transforma, `filter` seleciona, `reduce` acumula. `sort` altera o array; copia primeiro e usa `(a, b) => a - b` para ordenar números.
-- [Funções e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação): closure conserva ambiente lexical. `this` normal depende da chamada; arrow herda-o. `target` é o alvo; `currentTarget` é o elemento cujo listener está a correr. `preventDefault` impede ação, não propagação.
+## CSS: especificidade e caixa
 
-## HTTP e segurança
+Ordem de decisão: origem e importância, camadas, especificidade `(ID, classes, elementos)`, posição. Herança decide-se à parte: declaração no filho vence a herdada.
 
-- [HTTP](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência): GET seguro e idempotente; PUT/DELETE idempotentes; POST não em geral. Idempotência descreve efeito, não resposta igual. Fragmento não vai ao servidor.
-- [Cabeçalhos](/cadeiras/ltw/http-ajax-json/#ler-mensagens): Accept pede formato; Content-Type descreve corpo. Set-Cookie na resposta, Cookie no pedido. 201 criado; 204 sem corpo; 303 redireciona; 304 cache válida; 400 entrada; 403 recusa; 404 ausente; 405 método; 500 interno.
-- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` resolve com 404; verifica `ok` e lança erro. `json()` lê o corpo e é assíncrono. Encoda parâmetros com `URLSearchParams`; usa contador ou `AbortController` para ignorar respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF. `Access-Control-Allow-Origin` também é necessário na resposta real após preflight.
-- [Defesas](/cadeiras/ltw/seguranca-web/#injeção-sql): SQL preparado; escape conforme contexto; `textContent` para texto; token CSRF não vazio e verificado; autorização no servidor; caminhos fixos ou controlados; HTTPS no transporte.
-- [Palavras-passe](/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão): password_hash/password_verify, nunca SHA-1 simples. Salt não salva uma palavra-passe fraca. Regenera sessão ao autenticar.
+| Caso                                       | Regra                                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| 1 ID contra 10 classes                     | Ganha o ID                                                                 |
+| `:where`                                   | Vale 0                                                                     |
+| `!important`, estilo em linha              | Mudam importância/nível, não especificidade                                |
+| `content-box` / `border-box`               | `width` exclui / inclui padding e borda; margem sempre fora                |
+| `em` / `rem`                               | Próprio elemento ou pai / raiz                                             |
+| `relative` / `absolute`+`fixed` / `sticky` | Conserva lugar / sai do fluxo / prende no scroll                           |
+| `fr`                                       | Reparte o que sobra após fixos e gaps; item em span inclui gaps interiores |
 
-## Regex e XML
+[Seletores](/cadeiras/ltw/css-estilo-layout/#seletores) · [Cascata](/cadeiras/ltw/css-estilo-layout/#cascata-e-herança) · [Caixa](/cadeiras/ltw/css-estilo-layout/#medidas-e-modelo-de-caixa) · [Fr](/cadeiras/ltw/css-estilo-layout/#repartir-o-espaço-com-fr)
 
-- [Regex](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência): `[]` escolhe um caráter; `*` zero+, `+` um+, `?` opcional. `(?:...)` agrupa sem capturar. Agrupa alternativas antes de ancorar. Guloso tenta máximo; preguiçoso tenta mínimo.
-- [Capturas](/cadeiras/ltw/expressoes-regulares/#capturas-e-referências): grupo 0 é tudo; `\1` exige repetição da captura. Lookaround testa sem consumir. Formato de data não prova data existente.
-- [XML](/cadeiras/ltw/xml-xpath/#boa-formação-e-validade): boa formação = sintaxe; validade = contrato. Namespace é URI, não prefixo. Por defeito afeta elementos, não atributos sem prefixo.
-- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz do documento; `//` desce a descendentes; `@` escolhe atributos; `text()` escolhe texto; cada `[condição]` filtra o passo anterior. Posições começam em 1. `//livro[1]` escolhe o primeiro `livro` de cada grupo de irmãos; `(//livro)[1]` escolhe o primeiro do conjunto global. Em XPath 1.0, `x != 'a'` exige algum x diferente; `not(x = 'a')` exige que nenhum seja igual.
+## PHP: fronteira e persistência
 
-## Seguir estado e identidade
+| Entrada                         | Verificação                                                                       |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| Ausente, string com lixo, array | Rejeita antes de converter (`is_string`, inteiro completo, limites)               |
+| `$_POST`                        | Só corpos de formulário; JSON lê-se em `php://input`                              |
+| Coluna de ordenação             | Lista fixa de nomes; marcador é só valor                                          |
+| Stock concorrente               | `UPDATE ... WHERE stock >= :q` + `rowCount`, em transação com `commit`/`rollback` |
 
-- [Âmbito PHP](/cadeiras/ltw/php-dinamicas-bd/#âmbito-global-e-captura-de-uma-variável): uma função nomeada precisa de argumento ou acesso explícito à global. `use ($x)` captura valor; `use (&$x)` conserva referência. Globais do pedido não são persistência entre pedidos.
-- [Referência de foreach](/cadeiras/ltw/php-dinamicas-bd/#terminar-uma-referência-de-foreach): o nome usado com `&` continua ligado à última posição. Desfaz com `unset($nome)` antes de reutilizar, sem apagar o elemento do array.
-- [Callback registado](/cadeiras/ltw/javascript-dom-eventos/#guardar-a-função-que-foi-registada): cada `bind` cria uma função nova. Para remover, conserva callback e usa o mesmo tipo/captura. Repetir a adição da mesma combinação não duplica o listener.
-- [Frações de grelha](/cadeiras/ltw/css-estilo-layout/#repartir-o-espaço-com-fr): desconta tracks fixos e gaps, depois divide o resto pela soma das fr. Um item que atravessa tracks inclui os gaps interiores; mínimos de conteúdo podem mudar a distribuição.
+`intval('2x')` dá 2: converter não valida. `header` antes de saída + `exit`; após POST, 303 para GET. `password_hash` / `password_verify`; sessão regenerada ao autenticar; dono verificado em cada ação a partir de `$_SESSION`.
+
+[Pedir](/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido) · [PDO](/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas) · [Transação](/cadeiras/ltw/php-dinamicas-bd/#alterar-dados-de-forma-consistente) · [Sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação) · [Âmbito](/cadeiras/ltw/php-dinamicas-bd/#âmbito-global-e-captura-de-uma-variável) · [Foreach com `&`: `unset($v)` após o ciclo](/cadeiras/ltw/php-dinamicas-bd/#terminar-uma-referência-de-foreach)
+
+## JavaScript: valores e eventos
+
+`+` concatena, `-` numericiza; `??` só para `null`/`undefined`, `||` para falsos. `map`/`filter` criam, `forEach` devolve `undefined`, `sort` altera (números: `(a,b) => a-b` sobre cópia). `[1] === [1]` é falso.
+
+Closure guarda o ambiente de criação; `this` normal depende da chamada; arrow herda. `target` é a origem, `currentTarget` o listener em execução; delegação via `closest` serve itens futuros. `preventDefault` trava a ação, `stopPropagation` o percurso. Cada `bind` é função nova: guarda-a para remover, com igual tipo e captura. `textContent` para texto; `innerHTML` nunca com entrada.
+
+[Tipos](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões) · [Eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação) · [Remover listener](/cadeiras/ltw/javascript-dom-eventos/#guardar-a-função-que-foi-registada)
+
+## HTTP: método, estado e origem
+
+GET/HEAD/OPTIONS seguros e idempotentes; PUT/DELETE idempotentes; POST em geral não. Efeito igual, resposta pode diferir. `Accept` pede, `Content-Type` descreve. 201 criado, 204 sem corpo, 303 por GET, 304 cache válida, 400/401/403/404/405/500.
+
+`fetch` resolve com 404: testa `ok`. `json()` é assíncrono. Parâmetros com `URLSearchParams`; respostas fora de ordem pedem contador ou `AbortController`. POST JSON entre origens exige preflight OPTIONS; a resposta real também autoriza a origem. Credenciais pedem origem concreta, nunca `*`.
+
+[Métodos](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência) · [Mensagens](/cadeiras/ltw/http-ajax-json/#ler-mensagens) · [Fetch](/cadeiras/ltw/http-ajax-json/#json-e-fetch) · [CORS](/cadeiras/ltw/http-ajax-json/#sop-e-cors)
+
+## Segurança: cada risco, a sua defesa
+
+SQL preparado para valores; escape do contexto de saída; token CSRF não vazio com `hash_equals`; autorização no registo com o utilizador da sessão; caminhos de mapa fixo fora da raiz pública; HTTPS só no transporte. `HttpOnly` esconde o cookie, não trava pedidos. Salt público não salva palavra-passe fraca.
+
+[Injeção](/cadeiras/ltw/seguranca-web/#injeção-sql) · [XSS](/cadeiras/ltw/seguranca-web/#xss-e-contexto-de-saída) · [CSRF](/cadeiras/ltw/seguranca-web/#csrf) · [Autorização](/cadeiras/ltw/seguranca-web/#autenticação-e-autorização) · [Palavras-passe](/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão) · [Percurso de revisão](/cadeiras/ltw/seguranca-web/#https-e-revisão-de-uma-ação)
+
+## Regex e XPath: âncoras e alcance
+
+`ab+` repete `b`; `(ab)+` o par; `^A|B$` prende cada lado; `^(?:A|B)$` prende ambas. Guloso consome o máximo, preguiçoso o mínimo; classe negada nunca atravessa o delimitador. `\1` repete a captura; `g` guarda `lastIndex` em JS; PCRE usa `\A...\z`; `pattern` testa o valor completo e o servidor valida de novo.
+
+XPath: `/` raiz e filhos, `//` descendentes, `@` atributos, `text()` texto, posições desde 1. `[f][1]` filtra e escolhe; `[1][f]` escolhe e testa. `//livro[1]` por grupo, `(//livro)[1]` global. `!=` com vários nós pede `not(x = ...)`. Sem prefixo só há namespace vazio: regista prefixo para o URI.
+
+[Peças](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência) · [Motores](/cadeiras/ltw/expressoes-regulares/#javascript-php-e-html) · [Caminhos](/cadeiras/ltw/xml-xpath/#caminhos-xpath) · [Predicados](/cadeiras/ltw/xml-xpath/#predicados-e-posição)

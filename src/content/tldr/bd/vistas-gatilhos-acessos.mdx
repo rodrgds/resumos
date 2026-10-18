@@ -3,27 +3,24 @@ import auditarStock from '../../bd/examples/auditar-stock.sql?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-## Vistas
+## Vistas: consultas com nome
 
-Uma **vista virtual** guarda uma consulta, não uma cópia permanente dos resultados, por isso alterar a tabela base muda a sua resposta. Uma **materializada** guarda resultados e exige atualização; PostgreSQL tem esse mecanismo nativo, SQLite não tem o mesmo comando. A definição da vista também não diz como traduzir alterações: pedir total 120 não indica quais as linhas de compra a mudar.
+Uma **vista virtual** guarda a pergunta, não os resultados: alterar a base muda a resposta. Uma **materializada** guarda resultados e pede atualização; PostgreSQL tem-nas, SQLite não. A definição também não diz como traduzir escritas: pedir total 120 não indica que linhas mudar.
 
-- SQLite precisa de gatilhos `INSTEAD OF` para escrever através de vistas.
-- PostgreSQL atualiza automaticamente certas vistas simples. `WITH CHECK OPTION` pode exigir que os valores continuem a satisfazer o filtro da vista.
+- Em SQLite, escreve através de vistas com gatilhos `INSTEAD OF`; nada é automático.
+- Em PostgreSQL, vistas simples atualizam-se sozinhas; `WITH CHECK OPTION` pode exigir que a linha continue no filtro da vista.
 
-## Gatilhos
+## Gatilhos: quando disparam e o que veem
 
-Um **gatilho** reage a um evento `INSERT`, `UPDATE` ou `DELETE`, testa opcionalmente `WHEN` e executa uma ação. Em SQLite é por linha: alterar dez linhas pode dispará-lo dez vezes.
+Um **gatilho** segue evento (`INSERT`, `UPDATE`, `DELETE`), condição `WHEN` opcional e ação. Em SQLite é **por linha**: dez linhas disparam dez vezes.
 
-| Momento/evento | Significado ou valores disponíveis             |
-| -------------- | ---------------------------------------------- |
-| `BEFORE`       | Antes da alteração da linha.                   |
-| `AFTER`        | Depois da alteração.                           |
-| `INSTEAD OF`   | Substitui uma operação sobre uma vista SQLite. |
-| `INSERT`       | Disponibiliza `NEW`.                           |
-| `DELETE`       | Disponibiliza `OLD`.                           |
-| `UPDATE`       | Disponibiliza `OLD` e `NEW`.                   |
+| Evento em SQLite | Valores disponíveis |
+| ---------------- | ------------------- |
+| `INSERT`         | `NEW`               |
+| `DELETE`         | `OLD`               |
+| `UPDATE`         | `OLD` e `NEW`       |
 
-`UPDATE OF stock` reage à presença da coluna na instrução, mesmo que o valor não mude. A condição seguinte evita auditorias sem mudança, dado que stock é obrigatório:
+`BEFORE` corre antes, `AFTER` depois, `INSTEAD OF` substitui a operação na vista. `UPDATE OF stock` reage à coluna constar da instrução, **mesmo sem mudança de valor**: confirma a diferença em `WHEN`.
 
 <CodePlayground
   language="sqlite"
@@ -32,32 +29,24 @@ Um **gatilho** reage a um evento `INSERT`, `UPDATE` ou `DELETE`, testa opcionalm
   code={auditarStock}
 />
 
-Fica uma linha: produto 10, anterior 20, novo 18. A segunda instrução tem o evento, mas não satisfaz a condição.
+Uma linha (produto 10, 20 para 18); a segunda instrução dispara mas a condição trava-a. Prefere `CHECK`, `UNIQUE` e estrangeiras quando exprimem a regra. Um limite de encomendas tem de cobrir inserções **e** mudanças de cliente; mínimos pedem eliminações. Evita ciclos e ordens de gatilhos não garantidas.
 
-Prefere `CHECK`, `UNIQUE` e estrangeiras quando exprimem a regra. Um limite de encomendas precisa de cobrir inserções e mudanças de cliente; um mínimo exige considerar eliminações. Evita ciclos e depender de uma ordem de gatilhos não garantida.
+`RAISE(ABORT, ...)` desfaz a instrução sem necessariamente abortar a transação; `RAISE(ROLLBACK, ...)` termina-a.
 
-Em SQLite, `RAISE(ABORT, ...)` desfaz a instrução, sem necessariamente terminar toda a transação; `RAISE(ROLLBACK, ...)` também termina a transação ativa.
+## Reservar com dois gatilhos
 
-## Validação e stock
+Uma estrangeira por participante não prova que o **par** é compatível. Para inserções de usos: `BEFORE` rejeita par incompatível ou stock insuficiente com `RAISE(ABORT,...)`; `AFTER` debita o uso aceite. Um erro no lote desfaz também débitos de linhas anteriores do mesmo lote.
 
-Uma estrangeira por participante não garante compatibilidade do par. Para uma inserção, `BEFORE` pode rejeitar incompatibilidade ou stock insuficiente com `RAISE(ABORT,...)`; `AFTER` debita o uso aceite. Um erro num lote desfaz também os efeitos dos gatilhos das linhas anteriores desse lote.
+Ao mudar quantidades da mesma peça: disponibilidade `stock + OLD.qtd`, variação `OLD.qtd - NEW.qtd`. Ao trocar de peça: devolve à antiga, valida e debita a nova. Apagar histórico consumido não repõe stock; cancelar reserva pode repor. Gatilhos só de inserção não cobrem alterações nem eliminações.
 
-Ao alterar a quantidade da mesma peça, a disponibilidade é `stock + OLD.qtd` e a variação final é `OLD.qtd - NEW.qtd`. Ao mudar de peça, devolve à antiga e valida/debita a nova. Remover uma reserva pode devolver stock; apagar histórico de consumo não o devolve por si só. Gatilhos apenas de inserção não cobrem essas operações.
+## Quem pode o quê
 
-## Identidade e privilégios
+**Autenticação** identifica; **autorização** permite. Menor privilégio sempre.
 
-**Autenticação** confirma identidade; **autorização** decide operações permitidas. Aplica o menor privilégio.
+- SQLite é embebido: sem utilizadores, `GRANT`, `REVOKE` ou RLS. Vale o ficheiro e a aplicação; uma vista não esconde colunas de quem abre a base.
+- Em **PostgreSQL**, papéis juntam privilégios; `GRANT` dá, `REVOKE` tira, sem apagar outras vias de acesso. Propriedade e `GRANT OPTION` são privilégios à parte.
+- **RLS** filtra linhas além dos privilégios: `USING` nas existentes, `WITH CHECK` nas novas. Não concede `SELECT`/`UPDATE`. Sem política aplicável, nega; superutilizador, `BYPASSRLS` e normalmente o proprietário contornam-na, salvo `FORCE ROW LEVEL SECURITY`. `current_user` é a conta SQL, não o utilizador da aplicação.
 
-SQLite não tem utilizadores SQL, `GRANT`, `REVOKE` ou RLS como PostgreSQL. A aplicação e as permissões do ficheiro controlam acesso. Uma vista não protege colunas de quem pode abrir livremente a base de dados.
-
-Em **PostgreSQL**, papéis reúnem privilégios; `GRANT` concede e `REVOKE` retira. Revogar uma concessão não elimina outras vias de acesso herdadas ou concedidas diretamente.
-
-## Segurança por linha e parâmetros
-
-- Em PostgreSQL, **RLS** limita linhas além dos privilégios de objeto. `USING` filtra linhas existentes; `WITH CHECK` valida valores novos. A política não concede `SELECT` ou `UPDATE`.
-- Sem política aplicável, RLS nega linhas aos papéis sujeitos a ela. Superutilizadores e `BYPASSRLS` contornam-na; o proprietário normalmente também, salvo `FORCE ROW LEVEL SECURITY`.
-- `current_user` identifica a conta SQL, não os utilizadores de uma aplicação que partilhem essa conta.
-
-Consultas parametrizadas enviam **código e valores separadamente** ao driver. `WHERE email = ?` não é substituição manual de texto. Colunas de ordenação e `ASC`/`DESC` devem vir de opções conhecidas, pois normalmente não são valores parametrizáveis.
+Parametriza consultas: código e valores seguem separados (`WHERE email = ?`). Colunas de ordenação e `ASC`/`DESC` vêm de listas fechadas, não de parâmetros.
 
 [Políticas RLS e teste com outro papel](/cadeiras/bd/vistas-gatilhos-acessos/#segurança-por-linha).

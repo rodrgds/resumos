@@ -1,6 +1,6 @@
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-## Esquema e restrições
+## Declarar o esquema
 
 **DDL** cria e altera o esquema; **DML** consulta ou altera os tuplos.
 
@@ -18,46 +18,44 @@ INSERT INTO Quantidade VALUES (1, 7);`,
   code={`SELECT id, valor, typeof(valor) AS tipo FROM Quantidade;`}
 />
 
-O resultado é id 1, valor 7, tipo `integer`. Numa tabela SQLite comum, declarar `INTEGER` é afinidade, não uma imposição absoluta de tipo; o `CHECK` do exemplo exige também o tipo.
+Devolve id 1, valor 7, tipo `integer`. Em tabelas SQLite comuns, `INTEGER` é **afinidade**, não imposição de tipo; o `CHECK` do exemplo exige tipo e valor.
 
-| Restrição     | Efeito                                                                                     |
-| ------------- | ------------------------------------------------------------------------------------------ |
-| `PRIMARY KEY` | Escolhe a identidade. Em SQLite comum, declara `NOT NULL` em chaves textuais ou compostas. |
-| `NOT NULL`    | Exige um valor conhecido.                                                                  |
-| `UNIQUE`      | Proíbe valores conhecidos repetidos; SQLite permite vários nulos.                          |
-| `CHECK`       | Rejeita quando a expressão é falsa. Desconhecido não basta para rejeitar.                  |
-| `DEFAULT`     | Preenche uma coluna omitida; não substitui um `NULL` explícito.                            |
+| Restrição     | O que garante e o que não garante                                                             |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| `PRIMARY KEY` | Escolhe a identidade. Em chaves textuais ou compostas comuns, declara `NOT NULL`.             |
+| `NOT NULL`    | Exige valor conhecido.                                                                        |
+| `UNIQUE`      | Proíbe conhecidos repetidos; SQLite admite vários nulos.                                      |
+| `CHECK`       | Rejeita quando a expressão é **falsa**; desconhecido não rejeita. `CHECK(x>0)` aceita `NULL`. |
+| `DEFAULT`     | Preenche coluna omitida; não substitui um `NULL` explícito.                                   |
 
-`CHECK(valor > 0)` sozinho aceita `NULL` e não verifica completamente o tipo. `VARCHAR(20)` não impõe o comprimento em SQLite. Tabelas `STRICT` impõem tipos mais estritos, mas ainda precisam das regras do domínio.
+`VARCHAR(20)` não limita comprimento em SQLite. `STRICT` impõe tipos, mas as regras do domínio continuam necessárias. `INTEGER PRIMARY KEY` é o rowid (`INT PRIMARY KEY` não); a atribuição automática pode reutilizar apagados, `AUTOINCREMENT` proíbe-o com custo de `sqlite_sequence`.
 
-`INTEGER PRIMARY KEY` corresponde ao rowid numa tabela comum; `INT PRIMARY KEY` não. A atribuição automática pode reutilizar um id apagado. `AUTOINCREMENT` proíbe essa reutilização, com custo adicional; não é necessário para gerar ids automaticamente.
+## Ligar tabelas
 
-## Estrangeiras
+Em SQLite, corre `PRAGMA foreign_keys = ON` **em cada ligação, antes da transação**.
 
-Em SQLite, executa `PRAGMA foreign_keys = ON` **em cada ligação, antes da transação**.
+- A referência tem de existir numa primária ou única compatível; estrangeira não é automaticamente única.
+- Numa estrangeira composta, todas as colunas apontam ao **mesmo** tuplo; se qualquer componente for nulo, SQLite dispensa a correspondência. Para participação obrigatória, `NOT NULL` em todas.
+- `DEFERRABLE INITIALLY DEFERRED` admite inconsistência temporária até ao `COMMIT`.
 
-- A referência conhecida tem de existir numa primária ou chave única compatível. Uma estrangeira não é automaticamente única.
-- Uma estrangeira composta é uma declaração conjunta. Se qualquer componente for nulo, SQLite dispensa correspondência; exige `NOT NULL` em todos para participação obrigatória.
-- Referências imediatas verificam-se durante as operações; `DEFERRABLE INITIALLY DEFERRED` permite inconsistência temporária, corrigida até ao `COMMIT`.
+| Política      | Efeito ao alterar ou eliminar o alvo                       |
+| ------------- | ---------------------------------------------------------- |
+| `NO ACTION`   | Recusa se a referência estiver inválida na verificação.    |
+| `RESTRICT`    | Recusa de imediato havendo dependentes, mesmo em diferida. |
+| `CASCADE`     | Propaga a alteração ou elimina dependentes.                |
+| `SET NULL`    | Escreve nulos, se permitido.                               |
+| `SET DEFAULT` | Escreve o default, que tem de satisfazer a referência.     |
 
-| Política      | Ao alterar ou eliminar o alvo                                                |
-| ------------- | ---------------------------------------------------------------------------- |
-| `NO ACTION`   | Recusa se a referência estiver inválida no momento da verificação.           |
-| `RESTRICT`    | Recusa imediatamente se existirem dependentes, mesmo em referência diferida. |
-| `CASCADE`     | Propaga a alteração da chave ou elimina dependentes.                         |
-| `SET NULL`    | Escreve nulos, se as colunas o permitirem.                                   |
-| `SET DEFAULT` | Escreve o default, que ainda tem de satisfazer a referência.                 |
+Uma estrangeira em Item não obriga nenhuma encomenda a ter linhas; esse mínimo pede outro mecanismo.
 
-Uma estrangeira em Item não exige que toda a encomenda tenha linhas. Esse mínimo precisa de outro mecanismo.
+## Alterar dados e esquema
 
-## Alterações
+- Nomeia colunas em `INSERT`; `INSERT ... SELECT` insere resultados.
+- `UPDATE` e `DELETE` sem `WHERE` abrangem **todas** as linhas; restrições valem também em atualizações.
+- `INSERT OR REPLACE` pode apagar a linha em conflito e inserir outra, com efeitos referenciais: não é atualização.
+- `ALTER TABLE` muda o esquema dentro dos limites da versão; `DROP TABLE` apaga estrutura e dados; `DELETE` conserva a estrutura.
+- `CREATE TABLE ... AS SELECT` copia resultados, mas em SQLite não copia primárias, estrangeiras nem `CHECK`s.
 
-- Especifica as colunas em `INSERT`; `INSERT ... SELECT` insere resultados.
-- `UPDATE` e `DELETE` abrangem as linhas do `WHERE`; **sem `WHERE`, abrangem todas**. Restrições também se aplicam a atualizações.
-- `INSERT OR REPLACE` em SQLite pode eliminar a linha em conflito e inserir outra, com efeitos referenciais. Não é sinónimo de atualização.
-- `ALTER TABLE` muda o esquema, dentro dos limites da versão; `DROP TABLE` elimina estrutura e dados. `DELETE` conserva a estrutura.
-- `CREATE TABLE ... AS SELECT` copia resultados, mas em SQLite não copia primárias, estrangeiras ou `CHECK`s.
-
-Preços em cêntimos inteiros evitam arredondamentos binários nas quantias. Para euros, divide por `100.0`; em SQLite `5 / 2` dá 2.
+Preços em cêntimos inteiros evitam erros binários; para euros divide por `100.0`, porque em SQLite `5 / 2` dá 2.
 
 [Particularidades dos tipos SQLite](/cadeiras/bd/sql-definicao-dados/#tipos-e-valores-desconhecidos).

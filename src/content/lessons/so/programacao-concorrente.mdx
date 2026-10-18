@@ -219,7 +219,11 @@ O sinal permite deixar a espera; não reserva um item. São os dados, testados c
 
 Para vários consumidores, define também como termina a produção. Uma flag `terminado`, sob o mesmo mutex, permite esperar enquanto a fila está vazia **e** não terminou, e sair quando vazia e terminada. Nesse fim, um `broadcast` acorda os consumidores que precisam de observar a mudança.
 
+Se uma fila passa de vazia a um item e depois acumula vários itens, sinalizar apenas na transição pode ser suficiente para um único consumidor que continua a retirar. Com vários consumidores, pode deixar outros adormecidos apesar de haver trabalho. Decide entre sinalizar por inserção e acordar vários segundo o número de consumidores e o protocolo, não só segundo o desejo de fazer menos chamadas.
+
 ## Monitores com retoma imediata e diferida
+
+Um **monitor** reúne dados partilhados e as operações que os usam sob exclusão mútua, com variáveis de condição para esperar. Em C/Pthreads, o programador constrói essa disciplina com mutex e condição; outras linguagens oferecem parte dela diretamente.
 
 Nos monitores clássicos com **retoma imediata**, ou semântica de Hoare, um `signal` entrega o monitor à tarefa que esperava; a tarefa que sinalizou fica suspensa. Se o sinalizador tornou o predicado verdadeiro imediatamente antes do sinal, a tarefa acordada observa esse estado antes de outra operação do monitor o alterar.
 
@@ -239,12 +243,6 @@ Num protocolo com preferência pelos leitores, um novo leitor pode juntar-se enq
 | Leitores ativos, preferência por leitores | Pode juntar-se | Espera todos saírem |
 | Escritor ativo                            | Espera         | Espera              |
 
-Um mutex exclusivo para todas as consultas garante segurança, mas perde a simultaneidade entre leitores. Um read-write lock permite essa simultaneidade, porém a política de admissão e a justiça dependem do contrato. Não concluas espera limitada só por usar um lock de leitores/escritores. Este problema e a distinção entre monitores são úteis para interpretar fichas e provas históricas; a prática Pthreads atual continua a exigir mutex e predicado reavaliado.
-
-## Porque um sinal pode não bastar
-
-Se uma fila passa de vazia a um item e depois acumula vários itens, sinalizar apenas na transição pode ser suficiente para um único consumidor que continua a retirar. Com vários consumidores, pode deixar outros adormecidos apesar de haver trabalho. Decide entre sinalizar por inserção e acordar vários segundo o número de consumidores e o protocolo, não só segundo o desejo de fazer menos chamadas.
-
-Um **monitor** reúne dados protegidos e operações que os usam sob exclusão mútua, com condições para esperar. Em C/Pthreads, o programador constrói essa disciplina; outras linguagens oferecem parte dela diretamente.
+Um mutex exclusivo para todas as consultas garante segurança, mas perde a simultaneidade entre leitores. Um read-write lock permite essa simultaneidade, porém a política de admissão e a justiça dependem do contrato. Não concluas espera limitada só por usar um lock de leitores/escritores. Este problema e a distinção entre políticas de retoma acima são úteis para interpretar fichas e provas históricas; a prática Pthreads atual continua a exigir mutex e predicado reavaliado.
 
 Mutexes evitam corridas, mas um conjunto de locks ainda pode criar [impasses](/cadeiras/so/impasses/). Para avaliar correção, procura tanto acessos concorrentes como ordens de obtenção incompatíveis.

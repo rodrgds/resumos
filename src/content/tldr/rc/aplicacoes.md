@@ -1,52 +1,26 @@
 ## DNS
 
-DNS é hierárquico e distribuído. Habitualmente, o cliente pede resposta recursiva ao resolver; este segue referências iterativas de raiz, TLD e autoritativo. Cache válida até ao TTL pode evitar consultas.
+- Hierárquico e distribuído. Cliente pede recursão ao resolver; este segue raiz, TLD, autoritativo. Recursão aceite normalmente só nos locais.
+- A/AAAA endereços, CNAME alias, MX correio, NS autoritativos, PTR inverso.
+- Porta 53; UDP para perguntas, TCP quando preciso. Cache até ao TTL dispensa consultas.
 
-| Registo  | Conteúdo                          |
-| -------- | --------------------------------- |
-| A / AAAA | IPv4 / IPv6                       |
-| CNAME    | Nome canónico de alias            |
-| MX       | Servidor de correio e preferência |
-| NS       | Servidor autoritativo             |
-| PTR      | Nome no espaço inverso            |
+## HTTP
 
-DNS clássico usa porta 53, UDP para muitas perguntas e TCP quando necessário, incluindo transferências de zona. Não é sempre UDP.
+- HTTP/1.1: linha inicial, cabeçalhos CRLF, linha vazia, corpo delimitado. `Content-Length: 2` para `42` conta o corpo.
+- GET pede, POST submete, PUT substitui, DELETE remove. 200, 301, 404, 500.
+- Persistente reutiliza TCP: sem DNS/TLS, TCP novo custa ~1 RTT e cada pedido/resposta outro. Dois objetos: 3 RTT com persistência, 4 sem.
+- Cookies guardam estado; cache válida serve sem rede; condicional com `If-None-Match`/`If-Modified-Since` pode dar 304.
+- HTTPS usa TLS. HTTP/2 binário multiplexado sobre TCP; HTTP/3 sobre QUIC.
 
-## HTTP e cache
+## FTP, sockets, correio
 
-HTTP/1.1 usa linha inicial, cabeçalhos terminados por CRLF, linha vazia e corpo delimitado, por exemplo com `Content-Length`. `Content-Length: 2` para `42` conta só os dois bytes do corpo.
-
-- GET pede representação; POST submete dados; PUT substitui representação; DELETE pede remoção.
-- 200 indica sucesso, 301 redirecionamento permanente, 404 recurso não encontrado e 500 erro interno.
-- Ligação persistente reutiliza TCP. Com objetos pequenos pedidos em sequência, sem DNS, TLS, transmissão ou processamento, TCP novo custa um RTT e cada pedido/resposta outro. Dois objetos persistentes demoram três RTT.
-- Cookies associam pedidos a estado da aplicação. Cache válida pode fornecer o objeto sem rede; validação condicional por `If-None-Match` ou `If-Modified-Since` pode receber 304 e reutilizar o corpo guardado.
-
-HTTPS usa TLS. HTTP/2 tem enquadramento binário e multiplexagem sobre TCP; HTTP/3 usa QUIC. O formato textual descrito é de HTTP/1.x.
-
-Sem caches nem ligação aberta, HTTP/1.1 segue resolução DNS, abertura TCP, pedido HTTP e resposta. Cache DNS elimina consultas à hierarquia e objeto fresco pode eliminar toda a sequência; ARP resolve MAC local, não IP do servidor.
-
-## FTP, sockets e correio
-
-FTP clássico separa controlo TCP 21 de ligações de dados. No ativo, o servidor inicia dados; no passivo, o cliente liga à porta anunciada. FTP não cifra credenciais; SFTP usa SSH e é outro protocolo.
-
-Cliente TCP: socket, connect, send, recv. Servidor: socket, bind, listen, accept. `accept` cria socket de conversa e mantém o de escuta. UDP usa datagramas, por exemplo `sendto` e `recvfrom`.
-
-`recv(4096)` pode devolver menos bytes e não corresponde a uma mensagem. Acumula segundo a delimitação da aplicação; `sendall` tenta enviar todos, sem garantir processamento remoto.
-
-SMTP envia correio e procura MX do domínio destinatário. POP3 e IMAP permitem acesso à caixa; IMAP mantém pastas e estado no servidor. MIME descreve tipos, anexos e codificações. Portas clássicas: SMTP 25, submissão 587, POP3 110, IMAP 143; TLS implícito usa outras.
-
-Em SMTP com `DATA`, após 354, o conteúdo termina numa linha com apenas `.` e fins CRLF. Linhas de conteúdo iniciadas por ponto recebem outro, removido no recetor: `.` viaja como `..`. Não fecha TCP para delimitar a mensagem. A resposta 250 confirma aceitação pelo servidor, não leitura pelo destinatário.
+- FTP: controlo TCP 21, dados em ligações separadas. Ativo serve do servidor; passivo liga o cliente. Sem cifra; SFTP é outro protocolo sobre SSH.
+- Servidor TCP: socket, bind, listen, accept. `accept` cria socket por conversa.
+- SMTP transporta entre servidores; MX diz onde entregar. POP3/IMAP dão acesso à caixa.
+- `DATA` termina em linha só com `.`; linhas de conteúdo com ponto inicial levam outro. 250 confirma aceitação para entrega, não leitura.
 
 ## Distribuição
 
-Cliente-servidor concentra fornecimento no servidor. P2P permite que peers também forneçam, podendo usar trackers.
-
-Para F bits, N clientes, upload do servidor $u_s$, menor download $d_{min}$ e uploads dos peers $u_i$, em bit/s:
-
-$$D_{CS}\ge\max(NF/u_s,F/d_{min}),$$
-
-$$D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum_i u_i)).$$
-
-São **limites inferiores** em segundos, não tempos garantidos. Para F=100 Mbit, N=10, servidor 10 Mbit/s, cada peer upload 1 e download 5 Mbit/s: CS dá pelo menos 100 s; P2P, pelo menos 50 s. Disponibilidade de fragmentos, protocolo e topologia acrescentam restrições.
-
-[Percurso com DNS e cache](/cadeiras/rc/aplicacoes/#dns-tcp-e-http-no-mesmo-pedido).
+- Cliente-servidor: $D_{CS}\ge\max(NF/u_s,F/d_{min})$.
+- P2P: $D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum u_i))$. São limites inferiores.
+- F=100 Mbit, N=10, $u_s=10$, peers 1 up/5 down: CS 100 s, P2P 50 s.

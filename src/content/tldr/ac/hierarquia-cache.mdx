@@ -1,54 +1,38 @@
 import Typst from '../../../components/Typst.astro';
 import endereco from '../../ac/endereco-cache.typ?raw';
 
-## Organização e localidade
+## Organização
 
-- **Temporal:** reutilizar um dado recente. **Espacial:** usar endereços próximos, aproveitando vários bytes da mesma linha.
-- Registos/SRAM são rápidos e caros por bit; DRAM permite maior capacidade. SRAM e DRAM são voláteis; armazenamento conserva dados sem alimentação.
-- Hit exige entrada **válida** com etiqueta igual à pedida. Write-back acrescenta dirty para indicar dados alterados.
+| Organização       | Bloco entra em               |
+| ----------------- | ---------------------------- |
+| Direta            | Uma linha, dada pelo índice  |
+| $A$ vias          | Qualquer via do seu conjunto |
+| Totalmente assoc. | Qualquer linha               |
 
-| Organização            | Posições possíveis de um bloco       |
-| ---------------------- | ------------------------------------ |
-| Direta                 | Uma linha, determinada pelo índice   |
-| $A$ vias               | Qualquer via do conjunto selecionado |
-| Totalmente associativa | Qualquer linha                       |
-
-Com capacidade de **dados** $C$, linha de $B$ bytes e $A$ vias, há $S=C/(BA)$ conjuntos. Comparam-se as $A$ etiquetas do conjunto, não todas as etiquetas da cache.
+- Hit exige entrada **válida** com a etiqueta pedida. Com $C$ bytes de dados, $B$ por linha e $A$ vias: $S=C/(BA)$ conjuntos.
+- Registos/SRAM rápidos e caros; DRAM maior; armazenamento conserva sem alimentação.
 
 ## Endereço de byte
 
 $$q=E//B,\quad o=E\bmod B,\quad i=q\bmod S,\quad t=q//S.$$
 
-$q$ é o bloco da memória, $o$ o deslocamento, $i$ o índice e $t$ a etiqueta. Reconstrução: $E=(tS+i)B+o$.
-
-Para endereços de $n$ bits, $B=2^b$ e $S=2^s$, há $b$ bits de deslocamento, $s$ de índice e $n-s-b$ de etiqueta.
-
 <Typst
   source={endereco}
   format="svg"
-  alt="Cache direta de 2 KiB e linhas de 64 bytes: endereço de 32 bits dividido em 21 bits de etiqueta, 5 de índice e 6 de deslocamento."
+  alt="Endereço de 32 bits dividido em etiqueta, índice e deslocamento."
 />
 
-- Endereço fornecido em palavras de 4 B: multiplica por 4 ou expressa a linha em palavras. Não mistures unidades.
-- Mudar apenas o deslocamento conserva o bloco. Compara validade e etiqueta antes de atualizar a linha.
-- Bits físicos incluem dados e metadados. Oito linhas diretas de 16 B, endereço de 24 bits, etiqueta de 17 bits e validade: $8(128+17+1)=1168$ bits. Dirty e substituição são adicionais.
+- Só o deslocamento muda dentro da linha. Endereço em palavras: multiplica por 4.
+- Bits físicos: linhas × (dados + etiqueta + validade + dirty + política).
 
 ## Substituição e faltas
 
-Usa primeiro uma via inválida. Num conjunto de duas vias, inicialmente vazio:
-
-| Política | Ordem após `A,B,A`                          | Vítima ao chegar C |
-| -------- | ------------------------------------------- | ------------------ |
-| **LRU**  | `[B,A]`, menos para mais recente            | B                  |
-| **FIFO** | `[A,B]`, chegada mais antiga para mais nova | A                  |
-
-Um hit atualiza recência LRU, não chegada FIFO. As listas mostram a ordem da política, não posições físicas.
-
-- **Compulsória:** primeira referência ao bloco. **Capacidade:** ocorreria numa cache totalmente associativa de igual capacidade sob a política de referência. **Conflito:** falta adicional causada pelo mapeamento. Classifica comparando modelos.
-- Mais associatividade pode evitar conflitos, sem eliminar faltas de capacidade nem garantir acesso mais rápido. Linhas maiores deixam menos linhas disponíveis e aumentam bytes transferidos por falta.
+- Usa primeiro via inválida. Acerto atualiza LRU, não FIFO.
+- **Compulsória:** primeira referência. **Capacidade:** persistiria totalmente associativa. **Conflito:** só pelo mapeamento.
+- Mais vias ou linhas maiores não garantem melhor desempenho.
 
 ## Matrizes
 
-Em C, `A[R][K]` contígua por linhas tem endereço `base + (iK+j)×tamanho`. Variar `j` percorre vizinhos; variar `i` salta uma linha. Trocar ciclos ou processar blocos pode melhorar reutilização se conservar o significado e as dependências.
+Ordem por linhas: variar o índice interno percorre vizinhos; variar o externo salta linhas. Percurso por colunas com linhas curtas multiplica faltas.
 
-[Traços de leituras, políticas e percursos de matriz](/cadeiras/ac/hierarquia-cache/).
+[Traços completos](/cadeiras/ac/hierarquia-cache/).
