@@ -171,7 +171,7 @@ import pedido from '../../minha-cadeira/pedido.mmd?raw';
 
 O diagrama é SVG estático gerado no build, com as cores de leitura. Usa mensagens curtas e descrição alternativa. Nos diagramas largos, conserva letras legíveis e verifica a deslocação horizontal por teclado e toque. Blocos de código com Mermaid mostram apenas o código; para desenhar, usa o componente.
 
-O renderer usa o estilo `classic`, com bordas sólidas e sem gradientes ou sombras. Mantém os fundos, traços e texto ligados aos tokens da paleta de leitura.
+O componente usa Pele no build, com cores ligadas à paleta de leitura e sem compilador no navegador. Mantém a sintaxe Mermaid e revê o layout próprio do Pele. Links e imagens dentro do diagrama estão desativados. Para gráficos científicos, matemática ou movimento, conserva Typst, SVG ou Manim. Consulta [formatos de conteúdo](docs/conteudo.md).
 
 ### Fórmulas
 

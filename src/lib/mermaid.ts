@@ -1,114 +1,87 @@
-import { randomUUID } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
+import { render } from 'pele';
 import { optimize } from 'svgo';
 import { themeDiagram } from './diagram-theme';
 
-const require = createRequire(import.meta.url);
-const cli = join(require.resolve('@mermaid-js/mermaid-cli'), '..', 'cli.js');
 const cache = new Map<string, string>();
+const occurrences = new Map<string, number>();
 
-function compile(source: string) {
-  const cached = cache.get(source);
-  if (cached) return cached;
-  const directory = mkdtempSync(join(tmpdir(), 'resumos-mermaid-'));
-  try {
-    const input = join(directory, 'diagram.mmd');
-    const output = join(directory, 'diagram.svg');
-    const config = join(directory, 'mermaid.json');
-    const browser = join(directory, 'browser.json');
-    writeFileSync(input, source);
-    writeFileSync(
-      config,
-      JSON.stringify({
-        securityLevel: 'strict',
-        htmlLabels: false,
-        theme: 'base',
-        look: 'classic',
-        fontFamily: 'Arial, sans-serif',
-        themeVariables: {
-          useGradient: false,
-          fontSize: '16px',
-          primaryColor: '#ffffff',
-          primaryTextColor: '#292a30',
-          primaryBorderColor: '#8c2d3b',
-          secondaryColor: '#f3e9e9',
-          tertiaryColor: '#ffffff',
-          lineColor: '#292a30',
-          textColor: '#292a30',
-          actorBkg: '#ffffff',
-          actorBorder: '#8c2d3b',
-          actorTextColor: '#292a30',
-          signalColor: '#292a30',
-          signalTextColor: '#292a30',
-          noteBkgColor: '#f3e9e9',
-          noteBorderColor: '#8c2d3b',
-          noteTextColor: '#292a30',
-        },
-        sequence: { mirrorActors: false, useMaxWidth: false },
-        flowchart: { htmlLabels: false, useMaxWidth: false },
-      }),
+// Keep these aliases inside the SVG: Markdown exports open outside the page CSS.
+const palette = [
+  '--pele-bg:var(--surface,#fff)',
+  '--pele-fg:currentColor',
+  '--pele-muted:var(--muted,#666)',
+  '--pele-line:currentColor',
+  '--pele-surface:var(--surface,#fff)',
+  '--pele-surface-alt:var(--soft,#f3e9e9)',
+  '--pele-border:var(--accent,#8c2d3b)',
+  '--pele-accent:var(--accent,#8c2d3b)',
+  '--pele-critical:var(--accent,#8c2d3b)',
+].join(';');
+
+export function renderMermaid(source: string, id?: string) {
+  let svg = cache.get(source);
+  if (!svg) {
+    // Only reviewed repository content reaches this build-time renderer.
+    const fontSize = 16;
+    const diagram = render(source, {
+      idPrefix: 'diagram',
+      links: false,
+      images: false,
+      responsive: false,
+      autoDirection: false,
+      fontFamily: 'Arial, sans-serif',
+      fontSize,
+      now: 0,
+    });
+    // Pele emits smaller label sizes as SVG font-size attributes. Allow only
+    // enough scaling to keep the smallest glyphs at 12 CSS px; wider diagrams
+    // still scroll. Round up so fractional layout cannot cross that floor.
+    const smallestFont = Math.min(
+      fontSize,
+      ...Array.from(
+        diagram.svg.matchAll(/\bfont-size="([\d.]+)(?:px)?"/g),
+        (match) => Number(match[1]),
+      ),
     );
-    writeFileSync(
-      browser,
-      JSON.stringify({
-        // Linux build workers run trusted repository diagrams as root.
-        args: process.platform === 'linux' ? ['--no-sandbox'] : [],
-      }),
+    const minWidth = Math.ceil(diagram.width * Math.min(1, 12 / smallestFont));
+    svg = diagram.svg.replace(
+      'style="',
+      `style="${palette};--diagram-width:${diagram.width}px;--diagram-min-width:${minWidth}px;`,
     );
-    execFileSync(
-      process.execPath,
-      [
-        cli,
-        '-i',
-        input,
-        '-o',
-        output,
-        '-c',
-        config,
-        '-p',
-        browser,
-        '-b',
-        'transparent',
-        '-q',
-      ],
-      { timeout: 60_000 },
-    );
-    const svg = readFileSync(output, 'utf8');
     cache.set(source, svg);
-    return svg;
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
   }
-}
-
-export function renderMermaid(source: string) {
-  // Inline styles stay inside this figure. Give markers unique ids when a page
-  // contains several diagrams, then adapt the authored palette to reading.
-  const svg = optimize(compile(source), {
-    plugins: [
-      { name: 'inlineStyles', params: { onlyMatchedOnce: false } },
-      'convertStyleToAttrs',
-      'removeStyleElement',
-      {
-        name: 'preserve-readable-size',
-        fn: () => ({
-          element: {
-            enter(node) {
-              if (node.name !== 'svg' || !node.attributes.viewBox) return;
-              const [, , width, height] = node.attributes.viewBox.split(/\s+/);
-              node.attributes.width = width;
-              node.attributes.height = height;
-              delete node.attributes.style;
+  const hash = createHash('sha256')
+    .update(id ?? source)
+    .digest('hex')
+    .slice(0, 16);
+  const ordinal = (occurrences.get(hash) ?? 0) + 1;
+  occurrences.set(hash, ordinal);
+  const prefix = `pele-${hash}-${ordinal}`;
+  return themeDiagram(
+    optimize(svg, {
+      plugins: [
+        {
+          name: 'prefixIds',
+          params: { prefix, delim: '-', prefixClassNames: false },
+        },
+        {
+          name: 'prefix-accessibility-references',
+          fn: () => ({
+            element: {
+              enter(node) {
+                for (const key of ['aria-labelledby', 'aria-describedby']) {
+                  if (node.attributes[key])
+                    node.attributes[key] = node.attributes[key]
+                      .split(/\s+/)
+                      .map((id) => `${prefix}-${id}`)
+                      .join(' ');
+                }
+              },
             },
-          },
-        }),
-      },
-      { name: 'prefixIds', params: { prefix: `mermaid-${randomUUID()}` } },
-    ],
-  }).data;
-  return themeDiagram(svg);
+          }),
+        },
+      ],
+    }).data,
+  );
 }

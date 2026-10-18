@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectDiagramArrows } from './helpers/diagram-arrows';
 
 test.describe('static Mermaid diagrams', () => {
   test.use({ javaScriptEnabled: false, viewport: { width: 320, height: 844 } });
@@ -25,10 +26,11 @@ test.describe('static Mermaid diagrams', () => {
 
   test('render without scripts, preserve local arrows and support keyboard scrolling', async ({
     page,
+    baseURL,
   }) => {
     const externalRequests: string[] = [];
     page.on('request', (request) => {
-      if (new URL(request.url()).origin !== 'http://127.0.0.1:4322')
+      if (new URL(request.url()).origin !== new URL(baseURL!).origin)
         externalRequests.push(request.url());
     });
     await page.goto('/_content-test');
@@ -57,36 +59,32 @@ test.describe('static Mermaid diagrams', () => {
       .boundingBox();
     expect(note!.y).toBeLessThan(request!.y);
     expect(request!.y).toBeLessThan(response!.y);
-    const arrows = await page
-      .locator('.mermaid-figure svg')
-      .evaluateAll((svgs) =>
-        svgs.flatMap((svg) =>
-          [...svg.querySelectorAll('[marker-end], [marker-start]')].map(
-            (arrow) => {
-              const ref =
-                arrow.getAttribute('marker-end') ||
-                arrow.getAttribute('marker-start')!;
-              const id = ref.slice(ref.indexOf('#') + 1, ref.lastIndexOf(')'));
-              const matches = [...document.querySelectorAll('[id]')].filter(
-                (node) => node.id === id,
-              );
-              return matches.length === 1 && svg.contains(matches[0]);
-            },
-          ),
-        ),
-      );
-    expect(arrows.length).toBeGreaterThan(0);
-    expect(arrows.every(Boolean)).toBe(true);
+    const figures = page.locator('.mermaid-figure');
+    // Independent counts from the fixture's directed relations, including the
+    // repeated flowchart, catch missing heads without assuming marker URLs.
+    await expect(figures).toHaveCount(4);
+    let references = 0;
+    for (const [index, count] of [3, 2, 3, 1].entries())
+      references += await expectDiagramArrows(figures.nth(index), count);
+    expect(references).toBeGreaterThan(0);
     expect(externalRequests).toEqual([]);
-    await sequence.focus();
+    const wide = figures.last();
+    expect(
+      await wide.evaluate((node) => node.scrollWidth > node.clientWidth),
+    ).toBe(true);
+    await wide.focus();
+    const start = await wide.evaluate((node) => node.scrollLeft);
     await page.keyboard.press('ArrowRight');
     await expect
-      .poll(() => sequence.evaluate((node) => node.scrollLeft))
-      .toBeGreaterThan(0);
+      .poll(() => wide.evaluate((node) => node.scrollLeft))
+      .toBeGreaterThan(start);
     await page.emulateMedia({ media: 'print' });
-    expect(
-      await sequence.evaluate((node) => node.scrollWidth <= node.clientWidth),
-    ).toBe(true);
+    for (const figure of await figures.all())
+      expect(
+        await figure.evaluate(
+          (node) => node.scrollWidth <= node.clientWidth + 1,
+        ),
+      ).toBe(true);
   });
 });
 

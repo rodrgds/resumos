@@ -223,7 +223,7 @@ export default function markdownExport() {
                 const name = `figura-${++number}.svg`;
                 const svgText = serializeOuter(svg).replace(
                   /(<svg[^>]*>)/,
-                  '$1<style>:root{--text:#292a30;--surface:#fff;--accent:#8c2d3b;--accent-soft:#f3e9e9;--diagram-secondary:#28716c}</style>',
+                  '$1<style>:root{color:#292a30!important;--text:#292a30;--surface:#fff;--soft:#f3e9e9;--muted:#666;--accent:#8c2d3b;--accent-soft:#f3e9e9;--diagram-secondary:#28716c}</style>',
                 );
                 diagrams.push(writeFile(join(root, path, name), svgText));
                 node.attrs.push({

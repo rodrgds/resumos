@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { readingThemes } from '../src/data/reading-themes';
+import { expectDiagramArrows } from './helpers/diagram-arrows';
 
 test('printed Mermaid diagrams retain their arrowheads', async ({ page }) => {
   await page.goto('/exemplo/diagramas/');
@@ -9,21 +11,7 @@ test('printed Mermaid diagrams retain their arrowheads', async ({ page }) => {
   await page.emulateMedia({ media: 'print' });
   const figure = page.locator('[data-print-page] .mermaid-figure');
   await expect(figure).toBeVisible();
-  const references = await figure.evaluate((element) => {
-    const arrows = Array.from(element.querySelectorAll('[marker-end]'));
-    return arrows.map((arrow) => {
-      const id = arrow.getAttribute('marker-end')!.match(/url\(#([^)]*)\)/)![1];
-      const marker = element.querySelector(`[id="${id}"]`);
-      return {
-        resolves: marker?.tagName === 'marker',
-        visible: !!marker?.querySelector('path'),
-      };
-    });
-  });
-  expect(references).toHaveLength(2);
-  expect(references.every(({ resolves, visible }) => resolves && visible)).toBe(
-    true,
-  );
+  await expectDiagramArrows(figure, 2);
 });
 
 test('printed lessons retain video thumbnails after they load', async ({
@@ -154,33 +142,13 @@ test('print expands disclosures and shows every tab with readable code colours',
   expect(colours.printColor).toBe('exact');
 });
 
-test('printed diagrams keep dark note backgrounds legible', async ({
+test('printed pages and diagram notes stay light and legible from every reading palette and mode', async ({
   page,
-}) => {
-  await page.addInitScript(() =>
-    localStorage.setItem(
-      'resumos-preferences',
-      JSON.stringify({ theme: 'dark' }),
-    ),
-  );
-  await page.goto('/exemplo/diagramas/');
+}, info) => {
+  await page.setViewportSize({ width: 794, height: 1123 });
+  await page.goto('/exemplo/diagram-notes/');
   await page.evaluate(() => {
     window.print = () => {};
-  });
-  await page.getByRole('button', { name: 'Imprimir', exact: true }).click();
-  await page.emulateMedia({ media: 'print' });
-  const printed = page.locator('[data-print-page]');
-  const note = printed.locator('svg [fill*="accent-soft"]').first();
-  expect(await note.count()).toBeGreaterThan(0);
-  const colours = await printed.evaluate((root) => {
-    const shape = root.querySelector(
-      'svg [fill*="accent-soft"]',
-    ) as SVGGraphicsElement;
-    const ink = root.querySelector('svg text') as SVGTextElement;
-    return {
-      background: getComputedStyle(shape).fill,
-      foreground: getComputedStyle(ink).fill,
-    };
   });
   const luminance = (colour: string) => {
     const channels = colour
@@ -194,9 +162,81 @@ test('printed diagrams keep dark note backgrounds legible', async ({
       });
     return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
   };
-  const light = luminance(colours.background);
-  const dark = luminance(colours.foreground);
-  expect(
-    (Math.max(light, dark) + 0.05) / (Math.min(light, dark) + 0.05),
-  ).toBeGreaterThanOrEqual(4.5);
+  const screen = page.locator('.lesson-body .mermaid-figure');
+  const screenColours = () =>
+    screen.evaluate((root) => ({
+      background: getComputedStyle(root.querySelector('.pele-note rect')!).fill,
+      foreground: getComputedStyle(root.querySelector('.pele-note text')!).fill,
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    }));
+  for (const palette of readingThemes) {
+    for (const mode of ['light', 'dark', 'system']) {
+      await page.emulateMedia({
+        colorScheme: mode === 'light' ? 'light' : 'dark',
+      });
+      await page.evaluate(
+        ({ palette, mode }) => {
+          document.documentElement.dataset.palette = palette;
+          if (mode === 'system') delete document.documentElement.dataset.theme;
+          else document.documentElement.dataset.theme = mode;
+        },
+        { palette: palette.id, mode },
+      );
+      const before = await screenColours();
+      await page.getByRole('button', { name: 'Imprimir', exact: true }).click();
+      const options = page.getByRole('dialog', {
+        name: 'Imprimir esta página',
+      });
+      await expect(options).toBeVisible();
+      await options
+        .getByRole('button', { name: 'Imprimir', exact: true })
+        .click();
+      await page.emulateMedia({ media: 'print' });
+      expect(
+        await page.evaluate(() =>
+          [document.documentElement, document.body].map((node) => {
+            const style = getComputedStyle(node);
+            return {
+              background: style.backgroundColor,
+              scheme: style.colorScheme,
+            };
+          }),
+        ),
+        `${palette.id}/${mode}: the page canvas must print in light mode`,
+      ).toEqual([
+        { background: 'rgb(255, 255, 255)', scheme: 'light' },
+        { background: 'rgb(255, 255, 255)', scheme: 'light' },
+      ]);
+      const printed = page.locator('[data-print-page] .mermaid-figure');
+      await expect(printed).toBeVisible();
+      expect(await expectDiagramArrows(printed, 2)).toBeGreaterThan(0);
+      const notes = await printed.locator('.pele-note').evaluateAll((nodes) =>
+        nodes.map((note) => ({
+          background: getComputedStyle(note.querySelector('rect')!).fill,
+          foreground: getComputedStyle(note.querySelector('text')!).fill,
+        })),
+      );
+      expect(notes.length).toBeGreaterThan(0);
+      for (const note of notes) {
+        const background = luminance(note.background);
+        const foreground = luminance(note.foreground);
+        expect(
+          (Math.max(background, foreground) + 0.05) /
+            (Math.min(background, foreground) + 0.05),
+          `${palette.id}/${mode}: ${JSON.stringify(note)}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(
+        await printed.evaluate(
+          (node) => node.scrollWidth <= node.clientWidth + 1,
+        ),
+      ).toBe(true);
+      await printed.screenshot({
+        path: info.outputPath(`print-${palette.id}-${mode}.png`),
+      });
+      await page.emulateMedia({ media: 'screen' });
+      await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+      expect(await screenColours()).toEqual(before);
+    }
+  }
 });
