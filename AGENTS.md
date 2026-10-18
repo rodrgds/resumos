@@ -31,5 +31,5 @@
 ## Verification
 
 - Add tests for observable regressions and privacy/isolation boundaries, not copies of lesson text or implementation details. Fixtures live in `tests/fixtures`; `RESUMOS_TEST_CONTENT=1` is never a production setting.
-- Parallel editing lanes need separate branches and Worktrunk worktrees. Verify each lane's branch and clean tree before editing. Keep Astro caches local to each checkout, not in shared `node_modules`.
+- Parallel course editing uses the provided shared checkout, with exclusive ownership of each course's content and video script files. The coordinator handles Git operations, shared files, dependency installation and site-wide checks/builds; course agents run scoped checks. Preserve other agents' edits and existing local changes. Create additional worktrees only when explicitly requested.
 - Keep this file short. Put subsystem details in their existing documentation or beside the code, not in an accumulating list of past fixes.

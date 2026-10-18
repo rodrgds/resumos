@@ -21,12 +21,12 @@ $$d=d_{proc}+d_{fila}+L/R+D/v.$$
 
 Hipóteses M/M/1: Poisson, serviço exponencial, um servidor, fila ilimitada. $\rho=\lambda/\mu<1$.
 
-| | M/M/1 | M/D/1 |
-| --- | --- | --- |
+|       | M/M/1                | M/D/1                 |
+| ----- | -------------------- | --------------------- |
 | $T_q$ | $\rho/(\mu-\lambda)$ | $\rho/(2\mu(1-\rho))$ |
-| $T$ | $1/(\mu-\lambda)$ | $T_q+1/\mu$ |
-| $N$ | $\rho/(1-\rho)$ | — |
-| $N_q$ | $\rho^2/(1-\rho)$ | — |
+| $T$   | $1/(\mu-\lambda)$    | $T_q+1/\mu$           |
+| $N$   | $\rho/(1-\rho)$      | —                     |
+| $N_q$ | $\rho^2/(1-\rho)$    | —                     |
 
 - $P(N=n)=(1-\rho)\rho^n$. Fila vazia: $P(N_q=0)=1-\rho^2$.
 - Mesma carga não fixa o atraso: a variabilidade do serviço conta. M/G/1: $T_q=\lambda E[S^2]/(2(1-\rho))$.

@@ -29,8 +29,10 @@ Palavras reservadas como `if` ou `while` casam com o padrão de identificador, p
 
 Uma expressão regular descreve, um [autómato finito](/cadeiras/tc/automatos-finitos/) executa. Ferramentas como o flex convertem cada padrão num autómato e combinam-nos num reconhecedor único que corre sobre o texto. Quando dois padrões casam o mesmo prefixo, valem duas regras de desempate, por esta ordem:
 
-1. **Prefixo mais longo** (_maximal munch_): fica o casamento que consome mais caracteres.
+1. **Prefixo mais longo**: fica o casamento que consome mais caracteres.
 2. **Primeira regra**: em empate de comprimento, ganha o padrão listado primeiro (é assim que `if` ganha a identificador).
+
+Esta regra do prefixo mais longo aplica-se aqui ao reconhecimento de texto. Não a confundas com o algoritmo guloso de cobertura de árvores com o mesmo nome inglês, que a [geração de código](/cadeiras/c/geracao-codigo/#seleção-de-instruções/) usa para escolher instruções: lá, a ganância está na escolha do maior padrão de instrução, não no consumo de caracteres.
 
 <Dot
   source={automatoLex}
@@ -50,9 +52,11 @@ Os dois vídeos seguintes acompanham o desempate entre padrões e a implementaç
 
 ### Da expressão regular ao DFA
 
-Uma construção habitual transforma a expressão regular num autómato não determinístico (NFA), que pode ter várias transições para o mesmo caráter e transições `ε` sem consumir entrada. O **fecho-ε** de um conjunto inclui os próprios estados e todos os alcançáveis só por `ε`.
+Uma construção habitual transforma a expressão regular num autómato não determinístico (NFA), que pode ter várias transições para o mesmo caráter e transições `ε` sem consumir entrada. O **fecho-ε** de um conjunto inclui os próprios estados e todos os alcançáveis só por `ε`. A construção por subconjuntos dá um DFA em três passos:
 
-A construção por subconjuntos dá um DFA: o estado inicial é o fecho-ε do inicial do NFA. Para cada caráter, seguimos todas as transições dos estados do conjunto e calculamos o fecho-ε dos destinos. Um conjunto é final se contiver algum estado final do NFA. Num léxico com várias categorias, guardamos também a prioridade dos estados finais.
+1. O estado inicial é o fecho-ε do inicial do NFA.
+2. Para cada caráter, segue todas as transições dos estados do conjunto e calcula o fecho-ε dos destinos.
+3. Um conjunto é final se contiver algum estado final do NFA. Num léxico com várias categorias, guarda também a prioridade dos estados finais.
 
 Por exemplo, com `q0 --ε--> q1`, `q1 --a--> q1` e `q1 --b--> q2`, sendo só `q2` final, o inicial do DFA é `{q0,q1}`. Ao ler `a`, chegamos a `{q1}`; ao ler `b`, a `{q2}`, final. Este autómato aceita `b`, `ab`, `aab`, e não aceita `a`. O conjunto vazio representa ausência de caminho. Só construímos os subconjuntos alcançáveis, embora possam existir até `2^n` com `n` estados no NFA.
 

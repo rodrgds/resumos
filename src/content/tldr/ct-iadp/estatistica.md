@@ -1,6 +1,8 @@
 ## Centro e dispersão
 
-Para 2, 3, 5 e 4, a soma é 14 e a média 3,5. Ordenar dá 2, 3, 4, 5 e mediana `(3 + 4) / 2 = 3,5`. A média é mais sensível a extremos; `mode()` pode devolver várias modas.
+Para 2, 3, 5 e 4, a soma é 14 e a média 3,5. Ordenar dá 2, 3, 4, 5 e mediana `(3 + 4) / 2 = 3,5`.
+
+A média é mais sensível a extremos; `mode()` pode devolver várias modas.
 
 Para `n` observações conhecidas, com média `m`:
 
@@ -18,7 +20,9 @@ O denominador tem de ser positivo. pandas usa `ddof=1` em `var` e `std`; NumPy u
 | Assimetria            | `s.skew()`                    | Sinal positivo sugere cauda à direita                                |
 | Excesso de curtose    | `s.kurt()`                    | Referência normal zero; não identifica sozinho a distribuição        |
 
-Com interpolação linear, os quartis dos quatro valores são 2,75 e 4,25. O desvio absoluto médio é 1 e o erro padrão cerca de 0,6455. Poucas observações ou valores constantes podem tornar medidas de forma pouco informativas ou ausentes.
+Com interpolação linear, os quartis dos quatro valores são 2,75 e 4,25. O desvio absoluto médio é 1 e o erro padrão cerca de 0,6455.
+
+Poucas observações ou valores constantes podem tornar medidas de forma pouco informativas ou ausentes.
 
 ## Contagem, ausências e ordem
 

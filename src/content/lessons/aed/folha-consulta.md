@@ -30,7 +30,7 @@ $O$ limita por cima, $\Omega$ por baixo, $\Theta$ pede os dois. Média exige dis
 | Um percurso                              | $\Theta(n)$                                        |
 | `n` interiores por cada exterior         | $\Theta(n^2)$                                      |
 | `1+…+n`                                  | $\Theta(n^2)$                                      |
-| Duplicar de `1` enquanto `<n`, `n>=1`    | $\lceil\log_2 n\rceil$ iterações                   |
+| Duplicar de `i=1` enquanto `i<n`, `n>=1` | $\lceil\log_2 n\rceil$ iterações                   |
 | Duplicar com interior proporcional a `i` | $\Theta(n)$                                        |
 | Metade com junção linear                 | $\Theta(n\log n)$                                  |
 | Prefixos e `q` somas                     | $\Theta(n+q)$ com $p[r]-p[l]$                      |

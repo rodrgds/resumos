@@ -3,11 +3,15 @@
 - Um **algoritmo** é uma sequência finita de passos para resolver um problema. Define entradas, cálculo e resultado esperado antes de escrever código.
 - Um script `.py` executa de cima para baixo. A consola executa instruções individuais; um notebook `.ipynb` junta células de código, texto e resultados.
 - `sum([2, 4, 6]) / len([2, 4, 6])` dá `4.0`. A sequência tem de ser não vazia para calcular a média.
-- Parênteses conservam a ordem pretendida: `(2 + 4 + 6) / 3` dá 4, mas `2 + 4 + 6 / 3` dá 8.
+
+| Expressão       | Resultado | Regra            |
+| --------------- | --------- | ---------------- |
+| `(2 + 4 + 6)/3` | `4.0`     | Soma primeiro    |
+| `2 + 4 + 6 / 3` | `8.0`     | Divisão primeiro |
 
 ## Estado e reprodução
 
-No Jupyter, `Shift+Enter` executa a célula. A ordem visual pode diferir da ordem de execução, e uma variável antiga pode alterar o resultado.
+No Jupyter, `Shift+Enter` executa a célula. A ordem de execução pode diferir da ordem visual; variáveis de execuções antigas alteram resultados.
 
 1. Reinicia o kernel.
 2. Executa todas as células por ordem, incluindo imports e leitura dos dados.

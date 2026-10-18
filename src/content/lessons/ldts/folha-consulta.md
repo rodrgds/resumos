@@ -38,13 +38,13 @@ Cada linha resume uma decisão explicada nas lições. Escolhe pela condição, 
 
 ## Concorrência, I/O e Swing
 
-| Decisão                 | Condição                                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| Arrancar e esperar      | `start()` inicia; `run()` direto é chamada normal; `join()` espera. `sleep()` não sincroniza.         |
-| Proteger estado         | Mesmo monitor em todos os acessos. `volatile` publica, sem tornar `++` atómico.                       |
-| Esperar condição        | `while`, não `if`: reacquire pode encontrar estado mudado; há despertares sem notificação.            |
-| Ler texto               | `InputStreamReader` com codificação explícita dentro de `BufferedReader`; `try-with-resources` fecha. |
-| Interface sem bloqueios | Listener na EDT cria worker e termina; `doInBackground` sem Swing; `done` atualiza na EDT.            |
+| Decisão                 | Condição                                                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Arrancar e esperar      | `start()` inicia; `run()` direto é chamada normal; `join()` espera. `sleep()` não sincroniza.                                |
+| Proteger estado         | Mesmo monitor em todos os acessos. `volatile` publica, sem tornar `++` atómico.                                              |
+| Esperar condição        | `while`, não `if`: ao voltar a adquirir o monitor, outra thread pode já ter mudado o estado; há despertares sem notificação. |
+| Ler texto               | `InputStreamReader` com codificação explícita dentro de `BufferedReader`; `try-with-resources` fecha.                        |
+| Interface sem bloqueios | Listener na EDT cria worker e termina; `doInBackground` sem Swing; `done` atualiza na EDT.                                   |
 
 [Monitores](/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock) · [Espera](/cadeiras/ldts/java-concorrencia-io-swing/#esperar-por-uma-condição) · [I/O](/cadeiras/ldts/java-concorrencia-io-swing/#bytes-texto-e-buffers) · [Swing](/cadeiras/ldts/java-concorrencia-io-swing/#swing-e-eventos)
 
@@ -84,13 +84,13 @@ Cada linha resume uma decisão explicada nas lições. Escolhe pela condição, 
 
 ## UML e arquitetura
 
-| Pergunta                 | Diagrama e leitura                                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Como se relacionam?      | Classes. Losango cheio no todo é composição; campo não prova posse. Multiplicidade conta o próprio extremo.           |
-| Em que ordem?            | Sequência, tempo para baixo é ordem. `alt` separa por guardas; comum aos ramos fica depois.                           |
-| Por que ligações?        | Comunicação, ordem por numeração; interna durante `2` é `2.1`.                                                        |
-| Quando reage como?       | Estados, `evento [guarda] / efeito`. Regiões ortogonais evitam repetir combinações.                                   |
-| Onde vive a regra?       | MVC: modelo valida, vista apresenta o aceite, controlador coordena.                                                   |
-| Onde vive o caso de uso? | Service Layer coordena; Domain Model protege invariantes; Repository fala o domínio; `empty()` é ausência, não falha. |
+| Pergunta                 | Diagrama e leitura                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Como se relacionam?      | Classes. Losango cheio no todo é composição; campo não prova posse. Multiplicidade num extremo conta objetos desse extremo por um objeto do outro. |
+| Em que ordem?            | Sequência, tempo para baixo é ordem. `alt` separa por guardas; comum aos ramos fica depois.                                                        |
+| Por que ligações?        | Comunicação, ordem por numeração; interna durante `2` é `2.1`.                                                                                     |
+| Quando reage como?       | Estados, `evento [guarda] / efeito`. Regiões ortogonais evitam repetir combinações.                                                                |
+| Onde vive a regra?       | MVC: modelo valida, vista apresenta o aceite, controlador coordena.                                                                                |
+| Onde vive o caso de uso? | Service Layer coordena; Domain Model protege invariantes; Repository fala o domínio; `empty()` é ausência, não falha.                              |
 
 [Classes](/cadeiras/ldts/diagramas-uml/#diagrama-de-classes) · [Sequência](/cadeiras/ldts/diagramas-uml/#condições-e-repetição) · [Estados](/cadeiras/ldts/diagramas-uml/#diagrama-de-estados) · [MVC](/cadeiras/ldts/mvc-projeto/) · [Camadas](/cadeiras/ldts/arquitetura-empresarial/#camadas-e-dependências) · [Persistência](/cadeiras/ldts/arquitetura-empresarial/#repository)

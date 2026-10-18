@@ -1,0 +1,228 @@
+---
+draft: true
+title: Cheat sheet de Compiladores
+description: Regras, fórmulas e procedimentos das fases de compilação, com hipóteses e erros frequentes.
+section: recursos
+studyKind: revision
+order: 9
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Ficha de Compiladores 2025/26, programa e avaliação
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560111
+    - title: Série de apresentações docentes de Compiladores (reportadas a 2018/19)
+      url: https://drive.google.com/file/d/165MX5bv_FYbooDFeJE8wIQG1uN1RGvcc/view
+    - title: Teste 1 de 23/4/2026, tabela de símbolos e sobrecarga
+      url: https://accio.pt/uploads/contributions/GCpohUGcAs.pdf
+    - title: Segundo teste de 3/6/2024, dominadores e webs
+      url: https://accio.pt/uploads/contributions/RGSPYVA7VWA.pdf
+  coverage: Condições e procedimentos das oito lições, sem demonstrações nem exemplos desenvolvidos.
+  gaps:
+    - Sem programa publicado para 2026/27; a profundidade da edição atual não está confirmada.
+---
+
+Usa esta página como índice. Cada regra vale nas condições da lição
+ligada: fases em [Fases](/cadeiras/c/fases-compilador/); léxico em
+[Léxico](/cadeiras/c/analise-lexica/); sintaxe em
+[Sintaxe](/cadeiras/c/analise-sintatica/); semântica em
+[Semântica](/cadeiras/c/analise-semantica/); execução em
+[Ambientes](/cadeiras/c/ambientes-execucao/); blocos em
+[Intermédio](/cadeiras/c/codigo-intermedio/); alvo em
+[Geração](/cadeiras/c/geracao-codigo/); fluxo em
+[Otimização](/cadeiras/c/otimizacao-codigo/).
+
+## Fases e artefactos
+
+| Fase              | Recebe                   | Entrega                                    |
+| ----------------- | ------------------------ | ------------------------------------------ |
+| Léxico            | Caracteres               | Tokens com categoria, lexema e posição     |
+| Sintaxe           | Tokens                   | Árvore com o agrupamento da gramática      |
+| Semântica         | Árvore                   | Nomes resolvidos, tipos verificados        |
+| Código intermédio | Árvore validada          | Operações e controlo explícitos            |
+| Otimização        | Representação válida     | Outra com o mesmo comportamento observável |
+| Geração           | Representação intermédia | Instruções e armazenamento do alvo         |
+
+A tabela de símbolos serve várias fases. Nenhuma fase calcula valores
+de execução; traduzir não é executar. [Percurso](/cadeiras/c/fases-compilador/#tokens-árvore-e-código-intermédio).
+
+## Léxico
+
+Padrões do exemplo (ASCII): ID `[a-zA-Z_][a-zA-Z0-9_]*`, inteiro
+`[0-9]+`, literais `=`, `+`, `*`, `(`, `)`, `;`. Reservadas
+reclassificam um ID completo. Espaços e comentários contam para
+posições. [Padrões](/cadeiras/c/analise-lexica/#padrões-lexicais).
+
+Desempate, por ordem: prefixo mais longo, depois primeira regra.
+`if2` é ID; `==` com padrão próprio ganha a dois `=`. Guarda a última
+aceitação e recomeça no bloqueio. [Desempate](/cadeiras/c/analise-lexica/#autómatos-e-desempate).
+
+NFA para DFA: inicial é o fecho-ε do inicial; por caráter, une
+destinos e fecha por ε; final contém final do NFA. Só subconjuntos
+alcançáveis, até $2^n$. O fecho-ε não reinicia a cada letra.
+[Construção](/cadeiras/c/analise-lexica/#da-expressão-regular-ao-dfa).
+
+Erro típico: caráter sem padrão, como `~` ou `é` no exemplo ASCII.
+Reporta posição, não inventes token.
+
+## Sintaxe
+
+Estratifica por precedência: $E \to E + T \mid T$,
+$T \to T \times F \mid F$, $F \to (E) \mid \text{id} \mid \text{num}$.
+Recursão à esquerda fixa associatividade à esquerda. AST guarda
+operações e operandos, sem $E/T/F$ nem parênteses como nós. Duas
+derivações da mesma árvore não provam ambiguidade.
+[Precedência](/cadeiras/c/analise-sintatica/#precedência-e-associatividade).
+
+Previsão LL(1): para $A \to \alpha$, usa FIRST($\alpha$) sem $\epsilon$;
+se $\alpha$ é anulável, usa também FOLLOW($A$). Duas regras na mesma
+célula impedem LL(1). Para sequências, continua pelos anuláveis; só
+inclui $\epsilon$ se todos desaparecerem. FOLLOW nunca contém
+$\epsilon$; propaga o FOLLOW do lado esquerdo quando o resto é
+anulável. [Tabela](/cadeiras/c/analise-sintatica/#first-follow-e-tabela-ll1).
+
+Transformações: `Lista -> Lista Inst | ε` vira ciclo ou
+`Lista -> Inst Lista | ε`; fatoriza prefixos comuns e adia a escolha
+até ao token distinto. Monta a AST à esquerda para operadores
+associativos à esquerda. ANTLR 4 usa previsão adaptativa, não é LL(1)
+simples nem LR.
+[Transformações](/cadeiras/c/analise-sintatica/#recursão-à-esquerda-e-prefixos-comuns).
+
+LR: shift consome e empilha; redução substitui o corpo sem consumir.
+Item com ponto no fim permite reduzir se a tabela autorizar; SLR usa
+FOLLOW do lado esquerdo. `else` associa ao `if` mais próximo ainda
+aberto; fixa na gramática. Erros: posição, recebido e esperado;
+recupera por sincronização (`;`, `}`). [Itens e erros](/cadeiras/c/analise-sintatica/#shift-redução-e-itens-lr).
+
+## Semântica
+
+Uma tabela por âmbito; procura do interior para o exterior. Shadowing
+esconde a exterior no bloco. Na linguagem didática, a declaração só
+entra depois do inicializador: `int x = x + 1` lê o exterior.
+Não transfiras esta regra para Java.
+[Âmbitos](/cadeiras/c/analise-semantica/#tabela-de-símbolos-e-âmbitos).
+
+Só `int` e `boolean`, sem conversões: `+` exige operandos numéricos do
+mesmo tipo; condição de `if`/`while` exige booleano; atribuição exige
+compatibilidade. Tabela de símbolos não é memória de execução: um
+parâmetro tem uma declaração, cada chamada tem o seu valor.
+[Tipos](/cadeiras/c/analise-semantica/#verificação-de-tipos).
+
+Sobrecargas: resolve nomes, calcula tipos, depois escolhe a assinatura
+pelas regras da linguagem. O destino não escolhe. Em C++, retorno
+igual não distingue. [Sobrecargas](/cadeiras/c/analise-semantica/#resolução-de-sobrecargas).
+
+Atributos: herdados descem contexto ($\Gamma$); sintetizados sobem
+resultados (tipos). Calcula operandos antes da operação.
+[Atributos](/cadeiras/c/analise-semantica/#atributos-herdados-e-sintetizados).
+
+## Ambientes de execução
+
+Zonas: código só de leitura; estáticos com endereço fixo; pilha de
+registos com vidas encaixadas; monte com vidas livres. Recursão usa um
+registo por chamada. [Zonas](/cadeiras/c/ambientes-execucao/#organização-de-memória).
+
+Registo: parâmetros, locais, temporários, retorno, registos
+preservados. Ligação dinâmica aponta o chamador; estática aponta o
+âmbito lexical exterior; endereço de retorno é uma instrução.
+[Ligações](/cadeiras/c/ambientes-execucao/#organização-de-memória).
+
+Por valor copia o argumento; por referência dá acesso à variável (na
+prática, o endereço). Java passa tudo por valor; com objetos, o valor
+é a referência. `ref` nos exemplos é pseudocódigo.
+[Parâmetros](/cadeiras/c/ambientes-execucao/#passagem-de-parâmetros).
+
+## Código intermédio
+
+Três endereços: um destino, dois operandos; temporários e rótulos
+frescos. Curto-circuito de `&&`: testa e salta antes de avaliar o
+resto; sem ele, `d != 0 && n / d > 2` com `d = 0` divide por zero.
+Produzir endereço não valida limites: `base + índice × tamanho`.
+[Tradução](/cadeiras/c/codigo-intermedio/#curto-circuito-num-ciclo).
+
+Líderes: primeira instrução, destino de salto, instrução após salto.
+Bloco vai até antes do próximo líder. Arestas: saltos e quedas; `goto`
+não cai. [Blocos](/cadeiras/c/codigo-intermedio/#blocos-básicos-e-grafo-de-fluxo).
+
+Dominância: $d$ domina $b$ se todos os caminhos da entrada até $b$
+passam por $d$. Remove inacessíveis; `DOM[entrada] = {entrada}`; resto
+começa cheio e itera:
+
+```text
+DOM[B] = {B} ∪ interseção de DOM[P], para os antecessores P
+```
+
+União aqui aceitaria blocos de um só ramo. Aresta $n \to h$ com $h$
+dominando $n$ é regresso de ciclo natural; recolhe antecessores de $n$
+até $h$. Posição no desenho não decide.
+[Dominância](/cadeiras/c/codigo-intermedio/#dominância-e-ciclos-naturais).
+
+## Geração de código
+
+Escolha depende do alvo: imediatos têm intervalo; nomes iguais não
+garantem instruções iguais. Cobre a árvore pelo custo completo, de
+baixo para cima; não contes nós já cobertos. Guloso (_maximal munch_)
+pode perder para a programação dinâmica. Fusão em vírgula flutuante
+pode mudar o resultado por arredondamento único.
+[Seleção](/cadeiras/c/geracao-codigo/#seleção-de-instruções).
+
+RAW escreve antes de ler; WAR conserva o valor da leitura anterior;
+WAW conserva a escrita final. Memória, chamadas e efeitos criam mais
+dependências. Escalonar não troca dependentes; o ganho depende de
+latências e recursos.
+[Dependências](/cadeiras/c/geracao-codigo/#dependências-e-escalonamento).
+
+Interferência: valores vivos ao mesmo tempo partilham aresta; $k$
+registos são $k$ cores. Sem cores, derrama: memória mais cargas e
+gravações, com peso maior em ciclos; depois volta a analisar.
+[Derrame](/cadeiras/c/geracao-codigo/#alocação-por-coloração).
+
+Jasmin/JVM: `iload` empilha, operações consomem dois e produzem um,
+`istore` retira e guarda. Altura máxima dá `.limit stack`; `long` e
+`double` ocupam duas unidades. Junções exigem alturas iguais e tipos
+compatíveis; aumentar o limite não corrige junção inválida. Locais e
+pilha não são registos físicos.
+[Jasmin](/cadeiras/c/geracao-codigo/#pilha-de-operandos-e-jasmin).
+
+## Otimização
+
+Vivacidade pergunta usos futuros, propaga para trás. Definições que
+alcançam perguntam origens, propagam para a frente:
+
+```text
+OUT[B] = união de IN[S], para os sucessores S
+IN[B] = USE[B] ∪ (OUT[B] − DEF[B])
+IN[B] = união de OUT[P], para os antecessores P
+OUT[B] = GEN[B] ∪ (IN[B] − KILL[B])
+```
+
+`USE` lê antes de definir; em `x = x + 1` o `x` antigo é `USE`.
+Vivacidade é possibilidade (_may_): união desde o vazio. Constante só
+se todos os caminhos concordarem. [Fluxo](/cadeiras/c/otimizacao-codigo/#análise-de-fluxo-de-dados).
+
+Transforma por ordem: propaga, dobra, elimina o que ficou sem uso. Só
+com locais, sem efeitos nem exceções, e só o observável à saída. Valor
+morto não implica operação dispensável: chamadas e memória observável
+ficam. Depura sem otimizações primeiro.
+[Transformações](/cadeiras/c/otimizacao-codigo/#propagação-dobramento-e-código-morto).
+
+Cadeia definição-uso: caminho sem redefinição. Web agrupa cadeias
+ligadas; redefinição separa vidas; uso comum em junção une ramos.
+Webs dão os nós, vivacidade dá interferências, alocação escolhe
+armazenamento. Contar webs não conta cores.
+[Webs](/cadeiras/c/otimizacao-codigo/#definições-usos-e-webs).
+
+## Erros que a pressa provoca
+
+| Errado                                             | Correto                                                  |
+| -------------------------------------------------- | -------------------------------------------------------- |
+| Partir `soma12` em `soma` + `12`                   | Prefixo mais longo: um ID                                |
+| Aplicar prioridade de regras antes do comprimento  | Comprimento primeiro, regra depois                       |
+| Reiniciar o fecho-ε a cada letra                   | Fecho só sobre destinos do passo                         |
+| Pôr `ε` em FOLLOW                                  | FOLLOW nunca contém `ε`                                  |
+| Escolher a produção vazia ao ver `c` com `A → c A` | Só escolhe ε nas colunas de FOLLOW                       |
+| Reduzir só por reconhecer o corpo no topo          | Redução exige autorização da tabela                      |
+| Ler `x` do chamador em vez do âmbito lexical       | Dinâmica para chamadas, estática para nomes              |
+| Chamar `istore` de derrame por falta de registos   | `istore` guarda resultado; derrame é decisão do alocador |
+| Aumentar `.limit stack` para corrigir junção       | Junção exige mesma altura e tipos nos caminhos           |
+| Apagar `t = escreve()` porque `t` morreu           | O efeito observável fica, o destino pode sair            |
+| Contar cores pelo número de webs                   | Webs separam vidas; interferências pedem cores           |

@@ -96,16 +96,16 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 
 ## Código e rede
 
-| Erro de memória              | Regra                                                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Cópia para buffer            | String de até $N-1$ bytes em buffer de $N$; mede e valida overflow de tamanhos antes de alocar         |
+| Erro de memória              | Regra                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cópia para buffer            | String de até $N-1$ bytes em buffer de $N$; mede e valida overflow de tamanhos antes de alocar                                                  |
 | `printf` com formato externo | Formato literal; `%s` lê string, `%n` escreve contagem em `int *`; formato controlado pode ler posições da pilha nesta máquina e expor canários |
-| Leitura fora dos limites     | Índice com sinal: `0 <= indice < len`; valida antes de converter para tipo menor                       |
-| Use-after-free / double free | Referência inválida mesmo sem crash; anular um ponteiro não anula aliases                              |
-| ROP                          | Reutiliza código existente; NX não o impede sozinho; argumentos dependem da convenção                  |
-| Canário                      | Deteta escritas que o atravessam; terminador depende da cópia, aleatório de imprevisibilidade          |
-| Taint                        | Source → propagação → sink; dinâmica só cobre execuções observadas                                     |
-| TOCTOU                       | Verifica e usa o mesmo objeto; repetir a verificação de um nome mutável não liga ao objeto usado       |
+| Leitura fora dos limites     | Índice com sinal: `0 <= indice < len`; valida antes de converter para tipo menor                                                                |
+| Use-after-free / double free | Referência inválida mesmo sem crash; anular um ponteiro não anula aliases                                                                       |
+| ROP                          | Reutiliza código existente; NX não o impede sozinho; argumentos dependem da convenção                                                           |
+| Canário                      | Deteta escritas que o atravessam; terminador depende da cópia, aleatório de imprevisibilidade                                                   |
+| Taint                        | Source → propagação → sink; dinâmica só cobre execuções observadas                                                                              |
+| TOCTOU                       | Verifica e usa o mesmo objeto; repetir a verificação de um nome mutável não liga ao objeto usado                                                |
 
 - CFI restringe desvios cobertos, não todos os acessos a memória. SCI medeia chamadas; SFI restringe código ao domínio permitido: [mitigações](/cadeiras/fsi/programacao-defensiva/#reutilização-de-código-e-rop).
 - TLS protege transporte entre os seus extremos; não protege de um extremo malicioso. Handshake estabelece material/parâmetros; Record protege dados. No HTTPS habitual, só o servidor é autenticado por certificado, mas a proteção funciona nos dois sentidos. Dados 0-RTT podem ser repetidos: só pedidos com perfil explícito de segurança sob repetição: [canal](/cadeiras/fsi/seguranca-redes/#tls-ssh-e-ipsec).
@@ -116,15 +116,15 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 
 Origem = esquema + host + porta. SOP restringe leitura, não todos os pedidos. CORS não autoriza utilizadores.
 
-| Problema              | Defesa que atua no mecanismo                                                          |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| SQL injection         | Parâmetros para valores; lista de opções para estrutura                               |
-| XSS                   | Codificação por contexto ou sanitização de HTML permitido; sinks seguros              |
-| CSRF                  | Não alterar por GET; defesas da framework, token e/ou validação de origem adequada    |
-| IDOR                  | Autorização no servidor sobre cada objeto e operação                                  |
-| Sessão roubada/fixada | IDs imprevisíveis, renovação, expiração/invalidação e transporte seguro               |
+| Problema              | Defesa que atua no mecanismo                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SQL injection         | Parâmetros para valores; lista de opções para estrutura                                                                                               |
+| XSS                   | Codificação por contexto ou sanitização de HTML permitido; sinks seguros                                                                              |
+| CSRF                  | Não alterar por GET; defesas da framework, token e/ou validação de origem adequada                                                                    |
+| IDOR                  | Autorização no servidor sobre cada objeto e operação                                                                                                  |
+| Sessão roubada/fixada | IDs imprevisíveis, renovação, expiração/invalidação e transporte seguro                                                                               |
 | Autoridade no cookie  | Referência opaca no cookie neste modelo; autoridade na sessão do servidor, verificada por operação; autoridade no cliente exige verificação explícita |
-| Palavra-passe exposta | KDF adequada com sal por entrada; limites de tentativas protegem outro risco          |
+| Palavra-passe exposta | KDF adequada com sal por entrada; limites de tentativas protegem outro risco                                                                          |
 
 Secure restringe transporte; HttpOnly restringe leitura do cookie por JS; SameSite restringe envio conforme o contexto. Nenhum destes atributos torna XSS seguro. [Explicação](/cadeiras/fsi/seguranca-web/).
 

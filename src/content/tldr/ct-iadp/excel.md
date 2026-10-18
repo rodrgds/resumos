@@ -25,10 +25,14 @@ with pd.ExcelWriter("relatorio.xlsx", engine="openpyxl") as escritor:
 
 `resumo` deve ser a tabela calculada antes da exportação. `index=False` evita escrever as posições como coluna. Usa um nome novo, pois a escrita habitual substitui um ficheiro existente.
 
-Depois, lê ambas as folhas pelos nomes e compara códigos, número de linhas e totais com as tabelas em memória. Ao usar `BytesIO`, termina o contexto de escrita e faz `seek(0)` antes de ler os bytes.
+Depois, lê ambas as folhas pelos nomes e compara códigos, número de linhas e totais com as tabelas em memória.
+
+Ao usar `BytesIO`, termina o contexto de escrita e faz `seek(0)` antes de ler os bytes.
 
 ## Fórmulas e apresentação
 
 pandas trabalha com tabelas e não reproduz automaticamente gráficos, células unidas ou toda a formatação. openpyxl não calcula fórmulas Excel: um resultado guardado pode estar desatualizado ou ausente.
 
-Para exportar valores, calcula-os em Python. Se precisas de fórmulas, define a aplicação que as recalcula e confere lá o resultado. Uma leitura sem erro não prova que uma fórmula está atualizada.
+Para exportar valores, calcula-os em Python. Se precisas de fórmulas, define a aplicação que as recalcula e confere lá o resultado.
+
+Uma leitura sem erro não prova que uma fórmula está atualizada.

@@ -17,18 +17,18 @@ Escolhe primeiro o modelo e a fronteira. Cada secção indica quando a fórmula 
 
 ## Canal e erros
 
-| Conta | Expressão | Vale quando |
-| --- | --- | --- |
-| Bits por símbolo | $\log_2M$ | Alfabeto de $M$ símbolos |
-| Débito | $R_s\log_2M$ | Sem redundância |
-| Nyquist | $2B\log_2M$ | Ideal, sem ruído, banda $B$ |
-| Shannon | $B\log_2(1+SNR)$ | SNR **linear**, ruído gaussiano |
-| SNR de dB | $10^{SNR_{dB}/10}$ | Razão de potências |
-| Ganho/perda | $10\log_{10}(P_2/P_1)$ | dB é razão, não potência |
-| dBm/dBW | $P_{dBm}=P_{dBW}+30$ | Referências 1 mW e 1 W |
-| Espaço livre | $20\log_{10}(4\pi d/\lambda)$ | Isotrópico, campo distante |
-| Erro de trama | $F=1-(1-p)^L$ | Bits independentes |
-| Sucesso em $k$ tentativas | $1-F^k$ | Tentativas independentes |
+| Conta                     | Expressão                     | Vale quando                     |
+| ------------------------- | ----------------------------- | ------------------------------- |
+| Bits por símbolo          | $\log_2M$                     | Alfabeto de $M$ símbolos        |
+| Débito                    | $R_s\log_2M$                  | Sem redundância                 |
+| Nyquist                   | $2B\log_2M$                   | Ideal, sem ruído, banda $B$     |
+| Shannon                   | $B\log_2(1+SNR)$              | SNR **linear**, ruído gaussiano |
+| SNR de dB                 | $10^{SNR_{dB}/10}$            | Razão de potências              |
+| Ganho/perda               | $10\log_{10}(P_2/P_1)$        | dB é razão, não potência        |
+| dBm/dBW                   | $P_{dBm}=P_{dBW}+30$          | Referências 1 mW e 1 W          |
+| Espaço livre              | $20\log_{10}(4\pi d/\lambda)$ | Isotrópico, campo distante      |
+| Erro de trama             | $F=1-(1-p)^L$                 | Bits independentes              |
+| Sucesso em $k$ tentativas | $1-F^k$                       | Tentativas independentes        |
 
 Com Nyquist e Shannon impostos, fica o menor. [Transmissão](/cadeiras/rc/transmissao-de-dados/#nyquist-e-shannon)
 
@@ -42,11 +42,11 @@ Com Nyquist e Shannon impostos, fica o menor. [Transmissão](/cadeiras/rc/transm
 
 ## ARQ: escolher e calcular
 
-| | Stop-and-Wait | Go-Back-N | Selective Repeat |
-| --- | --- | --- | --- |
-| Fora de ordem | — | Descarta | Guarda na janela |
-| Retransmite | A trama | Em falta e seguintes | Só em falta |
-| Janela, $m$ bits | 1 | $\le2^m-1$ | $\le2^{m-1}$ |
+|                  | Stop-and-Wait | Go-Back-N            | Selective Repeat |
+| ---------------- | ------------- | -------------------- | ---------------- |
+| Fora de ordem    | —             | Descarta             | Guarda na janela |
+| Retransmite      | A trama       | Em falta e seguintes | Só em falta      |
+| Janela, $m$ bits | 1             | $\le2^m-1$           | $\le2^{m-1}$     |
 
 - Sem perdas: $U=t_f/(t_f+2t_p+t_a)$; janela $W$: $\min(1,W/(1+2a))$, $a=t_p/t_f$.
 - Com $p_e$ independente: $U_{SW}=(1-p_e)/(1+2a)$; SR entrega $(1-p_e)\min(1,W/(1+2a))$.
