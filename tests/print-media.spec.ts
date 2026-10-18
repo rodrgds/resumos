@@ -142,34 +142,36 @@ test('print expands disclosures and shows every tab with readable code colours',
   expect(colours.printColor).toBe('exact');
 });
 
-test('printed pages and diagram notes stay light and legible from every reading palette and mode', async ({
-  page,
-}, info) => {
-  await page.setViewportSize({ width: 794, height: 1123 });
-  await page.goto('/exemplo/diagram-notes/');
-  await page.evaluate(() => {
-    window.print = () => {};
-  });
-  const luminance = (colour: string) => {
-    const channels = colour
-      .match(/\d+/g)!
-      .slice(0, 3)
-      .map((channel) => {
-        const value = Number(channel) / 255;
-        return value <= 0.04045
-          ? value / 12.92
-          : ((value + 0.055) / 1.055) ** 2.4;
-      });
-    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-  };
-  const screen = page.locator('.lesson-body .mermaid-figure');
-  const screenColours = () =>
-    screen.evaluate((root) => ({
-      background: getComputedStyle(root.querySelector('.pele-note rect')!).fill,
-      foreground: getComputedStyle(root.querySelector('.pele-note text')!).fill,
-      scheme: getComputedStyle(document.documentElement).colorScheme,
-    }));
-  for (const palette of readingThemes) {
+for (const palette of readingThemes) {
+  test(`printed pages and diagram notes stay light and legible for ${palette.id}`, async ({
+    page,
+  }, info) => {
+    await page.setViewportSize({ width: 794, height: 1123 });
+    await page.goto('/exemplo/diagram-notes/');
+    await page.evaluate(() => {
+      window.print = () => {};
+    });
+    const luminance = (colour: string) => {
+      const channels = colour
+        .match(/\d+/g)!
+        .slice(0, 3)
+        .map((channel) => {
+          const value = Number(channel) / 255;
+          return value <= 0.04045
+            ? value / 12.92
+            : ((value + 0.055) / 1.055) ** 2.4;
+        });
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    const screen = page.locator('.lesson-body .mermaid-figure');
+    const screenColours = () =>
+      screen.evaluate((root) => ({
+        background: getComputedStyle(root.querySelector('.pele-note rect')!)
+          .fill,
+        foreground: getComputedStyle(root.querySelector('.pele-note text')!)
+          .fill,
+        scheme: getComputedStyle(document.documentElement).colorScheme,
+      }));
     for (const mode of ['light', 'dark', 'system']) {
       await page.emulateMedia({
         colorScheme: mode === 'light' ? 'light' : 'dark',
@@ -238,5 +240,5 @@ test('printed pages and diagram notes stay light and legible from every reading 
       await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
       expect(await screenColours()).toEqual(before);
     }
-  }
-});
+  });
+}
