@@ -10,7 +10,6 @@ export interface ExerciseProgress {
   resultAssistance?: Assistance;
 }
 const STORAGE_KEY = 'resumos-exercise-progress';
-const MAX_RECORDS = 300;
 
 function readRecords(): Record<string, ExerciseProgress> {
   try {
@@ -49,12 +48,7 @@ export function saveExerciseProgress(key: string, progress: ExerciseProgress) {
     const records = readRecords();
     delete records[key];
     records[key] = progress;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(
-        Object.fromEntries(Object.entries(records).slice(-MAX_RECORDS)),
-      ),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   } catch {
     /* Practice remains available when browser storage is unavailable. */
   }

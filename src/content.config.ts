@@ -46,6 +46,7 @@ const lessons = defineCollection({
     draft: z.boolean().default(false),
     studyKind: z.enum(['lesson', 'revision']).default('lesson'),
     practices: z.array(z.string().min(1)).default([]),
+    exerciseScope: z.enum(['lesson', 'course']).default('lesson'),
     editorial: editorial.optional(),
   }),
 });

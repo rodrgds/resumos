@@ -75,7 +75,7 @@ practices:
   - exemplo/praticar-somas
 ```
 
-As questões aparecem recolhidas no fim da lição. Cada conjunto precisa de uma lição publicada da mesma cadeira; referências inválidas interrompem o build. Escolhe questões que peçam decisões diferentes.
+As questões aparecem recolhidas no fim da lição. Por defeito, cada conjunto precisa de uma lição publicada da mesma cadeira; referências inválidas interrompem o build. Para uma prova ou banco de questões independente, usa `section: exercicios` e `exerciseScope: course`: ganha uma página e uma ligação em Exercícios, fora da sequência de lições. Escolhe questões que peçam decisões diferentes.
 
 ```mdx
 import Exercise from '../../../components/Exercise.astro';
@@ -111,11 +111,11 @@ As diretivas documentadas usam blocos. Os dois pontos dentro do texto, como em `
 
 O problema e a resposta aparecem antes da ajuda. Verificar é a ação principal; na autoavaliação, Comparar abre e foca a solução. As pistas e a solução usam expansíveis nativos, acessíveis por teclado e sem JavaScript. A ligação à explicação fica dentro da solução. Limpar só aparece quando há uma resposta; no editor, Repor código só aparece após uma edição e Parar substitui Verificar durante a execução.
 
-Na autoavaliação, o leitor compara com a solução e indica se está certo ou precisa de corrigir. Não é uma classificação automática. O navegador guarda apenas resultados e ajuda consultada, nunca respostas ou código. Abrir uma pista depois da resposta não muda a ajuda atribuída àquela resposta. Enunciados, pistas e soluções continuam legíveis sem JavaScript.
+Na autoavaliação, o leitor compara com a solução e indica se está certo ou precisa de corrigir. Não é uma classificação automática. As respostas, o código, os resultados e a ajuda consultada ficam neste navegador. Limpar remove a resposta; Repor código restaura o ponto de partida. Editar uma resposta invalida a classificação anterior. Abrir uma pista depois da resposta não muda a ajuda atribuída àquela resposta. Enunciados, pistas e soluções continuam legíveis sem JavaScript.
 
 ### Respostas de programação
 
-`code` aceita Python e JavaScript. Os casos são públicos, executados separadamente em motores descartáveis. Define entradas normais e casos limite, incluindo a entrada vazia quando fizer sentido. Verifica uma implementação alternativa e uma errada, sem comparar o texto do código.
+`code` aceita Python, JavaScript e Haskell. Os casos são públicos, executados separadamente em motores descartáveis. Em Haskell, o código inicial define as funções e cada teste fornece `main`, sem stdin. Define entradas normais e casos limite, incluindo a entrada vazia quando fizer sentido. Verifica uma implementação alternativa e uma errada, sem comparar o texto do código.
 
 ```mdx
 <Exercise

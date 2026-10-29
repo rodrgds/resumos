@@ -55,6 +55,13 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
           a.data.title.localeCompare(b.data.title, 'pt'),
       );
     for (const page of pages) {
+      if (
+        page.data.exerciseScope === 'course' &&
+        page.data.section !== 'exercicios'
+      )
+        throw new Error(
+          `${page.id}: course exercise scope requires section exercicios.`,
+        );
       for (const target of page.data.practices) {
         if (
           page.data.section === 'exercicios' ||
@@ -70,6 +77,7 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
       }
       if (
         page.data.section === 'exercicios' &&
+        page.data.exerciseScope !== 'course' &&
         !pages.some((lesson) => lesson.data.practices.includes(page.id))
       )
         throw new Error(
@@ -82,7 +90,11 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
       path: id === 'exemplo' ? '/exemplo/' : `/cadeiras/${id}/`,
       example: id === 'exemplo',
       introduction: pages.find((page) => page.id === `${id}/index`),
-      pages: ordered.filter((page) => page.data.section !== 'exercicios'),
+      pages: ordered.filter(
+        (page) =>
+          page.data.section !== 'exercicios' ||
+          page.data.exerciseScope === 'course',
+      ),
       lessons: ordered.filter(
         (page) =>
           page.data.studyKind !== 'revision' &&

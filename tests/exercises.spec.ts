@@ -265,3 +265,112 @@ test('small numerical tolerances retain their precision in accessible and printa
   expect(print).toContain('±0,00000001 m');
   await page.close();
 });
+
+test('responses survive refresh and edits and clearing invalidate results', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/exercise-help/');
+  const choice = page.locator('#empty-help');
+  const number = page.locator('#solution-only');
+  const self = page.locator('#second-hint');
+  for (const exercise of [choice, number, self])
+    await exercise.locator('.exercise-disclosure > summary').click();
+  await choice.getByRole('radio').first().check();
+  await choice.locator('[data-check]').click();
+  await number.locator('[data-response]').fill('4');
+  await number.locator('[data-check]').click();
+  await self.locator('[data-response]').fill('2 + 2 = 4');
+  await self.locator('[data-check]').click();
+  await self.locator('[data-self-check="correct"]').click();
+  await page.reload();
+  for (const exercise of [choice, number, self])
+    await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(choice.getByRole('radio').first()).toBeChecked();
+  await expect(number.locator('[data-response]')).toHaveValue('4');
+  await expect(self.locator('[data-response]')).toHaveValue('2 + 2 = 4');
+  await expect(number.locator('[data-feedback]')).toContainText('correta');
+  await number.locator('[data-response]').fill('5');
+  await choice.getByRole('radio').last().check();
+  await self.locator('[data-response]').fill('Outro raciocínio');
+  await page.reload();
+  for (const exercise of [choice, number, self])
+    await exercise.locator('.exercise-disclosure > summary').click();
+  for (const exercise of [choice, number, self])
+    await expect(exercise.locator('[data-feedback]')).toBeEmpty();
+  await expect(self.locator('[data-self-check="correct"]')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  for (const exercise of [choice, number, self])
+    await exercise.locator('[data-clear]').click();
+  await page.reload();
+  for (const exercise of [choice, number, self])
+    await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(choice.getByRole('radio').last()).not.toBeChecked();
+  await expect(number.locator('[data-response]')).toHaveValue('');
+  await expect(self.locator('[data-response]')).toHaveValue('');
+});
+
+test('responses are revision scoped and storage failures do not block practice', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'resumos-exercise-responses',
+      JSON.stringify({ 'exemplo/solution-only/2': '99' }),
+    );
+  });
+  await page.goto('/exemplo/exercise-help/');
+  const exercise = page.locator('#solution-only');
+  await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(exercise.locator('[data-response]')).toHaveValue('');
+  await page.evaluate(() => {
+    Object.defineProperty(Storage.prototype, 'getItem', {
+      value: () => {
+        throw new Error('unavailable');
+      },
+    });
+    Object.defineProperty(Storage.prototype, 'setItem', {
+      value: () => {
+        throw new Error('unavailable');
+      },
+    });
+  });
+  await exercise.locator('[data-response]').fill('4');
+  await exercise.locator('[data-check]').click();
+  await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+  await exercise.locator('[data-clear]').click();
+  await expect(exercise.locator('[data-response]')).toHaveValue('');
+});
+
+test('question headings restore correctness and remove it when the answer changes', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/exercise-help/');
+  const exercise = page.locator('#solution-only');
+  const summary = exercise.locator('.exercise-disclosure > summary');
+  const status = summary.locator('[data-summary-status]');
+  await expect(status).toBeHidden();
+  await summary.click();
+  await exercise.locator('[data-response]').fill('5');
+  await exercise.locator('[data-check]').click();
+  await summary.click();
+  await expect(status).toBeVisible();
+  await expect(status).toHaveAttribute('aria-label', 'Resposta incorreta');
+  await page.reload();
+  await expect(status).toBeVisible();
+  await expect(status).toHaveAttribute('aria-label', 'Resposta incorreta');
+  await summary.click();
+  await exercise.locator('[data-response]').fill('4');
+  await expect(status).toBeHidden();
+  await exercise.locator('[data-check]').click();
+  await summary.click();
+  await expect(status).toHaveAttribute('aria-label', 'Resposta correta');
+  await page.reload();
+  await expect(status).toBeVisible();
+  await expect(status).toHaveAttribute('aria-label', 'Resposta correta');
+  await summary.click();
+  await exercise.locator('[data-clear]').click();
+  await page.reload();
+  await expect(status).toBeHidden();
+});

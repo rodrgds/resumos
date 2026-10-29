@@ -1,0 +1,372 @@
+---
+import Exercise from '../../../components/Exercise.astro';
+
+const league = `type Match = ((String,String), (Int,Int))
+type MatchDay = [Match]
+type League = [MatchDay]
+myLeague :: League
+myLeague = [[(("Porto","Sporting"),(2,2)),(("Benfica","Vitoria SC"),(4,0))],
+  [(("Porto","Benfica"),(5,0)),(("Vitoria SC","Sporting"),(3,2))],
+  [(("Vitoria SC","Porto"),(1,2)),(("Sporting","Benfica"),(2,1))]]
+`;
+const winner = `winner :: Match -> String
+winner ((h,a),(x,y)) | x > y = h | x < y = a | otherwise = "draw"
+`;
+const score = `matchDayScore :: String -> MatchDay -> Int
+matchDayScore _ [] = 0
+matchDayScore t (((h,a),(x,y)):ms)
+  | t == h = if x > y then 3 else if x == y then 1 else 0
+  | t == a = if y > x then 3 else if x == y then 1 else 0
+  | otherwise = matchDayScore t ms
+leagueScore :: String -> League -> Int
+leagueScore t = foldr (\\d acc -> matchDayScore t d + acc) 0
+sortByCond :: Ord a => [a] -> (a -> a -> Bool) -> [a]
+sortByCond [] _ = []
+sortByCond [x] _ = [x]
+sortByCond l cmp = merge (sortByCond l1 cmp) (sortByCond l2 cmp) cmp
+  where (l1,l2) = splitAt (div (length l) 2) l
+merge :: Ord a => [a] -> [a] -> (a -> a -> Bool) -> [a]
+merge [] l _ = l
+merge l [] _ = l
+merge (x:xs) (y:ys) cmp
+  | cmp x y = x : merge xs (y:ys) cmp
+  | otherwise = y : merge (x:xs) ys cmp
+`;
+const roads = `type City = String
+type Path = [City]
+type Distance = Int
+type RoadMap = [(City,City,Distance)]
+gTest1 :: RoadMap
+gTest1 = [("0","1",10),("0","2",15),("0","3",20),("1","2",35),("1","3",25),("2","3",30)]
+gTest2 :: RoadMap
+gTest2 = [("0","1",4),("2","3",2)]
+`;
+const adjacent = `adjacent :: RoadMap -> City -> [(City,Distance)]
+adjacent rs c = [(b,d) | (a,b,d) <- rs, a == c, b /= c] ++ [(a,d) | (a,b,d) <- rs, b == c, a /= c]
+`;
+const tree = `data KdTree = Empty | Node Char (Int,Int) KdTree KdTree deriving (Eq,Show)
+tree1 :: KdTree
+tree1 = Node 'x' (3,3) (Node 'y' (2,2) Empty Empty) (Node 'y' (4,4) Empty Empty)
+tree2 :: KdTree
+tree2 = Node 'x' (3,3) (Node 'y' (2,2) (Node 'x' (1,1) Empty Empty) Empty) (Node 'y' (4,4) (Node 'x' (3,2) Empty Empty) Empty)
+`;
+const questions = [
+  {
+    n: 1,
+    stem: 'Implement winner :: Match -> String, which, given a match, returns the name of the match\'s winner or "draw" in case both teams\nscored the same number of goals.\nExamples:\nghci> winner (("Porto","Benfica"),(5,0))\n"Porto"\nghci> winner (("Porto","Sporting"),(2,2))\n"draw"',
+    starter: league + 'winner :: Match -> String\nwinner = undefined',
+    tests: [
+      {
+        name: 'Casa',
+        code: 'main = print (winner (("Porto","Benfica"),(5,0)))',
+        output: '"Porto"',
+      },
+      {
+        name: 'Empate',
+        code: 'main = print (winner (("Porto","Sporting"),(2,2)))',
+        output: '"draw"',
+      },
+      {
+        name: 'Fora',
+        code: 'main = print (winner (("A","B"),(0,3)))',
+        output: '"B"',
+      },
+    ],
+    solution:
+      'winner ((h,a),(x,y)) | x > y = h | x < y = a | otherwise = "draw"\n\nCompara os golos das duas equipas; a igualdade é empate.',
+  },
+  {
+    n: 2,
+    stem: 'Implement matchDayScore :: String -> MatchDay -> Int, which, given a team and a matchday, returns the score obtained by that team\non their match of that matchday. Winning a match gives a team 3 points, drawing gives 1 point and losing gives 0 points. If the input\nteam does not exist in the league, then return 0.\nExamples:\nghci> matchDayScore "Porto" (myLeague !! 0)\n1\nghci> matchDayScore "Benfica" (myLeague !! 0)\n3\nghci> matchDayScore "Vitoria SC" (myLeague !! 0)\n0',
+    starter:
+      league +
+      'matchDayScore :: String -> MatchDay -> Int\nmatchDayScore = undefined',
+    tests: [
+      {
+        name: 'Empate',
+        code: 'main = print (matchDayScore "Porto" (myLeague !! 0))',
+        output: '1',
+      },
+      {
+        name: 'Vitória',
+        code: 'main = print (matchDayScore "Benfica" (myLeague !! 0))',
+        output: '3',
+      },
+      {
+        name: 'Derrota',
+        code: 'main = print (matchDayScore "Vitoria SC" (myLeague !! 0))',
+        output: '0',
+      },
+      {
+        name: 'Ausente',
+        code: 'main = print (matchDayScore "X" [])',
+        output: '0',
+      },
+    ],
+    solution:
+      'matchDayScore _ [] = 0\nmatchDayScore t (((h,a),(x,y)):ms)\n  | t == h = if x > y then 3 else if x == y then 1 else 0\n  | t == a = if y > x then 3 else if x == y then 1 else 0\n  | otherwise = matchDayScore t ms\n\nProcura o jogo da equipa e compara os golos na orientação correta.',
+  },
+  {
+    n: 3,
+    stem: 'Implement ranking:: League -> [(String,Int)], which returns a list of pairs (team,score) with the score obtained by each team during\nthe league. The league score is the sum of the points obtained by the team in each matchday. The output list must be ordered by the\nscores, in decreasing order. In case of a tie in the scores, return the team name that comes first alphabetically.\nExamples:\nghci> ranking myLeague\n[("Porto",7),("Sporting",4),("Benfica",3),("Vitoria SC",3)]\nghci> ranking (tail myLeague)\n[("Porto",6),("Sporting",3),("Vitoria SC",3),("Benfica",0)]\nghci> ranking []\n[]',
+    starter:
+      league +
+      score +
+      'ranking :: League -> [(String,Int)]\nranking = undefined',
+    tests: [
+      {
+        name: 'Liga',
+        code: 'main = print (ranking myLeague)',
+        output: '[("Porto",7),("Sporting",4),("Benfica",3),("Vitoria SC",3)]',
+      },
+      {
+        name: 'Cauda',
+        code: 'main = print (ranking (tail myLeague))',
+        output: '[("Porto",6),("Sporting",3),("Vitoria SC",3),("Benfica",0)]',
+      },
+      { name: 'Vazia', code: 'main = print (ranking [])', output: '[]' },
+    ],
+    solution:
+      'unique [] = []\nunique (x:xs) = x : unique [y | y <- xs, y /= x]\nranking l = sortByCond [(t,leagueScore t l) | t <- unique [t | d <- l, ((h,a),_) <- d, t <- [h,a]]] cmp\n  where cmp (a,x) (b,y) = x > y || (x == y && a < b)\n\nRecolhe cada equipa uma vez e ordena por pontos decrescentes, usando o nome para desempatar.',
+  },
+  {
+    n: 4,
+    stem: 'Implement numMatchDaysWithDraws :: League -> Int, which returns the amount of matchdays in the league where at least one\nmatch ended in a draw.\nConstraint: in this exercise, you must use higher-order functions. You are not allowed to define new recursive functions or use list\ncomprehensions.\nExample:\nghci> numMatchDaysWithDraws myLeague\n1',
+    starter:
+      league +
+      winner +
+      'numMatchDaysWithDraws :: League -> Int\nnumMatchDaysWithDraws = undefined',
+    tests: [
+      {
+        name: 'Liga',
+        code: 'main = print (numMatchDaysWithDraws myLeague)',
+        output: '1',
+      },
+      {
+        name: 'Vazia',
+        code: 'main = print (numMatchDaysWithDraws [])',
+        output: '0',
+      },
+      {
+        name: 'Dois empates',
+        code: 'main = print (numMatchDaysWithDraws [[(("A","B"),(0,0)),(("C","D"),(1,1))]])',
+        output: '1',
+      },
+    ],
+    solution:
+      'numMatchDaysWithDraws = length . filter (any ((== "draw") . winner))\n\nConta cada jornada que contém pelo menos um empate.',
+  },
+  {
+    n: 5,
+    stem: 'Implement bigWins :: League -> [(Int,[String])], which returns a list of pairs (i,ws), where i is the index of the matchday (with indices\nstarting at 1) and ws are the names of teams from that matchday that won their match with a goal difference of at least 3 goals. Any\norder of the winners ws of each matchday will be accepted.\nConstraint: in this exercise, you must use list comprehensions. You are not allowed to define new recursive functions or use higher-\norder functions (map, filter, foldl ...).\nExample:\nghci> bigWins myLeague\n[(1,["Benfica"]),(2,["Porto"]),(3,[])]',
+    starter:
+      league +
+      winner +
+      'bigWins :: League -> [(Int,[String])]\nbigWins = undefined',
+    tests: [
+      {
+        name: 'Liga',
+        code: 'main = print (bigWins myLeague)',
+        output: '[(1,["Benfica"]),(2,["Porto"]),(3,[])]',
+      },
+      { name: 'Vazia', code: 'main = print (bigWins [])', output: '[]' },
+      {
+        name: 'Limite',
+        code: 'main = print (bigWins [[(("A","B"),(0,3))]])',
+        output: '[(1,["B"])]',
+      },
+    ],
+    solution:
+      'bigWins l = [(i,[winner m | m@(_, (x,y)) <- d, abs (x-y) >= 3]) | (i,d) <- zip [1..] l]\n\nA compreensão exterior conserva todas as jornadas; a interior seleciona diferenças de pelo menos três golos.',
+  },
+  {
+    n: 6,
+    stem: 'Implement winningStreaks :: League -> [(String,Int,Int)], which returns a list of winning streaks, described by a triple (t,s,e), where:\n     t is the name of the team involved in the winning streak;\n     s and e are the indices of the streak\'s first and last matchday (with indices starting at 1).\nA winning streak is a sequence of wins in 2 or more consecutive matchdays.\nNote that the same team may have more than one winning streak and thus appear multiple times in the output. Any order of the\noutput list will be accepted.\nExamples:\nghci> winningStreaks myLeague\n[("Porto",2,3)]\nghci> winningStreaks [[(("RM","Barca"),(4,0))],[(("Barca","RM"),(1,2))],[(("RM","Barca"),(2,2))],[(("RM","Barca"),\n(0,4))],[(("Barca","RM"),(3,0))],[(("Barca","RM"),(3,1))]]\n[("RM",1,2),("Barca",4,6)]',
+    starter:
+      league +
+      winner +
+      'winningStreaks :: League -> [(String,Int,Int)]\nwinningStreaks = undefined',
+    tests: [
+      {
+        name: 'Liga',
+        code: 'main = print (winningStreaks myLeague)',
+        output: '[("Porto",2,3)]',
+      },
+      { name: 'Vazia', code: 'main = print (winningStreaks [])', output: '[]' },
+      {
+        name: 'Duas equipas',
+        code: 'main = print (let r = winningStreaks [[(("RM","Barca"),(4,0))],[(("Barca","RM"),(1,2))],[(("RM","Barca"),(2,2))],[(("RM","Barca"),(0,4))],[(("Barca","RM"),(3,0))],[(("Barca","RM"),(3,1))]] in (elem ("RM",1,2) r, elem ("Barca",4,6) r, length r))',
+        output: '(True,True,2)',
+      },
+    ],
+    solution:
+      'unique [] = []\nunique (x:xs) = x : unique [y | y <- xs, y /= x]\nruns t [] = []\nruns t (i:is) = extend t i i is\nextend t s e (i:is) | i == e+1 = extend t s i is\nextend t s e rest = (if e > s then [(t,s,e)] else []) ++ runs t rest\nwinningStreaks l = concat [runs t [i | (i,d) <- zip [1..] l, m <- d, winner m == t] | t <- unique [t | d <- l, ((h,a),_) <- d, t <- [h,a]]]\n\nAgrupa, para cada equipa, índices consecutivos de vitórias e descarta grupos de uma só jornada.',
+  },
+  {
+    n: 7,
+    stem: 'Implement adjacent :: RoadMap -> City ->[(City,Distance)], which returns the cities adjacent to a particular city (i.e. cities with a\ndirect edge between them) and the respective distances to them. Any order of the output list will be accepted. Note that a city is\nNOT adjacent to itself.\nExamples:\nghci> adjacent gTest1 "0"\n[("1",10),("2",15),("3",20)]\nghci> adjacent gTest2 "0"\n[("1",4)]',
+    starter:
+      roads +
+      'adjacent :: RoadMap -> City -> [(City,Distance)]\nadjacent = undefined',
+    tests: [
+      {
+        name: 'Mapa',
+        code: 'main = print (let r = adjacent gTest1 "0" in (length r, elem ("1",10) r, elem ("2",15) r, elem ("3",20) r))',
+        output: '(3,True,True,True)',
+      },
+      {
+        name: 'Desconexo',
+        code: 'main = print (adjacent gTest2 "0")',
+        output: '[("1",4)]',
+      },
+      {
+        name: 'Laço',
+        code: 'main = print (adjacent [("A","A",1)] "A")',
+        output: '[]',
+      },
+    ],
+    solution:
+      'adjacent rs c = [(b,d) | (a,b,d) <- rs, a == c, b /= c] ++ [(a,d) | (a,b,d) <- rs, b == c, a /= c]\n\nPercorre as estradas nos dois sentidos e exclui laços.',
+  },
+  {
+    n: 8,
+    stem: 'Implement areConnected :: RoadMap -> City -> City -> Bool, which determines if there is a path, composed of one or more roads,\nconnecting both input cities of the input roadmap. Consider that a city is connected to itself.\nExamples:\nghci> areConnected gTest1 "0" "3"\nTrue\nghci> areConnected gTest2 "0" "3"\nFalse',
+    starter:
+      roads +
+      adjacent +
+      'areConnected :: RoadMap -> City -> City -> Bool\nareConnected = undefined',
+    tests: [
+      {
+        name: 'Ligadas',
+        code: 'main = print (areConnected gTest1 "0" "3")',
+        output: 'True',
+      },
+      {
+        name: 'Desligadas',
+        code: 'main = print (areConnected gTest2 "0" "3")',
+        output: 'False',
+      },
+      {
+        name: 'Mesma',
+        code: 'main = print (areConnected [] "X" "X")',
+        output: 'True',
+      },
+      {
+        name: 'Ciclo',
+        code: 'main = print (areConnected [("A","B",1),("B","C",1),("C","A",1)] "A" "Z")',
+        output: 'False',
+      },
+    ],
+    solution:
+      'areConnected roads start end = search [] [start]\n  where\n    search _ [] = False\n    search seen (c:cs)\n      | c == end = True\n      | c `elem` seen = search seen cs\n      | otherwise = search (c:seen) (map fst (adjacent roads c) ++ cs)\n\nA pesquisa guarda cidades visitadas para terminar mesmo com ciclos. A cidade inicial está ligada a si própria.',
+  },
+  {
+    n: 9,
+    stem: "Implement insert :: (Int,Int) -> KdTree -> KdTree, which given a point p and a tree t, returns a new tree with the result of adding p to t.\nPoint p should be added on the appropriate leaf node (Empty), according to the rules of the kd-tree stated before. If point p is\nalready in the tree, then return t.\nExamples:\nghci> insert (3,2) tree1\nNode 'x' (3,3) (Node 'y' (2,2) Empty Empty) (Node 'y' (4,4) (Node 'x' (3,2) Empty Empty) Empty)\nghci> insert (1,1) (insert (3,2) tree1)\nNode 'x' (3,3) (Node 'y' (2,2) (Node 'x' (1,1) Empty Empty) Empty) (Node 'y' (4,4) (Node 'x' (3,2) Empty Empty) Empty)",
+    starter:
+      tree + 'insert :: (Int,Int) -> KdTree -> KdTree\ninsert = undefined',
+    tests: [
+      {
+        name: 'Raiz',
+        code: 'main = print (insert (1,2) Empty)',
+        output: "Node 'x' (1,2) Empty Empty",
+      },
+      {
+        name: 'Exemplo',
+        code: 'main = print (insert (3,2) tree1)',
+        output:
+          "Node 'x' (3,3) (Node 'y' (2,2) Empty Empty) (Node 'y' (4,4) (Node 'x' (3,2) Empty Empty) Empty)",
+      },
+      {
+        name: 'Duplicado',
+        code: 'main = print (insert (3,2) tree2)',
+        output:
+          "Node 'x' (3,3) (Node 'y' (2,2) (Node 'x' (1,1) Empty Empty) Empty) (Node 'y' (4,4) (Node 'x' (3,2) Empty Empty) Empty)",
+      },
+    ],
+    solution:
+      "insert p = go 'x'\n  where\n    go axis Empty = Node axis p Empty Empty\n    go _ node@(Node a q left right)\n      | p == q = node\n      | coordinate a p < coordinate a q = Node a q (go (next a) left) right\n      | otherwise = Node a q left (go (next a) right)\n    coordinate 'x' (x,_) = x\n    coordinate _ (_,y) = y\n    next 'x' = 'y'\n    next _ = 'x' \n\nCoordenadas iguais seguem para a direita; o eixo alterna ao descer. Um ponto igual já existe.",
+  },
+  {
+    n: 10,
+    stem: "Implement putTreeStr :: KdTree -> IO (), which prints the contents of the tree in several lines, in a user-friendly manner. The output\nformat must be exactly as detailed in the examples (including regarding the ' ' and newlines).\nEach tree is printed as follows:\n     a line for the root's point;\n     a line with the condition that all points of the left child must follow;\n     the left child (if it exists);\n     a line with the condition that all points of the right child must follow;\n     the right child (if it exists).\nAt each level of depth in tree, all of the prints must be prefixed by exactly two additional spaces: \" \".\nNote that nothing should be printed for empty trees.\nExamples:\nghci> putTreeStr Empty\nghci> putTreeStr tree1\n(3,3)\nx<3\n  (2,2)\n  y<2\n  y>=2\nx>=3\n  (4,4)\n  y<4\n  y>=4\nghci> putTreeStr tree2\n(3,3)\nx<3\n  (2,2)\n  y<2\n      (1,1)\n      x<1\n    x>=1\n  y>=2\nx>=3\n  (4,4)\n  y<4\n      (3,2)\n      x<3\n    x>=3\n  y>=4",
+    starter: tree + 'putTreeStr :: KdTree -> IO ()\nputTreeStr = undefined',
+    tests: [
+      {
+        name: 'Vazia',
+        code: 'main = print =<< (putTreeStr Empty)',
+        output: '()',
+      },
+      {
+        name: 'Um nó',
+        code: "main = print =<< (putTreeStr (Node 'x' (1,2) Empty Empty))",
+        output: '(1,2)\nx<1\nx>=1\n()',
+      },
+      {
+        name: 'Árvore',
+        code: 'main = print =<< (putTreeStr tree1)',
+        output:
+          '(3,3)\nx<3\n  (2,2)\n  y<2\n  y>=2\nx>=3\n  (4,4)\n  y<4\n  y>=4\n()',
+      },
+    ],
+    solution:
+      'putTreeStr = go ""\n  where\n    go _ Empty = return ()\n    go indent (Node axis p@(x,y) left right) = do\n      putStrLn (indent ++ show p)\n      let value = if axis == \'x\' then x else y\n      putStrLn (indent ++ [axis] ++ "<" ++ show value)\n      go (indent ++ "  ") left\n      putStrLn (indent ++ [axis] ++ ">=" ++ show value)\n      go (indent ++ "  ") right\n\nImprime as condições mesmo quando a subárvore é vazia e acrescenta dois espaços por nível.',
+  },
+];
+---
+
+<p>
+  Não uses funções de biblioteca nem importes módulos, salvo indicação
+  explícita. Podes usar as funções fornecidas no código inicial. Os testes
+  verificam o resultado, não o método.
+</p>
+
+{questions.map((q) => (
+  <Exercise
+    id={`mt1-2024-part2-q${q.n}`}
+    title={`Questão ${q.n}`}
+    explanation="/cadeiras/pfl/listas-recursao/#construir-e-percorrer"
+    answer={{
+      kind: 'code',
+      language: 'haskell',
+      starter: q.starter,
+      tests: q.tests,
+    }}
+  >
+    {q.n <= 6 && (
+      <p>
+        Uma liga é uma sequência de jornadas. Cada equipa joga uma partida por
+        jornada; cada partida contém as equipas da casa e visitante e os
+        respetivos golos. Por exemplo, <code>(("Porto","Benfica"),(5,0))</code>{' '}
+        representa uma vitória do Porto por 5–0. As definições e os exemplos da
+        liga estão no código inicial.
+      </p>
+    )}
+    {q.n === 3 && (
+      <p>
+        Podes usar <code>leagueScore</code>, <code>sortByCond</code> e{' '}
+        <code>merge</code>, fornecidas no código inicial.
+      </p>
+    )}
+    {q.n >= 7 && q.n <= 8 && (
+      <p>
+        RoadMap representa estradas não orientadas entre cidades, com as
+        respetivas distâncias. Os mapas de exemplo estão no código inicial;{' '}
+        <code>gTest2</code> é desconexo.
+      </p>
+    )}
+    {q.n >= 9 && (
+      <p>
+        Uma KD-tree guarda pontos distintos. A raiz não vazia é um nó X e os
+        níveis alternam entre X e Y. À esquerda ficam pontos com coordenada do
+        eixo estritamente inferior; à direita, igual ou superior. Pontos
+        distintos podem partilhar uma coordenada. As árvores de exemplo estão no
+        código inicial.
+      </p>
+    )}
+    <p style="white-space: pre-wrap">{q.stem}</p>
+    <div slot="solution" style="white-space: pre-wrap">
+      {q.solution}
+    </div>
+  </Exercise>
+))}

@@ -157,7 +157,7 @@ test.describe('exercise feedback when an uncached engine fails', () => {
     expect(print).not.toContain('private-reader-code');
     await page.reload();
     await exercise.locator('.exercise-disclosure > summary').click();
-    await expect(editor).not.toContainText('n * (n + 1)');
+    await expect(editor).toContainText('n * (n + 1)');
     await expect(exercise.locator('[data-feedback]')).toContainText('correta');
   });
 });
@@ -238,4 +238,39 @@ test('public exports and no-script exercises include authored code and test case
   const markdown = await request.get('/exemplo/apontamentos.md');
   expect(await markdown.text()).toContain('print(soma_naturais(20))');
   await page.close();
+});
+
+test('Haskell exercises grade behavior and retain edits until reset', async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await page.goto('/exemplo/exercise-help/');
+  const exercise = page.locator('#haskell-double');
+  await exercise.locator('.exercise-disclosure > summary').click();
+  const editor = exercise.getByRole('textbox', { name: 'Código haskell' });
+  const check = exercise.getByRole('button', { name: 'Verificar código' });
+  await editor.fill('dobro x = x + x');
+  await check.click();
+  await expect(exercise.locator('[data-code-status]')).toHaveText(
+    '2/2 testes passaram.',
+    { timeout: 180_000 },
+  );
+  await page.reload();
+  await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(editor).toHaveText('dobro x = x + x');
+  await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+  await editor.fill('dobro x = x');
+  await page.reload();
+  await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(exercise.locator('[data-feedback]')).toBeEmpty();
+  await check.click();
+  await expect(exercise.locator('[data-code-status]')).toContainText('falhou', {
+    timeout: 180_000,
+  });
+  await editor.fill('dobro x = 99');
+  await exercise.getByRole('button', { name: 'Repor código' }).click();
+  await page.reload();
+  await exercise.locator('.exercise-disclosure > summary').click();
+  await expect(editor).toHaveText('dobro x = x');
+  await expect(exercise.locator('[data-feedback]')).toBeEmpty();
 });

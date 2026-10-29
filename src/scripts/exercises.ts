@@ -6,6 +6,10 @@ import {
   type ExerciseProgress,
 } from '../lib/exercise-progress';
 import {
+  readExerciseResponse,
+  saveExerciseResponse,
+} from '../lib/exercise-responses';
+import {
   createExerciseFeedback,
   showExerciseNotice,
 } from '../lib/exercise-feedback';
@@ -23,6 +27,9 @@ export function setupExercises() {
     const answer: Answer = JSON.parse(root.dataset.answer!);
     const key = root.dataset.progressKey!;
     const feedback = root.querySelector<HTMLElement>('[data-feedback]')!;
+    const summaryStatus = root.querySelector<HTMLElement>(
+      '[data-summary-status]',
+    )!;
     const effects = createExerciseFeedback(root);
     root.addEventListener('exercise-code-reset', () => {
       effects.reset();
@@ -40,7 +47,21 @@ export function setupExercises() {
         : level === 'hint'
           ? 'com pistas'
           : 'sem ajuda';
+    const showSummaryStatus = () => {
+      const result = progress?.result;
+      const correct = result === 'correct' || result === 'self-correct';
+      const incorrect =
+        result === 'self-incorrect' ||
+        (result === 'attempted' && answer.kind !== 'self');
+      summaryStatus.hidden = !correct && !incorrect;
+      summaryStatus.dataset.result = correct ? 'correct' : 'incorrect';
+      summaryStatus.setAttribute(
+        'aria-label',
+        correct ? 'Resposta correta' : 'Resposta incorreta',
+      );
+    };
     const showProgress = () => {
+      showSummaryStatus();
       selfChecks.forEach((button) => {
         button.setAttribute(
           'aria-pressed',
@@ -76,7 +97,19 @@ export function setupExercises() {
     const save = (result: NonNullable<ExerciseProgress['result']>) => {
       progress = { result, assistance, resultAssistance: assistance };
       saveExerciseProgress(key, progress);
+      showSummaryStatus();
     };
+    const invalidateResult = () => {
+      if (progress?.result) {
+        progress = { assistance };
+        saveExerciseProgress(key, progress);
+      }
+      effects.reset();
+      delete feedback.dataset.result;
+      feedback.textContent = '';
+      showProgress();
+    };
+    root.addEventListener('exercise-response-changed', invalidateResult);
     const readHelp = () => {
       const saved = readExerciseProgress(key)?.assistance;
       if (saved === 'solution' || (saved === 'hint' && assistance === 'none'))
@@ -244,7 +277,31 @@ export function setupExercises() {
           : Boolean(input.value),
       );
     };
-    root.addEventListener('input', updateClear);
+    const savedResponse = readExerciseResponse(key);
+    if (savedResponse !== undefined) {
+      if (answer.kind === 'choice') {
+        const selected = [...responses].find(
+          (input) => input.value === savedResponse,
+        );
+        if (selected instanceof HTMLInputElement) selected.checked = true;
+      } else if (answer.kind !== 'code' && responses[0]) {
+        responses[0].value = savedResponse;
+      }
+    }
+    root.addEventListener('input', (event) => {
+      const target = event.target;
+      if (
+        !(
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement
+        ) ||
+        ![...responses].includes(target)
+      )
+        return;
+      saveExerciseResponse(key, target.value || undefined);
+      invalidateResult();
+      updateClear();
+    });
     updateClear();
     clear?.addEventListener('click', () => {
       effects.reset();
@@ -253,6 +310,8 @@ export function setupExercises() {
           input.checked = false;
         else input.value = '';
       });
+      saveExerciseResponse(key, undefined);
+      invalidateResult();
       updateClear();
       responses[0]?.focus();
       delete feedback.dataset.result;
