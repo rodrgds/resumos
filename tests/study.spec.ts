@@ -12,7 +12,7 @@ test('continue reading returns to an open exercise in its lesson', async ({
   await question.locator(':scope > details > summary').click();
   await question
     .getByLabel('A tua resposta')
-    .fill('Resposta privada sem persistência');
+    .fill('Resposta privada guardada neste navegador');
   await question.scrollIntoViewIfNeeded();
   await page.goto('/');
   await expect(page.locator('[data-resume]')).toHaveAttribute(
@@ -21,7 +21,9 @@ test('continue reading returns to an open exercise in its lesson', async ({
   );
   await page.locator('[data-resume]').click();
   await expect(question.getByLabel('A tua resposta')).toBeVisible();
-  await expect(question.getByLabel('A tua resposta')).toHaveValue('');
+  await expect(question.getByLabel('A tua resposta')).toHaveValue(
+    'Resposta privada guardada neste navegador',
+  );
   await expect(question).toBeInViewport();
 });
 
@@ -232,7 +234,7 @@ test('numeric answers enforce tolerance and retain help attribution across clear
   );
   await page.reload();
   await question.locator(':scope > details > summary').click();
-  await expect(question.getByLabel('A tua resposta')).toHaveValue('');
+  await expect(question.getByLabel('A tua resposta')).toHaveValue('3.5');
   await expect(question.getByRole('status')).toContainText(
     'após consultar a solução',
   );
@@ -412,10 +414,11 @@ test('the statistics sheet keeps long formulas within a narrow reading page', as
 
 test('practice and print remain readable without JavaScript or storage', async ({
   browser,
+  baseURL,
 }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
-    baseURL: 'http://127.0.0.1:4322',
+    baseURL,
   });
   const page = await context.newPage();
   await page.goto('/exemplo/apontamentos/');
