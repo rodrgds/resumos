@@ -83,7 +83,7 @@ export const questions: PrologQuestion[] = [
     id: 'mt2-allocation-parity',
     title: 'Atribuir presentes com paridade oposta',
     prompt:
-      'Explique as soluções que pres/3 obtém. A variável de índice I representa o destinatário do presente I.',
+      'Explique as soluções que `pres/3` obtém. A variável de índice I representa o destinatário do presente I.',
     answer: {
       kind: 'self',
       checklist: [
@@ -94,7 +94,7 @@ export const questions: PrologQuestion[] = [
     },
     solution: '',
     reasoning:
-      'O presente de índice ímpar só pode ir para uma pessoa de índice par; o presente de índice par só pode ir para uma pessoa de índice ímpar. Não há all_distinct/1 nem uma restrição sobre quantos presentes cada pessoa recebe.',
+      'O presente de índice ímpar só pode ir para uma pessoa de índice par; o presente de índice par só pode ir para uma pessoa de índice ímpar. Não há `all_distinct/1` nem uma restrição sobre quantos presentes cada pessoa recebe.',
     explanation: '/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética',
     definitions:
       ':- use_module(library(clpfd)).\npres(N,K,Vars) :-\n    length(Vars,N), domain(Vars,1,K), indices(1,Vars), labeling([],Vars).\nindices(I,[V|Vs]) :- V mod 2 #\\= I mod 2, J is I+1, indices(J,Vs).\nindices(_,[]).\n% Compatibilidade com a notação domain/3.\ndomain(Vars,Lo,Hi) :- Vars ins Lo..Hi.',
@@ -111,25 +111,25 @@ export const questions: PrologQuestion[] = [
           text: 'a. Não.',
           correct: false,
           explanation:
-            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, X in 1..10 e X mod 2 #\\= 1 deixam um intervalo 2..10; nem todos os ímpares interiores são eliminados antes de labeling.',
+            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, `X in 1..10` e `X mod 2 #\\= 1` deixam um intervalo `2..10`; nem todos os ímpares interiores são eliminados antes de `labeling`.',
         },
         {
           text: 'b. O limite inferior ou superior do domínio das variáveis é alterado.',
           correct: true,
           explanation:
-            'O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, X in 1..10 e X mod 2 #\\= 1 deixam um intervalo 2..10; nem todos os ímpares interiores são eliminados antes de labeling.',
+            'O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, `X in 1..10` e `X mod 2 #\\= 1` deixam um intervalo `2..10`; nem todos os ímpares interiores são eliminados antes de `labeling`.',
         },
         {
           text: 'c. Todos os valores redundantes são removidos dos domínios das variáveis.',
           correct: false,
           explanation:
-            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, X in 1..10 e X mod 2 #\\= 1 deixam um intervalo 2..10; nem todos os ímpares interiores são eliminados antes de labeling.',
+            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, `X in 1..10` e `X mod 2 #\\= 1` deixam um intervalo `2..10`; nem todos os ímpares interiores são eliminados antes de `labeling`.',
         },
         {
           text: 'd. Sim, mas apenas em algumas das variáveis.',
           correct: false,
           explanation:
-            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, X in 1..10 e X mod 2 #\\= 1 deixam um intervalo 2..10; nem todos os ímpares interiores são eliminados antes de labeling.',
+            'Esta opção não corresponde ao modelo pedido. O propagador pode ajustar os extremos do intervalo sem remover todos os valores interiores incompatíveis. Por exemplo, `X in 1..10` e `X mod 2 #\\= 1` deixam um intervalo `2..10`; nem todos os ímpares interiores são eliminados antes de `labeling`.',
         },
       ],
     },
@@ -144,7 +144,7 @@ export const questions: PrologQuestion[] = [
     id: 'mt2-allocation-reification',
     title: 'Construir uma linha binária',
     prompt:
-      'Implemente constroi_bins(+I,+Vars,-LBin) usando materializações. Para cada variável V de Vars, o bit correspondente deve valer 1 se e só se V=I, mantendo a restrição nos dois sentidos. É a linha da pessoa I numa matriz de presentes. O auxiliar constroi_binarias/4 aplica este predicado a cada pessoa de 1 a K.',
+      'Implemente `constroi_bins(+I,+Vars,-LBin)` usando materializações. Para cada variável V de `Vars`, o bit correspondente deve valer 1 se e só se `V=I`, mantendo a restrição nos dois sentidos. É a linha da pessoa I numa matriz de presentes. O auxiliar `constroi_binarias/4` aplica este predicado a cada pessoa de 1 a K.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -175,7 +175,7 @@ export const questions: PrologQuestion[] = [
     solution:
       ':- use_module(library(clpfd)).\nconstroi_bins(_,[],[]).\nconstroi_bins(I,[V|Vs],[B|Bs]) :-\n    B #<==> (V #= I), constroi_bins(I,Vs,Bs).',
     reasoning:
-      'A equivalência reificada B #<==> (V #= I) permite deduzir o bit a partir do destinatário e restringir o destinatário a partir do bit.',
+      'A equivalência reificada `B #<==> (V #= I)` permite deduzir o bit a partir do destinatário e restringir o destinatário a partir do bit.',
     explanation: '/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética',
     definitions:
       'constroi_binarias(I,K,Vars,[LBin|LBins]) :-\n    I =< K, !, constroi_bins(I,Vars,LBin),\n    J is I+1, constroi_binarias(J,K,Vars,LBins).\nconstroi_binarias(_,_,_,[]).',
@@ -184,7 +184,7 @@ export const questions: PrologQuestion[] = [
     id: 'mt2-allocation-compartments',
     title: 'Distribuir objetos pelo armário',
     prompt:
-      'Implemente prat(+Prateleiras,+Objetos,-Vars) em CLP(FD). Prateleiras é a matriz de capacidades e Objetos contém pares Peso-Volume. Vars indica o compartimento de cada objeto. No exemplo pequeno prat([[30,6],[75,15]],[176-40,396-24,474-35,250-8,149-5,479-5],Vars), as soluções são [3,1,3,4,1,4] e [3,1,3,4,2,4]. Os factos do exemplo maior estão no código inicial; uma resposta parcial é Vars=[12,13,9,14,20,8,20,10,16,18|...].',
+      'Implemente `prat(+Prateleiras,+Objetos,-Vars)` em CLP(FD). `Prateleiras` é a matriz de capacidades e `Objetos` contém pares `Peso-Volume`. `Vars` indica o compartimento de cada objeto. No exemplo pequeno `prat([[30,6],[75,15]],[176-40,396-24,474-35,250-8,149-5,479-5],Vars)`, as soluções são `[3,1,3,4,1,4]` e `[3,1,3,4,2,4]`. Os factos do exemplo maior estão no código inicial; uma resposta parcial é `Vars=[12,13,9,14,20,8,20,10,16,18|...]`.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -220,7 +220,7 @@ export const questions: PrologQuestion[] = [
     id: 'mt2-allocation-compartment-model',
     title: 'Escolher as variáveis do armário',
     prompt:
-      'Descreva a modelação do armário: variáveis de decisão, domínios e significado. Prateleiras contém a matriz de capacidades e cada objeto é um par Peso-Volume.',
+      'Descreva a modelação do armário: variáveis de decisão, domínios e significado. `Prateleiras` contém a matriz de capacidades e cada objeto é um par `Peso-Volume`.',
     answer: {
       kind: 'self',
       checklist: [
@@ -231,7 +231,7 @@ export const questions: PrologQuestion[] = [
     },
     solution: '',
     reasoning:
-      'Use X_i em 1..K para o compartimento do objeto i. Para cada compartimento j, B_ij equivale a X_i=j. A soma Volume_i×B_ij não excede a capacidade j; a soma Peso_i×B_ij é o peso j. Para cada posição que tenha uma posição inferior na mesma coluna, imponha Peso_j ≤ Peso_inferior. A pesquisa etiqueta os X_i.',
+      'Use X_i em `1..K` para o compartimento do objeto i. Para cada compartimento j, B_ij equivale a X_i=j. A soma Volume_i×B_ij não excede a capacidade j; a soma Peso_i×B_ij é o peso j. Para cada posição que tenha uma posição inferior na mesma coluna, imponha Peso_j ≤ Peso_inferior. A pesquisa etiqueta os X_i.',
     explanation: '/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética',
     definitions:
       'armario([[20,30,6,50],[50,75,15,125],[60,90,18,150],[30,45,9,75],[40,60,12,100]]).\nobjetos([114-54,305-30,295-53,376-39,468-84,114-48,337-11,259-80,473-28,386-55,258-39,391-37,365-76,251-18,144-42,399-94,463-48,473-9,132-56,367-81]).',
@@ -242,7 +242,7 @@ export const questions: PrologQuestion[] = [
     id: 'mt2-allocation-furniture',
     title: 'Planear o transporte de mobília',
     prompt:
-      'Construa a programação em CLP(FD), minimizando o instante de conclusão e respeitando o máximo. Para testar sem impor um formato de impressão, implemente furniture(-Schedule,-Total): Schedule contém task(Nome,Inicio,Fim), uma vez por objeto. Os factos objeto/3, homens/1 e tempo_max/1 são fornecidos. O predicado de apresentação furniture/0 é opcional. Uma programação ótima é piano 0–30, cadeira 0–10, cama 30–45 e mesa 45–60, com Total=60; qualquer programação ótima válida é aceite.',
+      'Construa a programação em CLP(FD), minimizando o instante de conclusão e respeitando o máximo. Para testar sem impor um formato de impressão, implemente `furniture(-Schedule,-Total)`: `Schedule` contém `task(Nome,Inicio,Fim)`, uma vez por objeto. Os factos `objeto/3`, `homens/1` e `tempo_max/1` são fornecidos. O predicado de apresentação `furniture/0` é opcional. Uma programação ótima é piano 0–30, cadeira 0–10, cama 30–45 e mesa 45–60, com `Total=60`; qualquer programação ótima válida é aceite.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -269,7 +269,7 @@ export const questions: PrologQuestion[] = [
     solution:
       ':- use_module(library(clpfd)).\n:- dynamic objeto/3, homens/1, tempo_max/1.\nobjeto(piano,3,30).\nobjeto(cadeira,1,10).\nobjeto(cama,3,15).\nobjeto(mesa,2,15).\nhomens(4).\ntempo_max(60).\nfurniture(Schedule,Total) :-\n    findall(obj(N,R,D),objeto(N,R,D),Objs), homens(Limit), tempo_max(Max),\n    same_length(Objs,Starts), same_length(Objs,Ends),\n    Starts ins 0..Max, Ends ins 0..Max,\n    build_jobs(Objs,Starts,Ends,Tasks,Schedule),\n    cumulative(Tasks,[limit(Limit)]), max_end(Ends,Total),\n    once(labeling([min(Total),ffc,bisect],Starts)).\nbuild_jobs([],[],[],[],[]).\nbuild_jobs([obj(N,R,D)|Os],[S|Ss],[E|Es],[task(S,D,E,R,N)|Ts],[task(N,S,E)|Ps]) :-\n    E #= S+D, build_jobs(Os,Ss,Es,Ts,Ps).\nmax_end([],0).\nmax_end([E|Es],M) :- max_end(Es,Rest), M #= max(E,Rest).',
     reasoning:
-      'Uma variável indica o início de cada tarefa. O fim é início mais duração. cumulative/2 limita trabalhadores simultâneos, o máximo dos fins dá o tempo total e a pesquisa minimiza esse total.',
+      'Uma variável indica o início de cada tarefa. O fim é início mais duração. `cumulative/2` limita trabalhadores simultâneos, o máximo dos fins dá o tempo total e a pesquisa minimiza esse total.',
     explanation: '/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética',
     context:
       'Existem quatro trabalhadores e, no máximo, 60 minutos. Transportar um piano exige três trabalhadores durante 30 minutos; uma cadeira, um durante 10; uma cama, três durante 15; uma mesa, dois durante 15. As tarefas não podem ser interrompidas. Pretende-se concluir tudo no menor tempo possível. O programa tem de funcionar também com outros objetos, números de trabalhadores e limites de tempo.',
@@ -289,7 +289,7 @@ export const questions: PrologQuestion[] = [
     },
     solution: '',
     reasoning:
-      'Use um início S_i em 0..TempoMax por objeto e um fim E_i=S_i+Duração_i, também limitado por TempoMax. Cada tarefa consome o número de trabalhadores indicado no seu facto durante [S_i,E_i). cumulative/2 limita o consumo agregado ao total de homens. Total é o máximo dos E_i e deve ser minimizado na pesquisa.',
+      'Use um início S_i em `0..TempoMax` por objeto e um fim E_i=S_i+Duração_i, também limitado por `TempoMax`. Cada tarefa consome o número de trabalhadores indicado no seu facto durante [S_i,E_i). `cumulative/2` limita o consumo agregado ao total de homens. `Total` é o máximo dos E_i e deve ser minimizado na pesquisa.',
     explanation: '/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética',
     definitions:
       ':- dynamic objeto/3, homens/1, tempo_max/1.\nobjeto(piano,3,30).\nobjeto(cadeira,1,10).\nobjeto(cama,3,15).\nobjeto(mesa,2,15).\nhomens(4).\ntempo_max(60).',

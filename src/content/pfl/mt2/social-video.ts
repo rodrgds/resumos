@@ -7,7 +7,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `video_username(?VideoID, ?Name)`. O vídeo 10 pertence a Alice; Carla tem os vídeos 13 e 14.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -38,7 +38,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `odd_birthyear(?UserID)`, que sucede quando o ano de nascimento é ímpar. Os resultados são 1, 3, 4 e 5.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -69,7 +69,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `are_friends(?UserID1, ?UserID2)`: cada utilizador segue o outro. A relação é simétrica.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -100,7 +100,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `num_followers(+UserID, ?NumFollowers)`, contando os outros utilizadores distintos que o seguem. O utilizador 1 tem três seguidores.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -131,7 +131,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `print_genre_videos(+Genre)`. Imprime todos os títulos e nomes dos autores como `Title by Name`, um por linha, em qualquer ordem; deve sempre suceder. Não uses recursão.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -168,7 +168,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `can_see_all_videos(+UserID, +ListOfVideoIDs)`. Uma pessoa vê os seus vídeos e os de quem segue; todos os identificadores devem existir e ser visíveis. 1 vê `[12,13,10]`, mas não `[15]`.',
     context:
-      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos dados representam utilizadores, datas de nascimento, pessoas seguidas e vídeos. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',

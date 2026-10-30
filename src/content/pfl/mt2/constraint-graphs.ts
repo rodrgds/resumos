@@ -60,7 +60,7 @@ export const questions: PrologQuestion[] = [
     'Em que fase está o erro do programa? A seleção de posições é feita antes de as etiquetar.',
     [
       'Definição do domínio das variáveis de decisão',
-      'Definição da pesquisa no espaço de estados (labeling)',
+      'Definição da pesquisa no espaço de estados (`labeling`)',
       'Definição do número de variáveis de decisão',
       'Definição das restrições',
     ],

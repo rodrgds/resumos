@@ -140,7 +140,7 @@ export const questions: PrologQuestion[] = [
       '`setof/3` falha sem soluções e `findall/3` lança um erro.',
     ],
     2,
-    'findall devolve uma lista vazia quando não há soluções; setof falha.',
+    '`findall` devolve uma lista vazia quando não há soluções; `setof` falha.',
   ),
   choice(
     'io',

@@ -38,7 +38,7 @@ function exercise(
     title,
     prompt,
     context: given.includes(facts)
-      ? 'Os factos usam author(ID, Nome, AnoNascimento, País) e book(Título, IDAutor, Ano, Páginas, Géneros).'
+      ? 'Os factos usam `author(ID, Nome, AnoNascimento, País)` e `book(Título, IDAutor, Ano, Páginas, Géneros)`.'
       : undefined,
     answer: {
       kind: 'code',
@@ -51,7 +51,8 @@ function exercise(
     explanation: link,
   };
 }
-const noSets = ' Não uses findall/3, setof/3, bagof/3 nem bibliotecas SICStus.';
+const noSets =
+  ' Não uses `findall/3`, `setof/3`, `bagof/3` nem bibliotecas SICStus.';
 function choice(
   id: string,
   title: string,
@@ -94,7 +95,7 @@ export const questions: PrologQuestion[] = [
       noSets,
     facts,
     `book_genre(T,G) :- book(T,_,_,_,Gs), member(G,Gs).`,
-    'A pesquisa de member percorre os géneros por retrocesso.',
+    'A pesquisa de `member` percorre os géneros por retrocesso.',
     [
       {
         name: 'Vários géneros',
@@ -223,7 +224,7 @@ export const questions: PrologQuestion[] = [
     'Define `country_authors(?Country, ?Authors)`, relacionando cada país de nascimento com a lista de todos os seus autores. Para USA são John Grisham, Stephen King e Michael Crichton; para Zambia, Wilbur Smith.',
     facts,
     `country_authors(C,As) :- bagof(A,I^Y^author(I,A,Y,C),As).`,
-    'bagof agrupa por país e as variáveis existenciais não criam grupos separados.',
+    '`bagof` agrupa por país e as variáveis existenciais não criam grupos separados.',
     [
       {
         name: 'Países',
@@ -281,10 +282,10 @@ predX(R, [A|B], [C|D], [E|F]) :- S =.. [R,A,C,E], S, predX(R,B,D,F).`,
     `most_similar(Book,C1,C2,C1) :- similarity(Book,C1,S1), similarity(Book,C2,S2), S1 >= S2, !.
 most_similar(Book,C1,C2,C2) :- similarity(Book,C1,S1), similarity(Book,C2,S2), S2 >= S1.`,
     [
-      'É necessário conhecer a implementação de similarity/3 para classificar o corte.',
-      'O corte pode ser vermelho ou verde consoante os resultados de similarity/3.',
+      'É necessário conhecer a implementação de `similarity/3` para classificar o corte.',
+      'O corte pode ser vermelho ou verde consoante os resultados de `similarity/3`.',
       'O corte não é vermelho nem verde e pode ser retirado sem efeitos.',
-      'O corte é vermelho porque removê-lo altera os resultados de most_similar/4.',
+      'O corte é vermelho porque removê-lo altera os resultados de `most_similar/4`.',
       'O corte é verde porque removê-lo só afeta o desempenho.',
     ],
     3,
@@ -296,11 +297,11 @@ most_similar(Book,C1,C2,C2) :- similarity(Book,C1,S1), similarity(Book,C2,S2), S
     'Considera `predY/2` com várias cláusulas. O que faz uma chamada `predZ(predY,A,B)`?',
     String.raw`predZ(R,A,C) :- T =.. [R,_,_], retract((T :- S)), E =.. [R,A,C], E, asserta((T :- S)).`,
     [
-      'Substitui os argumentos da primeira cláusula de predY/2 pelos argumentos de predZ/3.',
-      'Altera a ordem das cláusulas de predY/2.',
-      'Altera a ordem dos objetivos de cada cláusula de predY/2.',
-      'Simula uma chamada a predY/2 sem considerar a primeira cláusula.',
-      'Nada, qualquer chamada a predZ/3 falha sempre.',
+      'Substitui os argumentos da primeira cláusula de `predY/2` pelos argumentos de `predZ/3`.',
+      'Altera a ordem das cláusulas de `predY/2`.',
+      'Altera a ordem dos objetivos de cada cláusula de `predY/2`.',
+      'Simula uma chamada a `predY/2` sem considerar a primeira cláusula.',
+      'Nada, qualquer chamada a `predZ/3` falha sempre.',
     ],
     3,
     'Retira temporariamente a primeira cláusula, chama o predicado e volta a inseri-la após sucesso. Se a chamada falhar, a reinserção não é executada.',

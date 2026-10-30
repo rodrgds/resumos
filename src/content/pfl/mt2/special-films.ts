@@ -7,7 +7,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `plays_twins(?Actor, ?Movie)`, verdadeiro quando o ator interpreta pelo menos duas personagens diferentes no mesmo filme ou série.',
     context:
-      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -38,7 +38,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `actor_movies(+Actor, -Movies)`, a lista de filmes e séries distintos em que o ator participa. A ordem não é relevante.',
     context:
-      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -69,7 +69,7 @@ export const questions: PrologQuestion[] = [
     prompt:
       'Define `changeSelf/0`, substituindo cada facto cuja personagem é igual ao ator por um facto com personagem `self`, mantendo filme e ator. Deve sempre suceder. Por exemplo, `by(stephenColbert,dailyShow,stephenColbert)` passa a `by(self,dailyShow,stephenColbert)`.',
     context:
-      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses findall, setof, bagof nem bibliotecas SICStus.',
+      'Os factos `by(Character, Movie, Actor)` associam personagens, filmes ou séries e atores. Não uses `findall`, `setof`, `bagof` nem bibliotecas SICStus.',
     answer: {
       kind: 'code',
       language: 'prolog',
