@@ -7,7 +7,7 @@ export interface CodeTest {
 
 export interface CodeAnswer {
   kind: 'code';
-  language: 'python' | 'javascript' | 'haskell';
+  language: 'python' | 'javascript' | 'haskell' | 'prolog';
   starter: string;
   tests: CodeTest[];
 }

@@ -3,6 +3,7 @@ import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
 import { StreamLanguage } from '@codemirror/language';
 import { haskell } from '@codemirror/legacy-modes/mode/haskell';
+import { prolog } from 'codemirror-lang-prolog';
 import {
   readExerciseResponse,
   saveExerciseResponse,
@@ -133,7 +134,10 @@ export function setupCodeExercises() {
             };
             const request = {
               language: answer.language,
-              code: test.code ? `${code}\n\n${test.code}` : code,
+              code:
+                (answer.language === 'prolog'
+                  ? ':- style_check(-singleton).\n'
+                  : '') + (test.code ? `${code}\n\n${test.code}` : code),
               input: test.input || '',
             };
             try {
@@ -219,7 +223,9 @@ export function setupCodeExercises() {
                 ? python()
                 : answer.language === 'haskell'
                   ? StreamLanguage.define(haskell)
-                  : javascript(),
+                  : answer.language === 'prolog'
+                    ? prolog()
+                    : javascript(),
             ),
             EditorView.contentAttributes.of({
               'aria-label': `Código ${answer.language}`,
