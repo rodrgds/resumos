@@ -311,7 +311,12 @@ export function setupCodeExercises() {
       const disclosure = root.closest<HTMLDetailsElement>(
         '.exercise-disclosure',
       );
-      if (disclosure && !disclosure.open) {
+      const modal = root.closest<HTMLElement>('[data-exercise-modal]');
+      if (modal) {
+        modal.addEventListener('exercise-modal-open', initialize, {
+          once: true,
+        });
+      } else if (disclosure && !disclosure.open) {
         const onOpen = () => {
           if (!disclosure.open || !root.isConnected) return;
           disclosure.removeEventListener('toggle', onOpen);

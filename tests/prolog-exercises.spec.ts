@@ -109,5 +109,7 @@ test('the MT2 bank is a course page and grades an optimization exercise', async 
       'aria-label',
       'Resposta correta',
     );
+    await page.keyboard.press('Escape');
+    await expect(exercise.locator('dialog')).toBeHidden();
   }
 });

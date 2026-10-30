@@ -20,7 +20,10 @@ export function showExerciseNotice(message: string) {
   notice.className = 'exercise-notice';
   notice.setAttribute('aria-hidden', 'true');
   notice.textContent = message;
-  document.body.append(notice);
+  // An open exercise modal sits in the top layer, above anything in the body.
+  (
+    document.querySelector('dialog.exercise-modal[open]') ?? document.body
+  ).append(notice);
   noticeTimer = window.setTimeout(dismissNotice, 3500);
 }
 

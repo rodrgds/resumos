@@ -33,3 +33,13 @@ export function saveExerciseResponse(
     // Practice remains available when browser storage is unavailable.
   }
 }
+
+export function clearExerciseResponses(keys: string[]) {
+  try {
+    const records = readRecords();
+    keys.forEach((key) => delete records[key]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    // Practice remains available when browser storage is unavailable.
+  }
+}

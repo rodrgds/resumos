@@ -68,3 +68,58 @@ test('an IO exercise checks the reader function with captured input and output',
     'Resposta incorreta',
   );
 });
+
+test('the exercise bank opens exercises in a modal, picks a random unsolved one and clears solved ones after confirming', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/cadeiras/pfl/exercicios-mt1/');
+  const total = await page.locator('[data-exercise]').count();
+  const count = page.locator('[data-bank-count]');
+  await expect(count).toHaveText(`0 de ${total} resolvidos`);
+
+  const first = page.locator('[data-exercise]').first();
+  await first.locator('.exercise-disclosure > summary').click();
+  const modal = first.locator('dialog');
+  await expect(modal).toBeVisible();
+  await expect(modal.getByRole('heading', { level: 2 })).toHaveText(
+    (await first.locator('.exercise-title').innerText()).trim(),
+  );
+  await expect(page).toHaveURL(
+    new RegExp(`#${await first.getAttribute('id')}$`),
+  );
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+  await expect(page).not.toHaveURL(/#/);
+
+  await page.getByRole('button', { name: /Exercício aleatório/ }).click();
+  await expect(page.locator('dialog.exercise-modal[open]')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(() => {
+    const key =
+      document.querySelector<HTMLElement>('[data-exercise]')!.dataset
+        .progressKey!;
+    localStorage.setItem(
+      'resumos-exercise-progress',
+      JSON.stringify({ [key]: { assistance: 'none', result: 'correct' } }),
+    );
+  });
+  await page.reload();
+  await expect(count).toHaveText(`1 de ${total} resolvidos`);
+  await page.getByRole('button', { name: 'Por resolver', exact: true }).click();
+  await expect(page.locator('[data-exercise]:not([hidden])')).toHaveCount(
+    total - 1,
+  );
+
+  await page.getByRole('button', { name: 'Limpar resolvidos' }).click();
+  const confirm = page.locator('[data-bank-confirm]');
+  await confirm.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(count).toHaveText(`1 de ${total} resolvidos`);
+  await page.getByRole('button', { name: 'Limpar resolvidos' }).click();
+  await confirm.getByRole('button', { name: 'Limpar tudo' }).click();
+  await expect(count).toHaveText(`0 de ${total} resolvidos`);
+  await expect(
+    page.getByRole('button', { name: 'Limpar resolvidos' }),
+  ).toBeDisabled();
+});

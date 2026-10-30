@@ -13,6 +13,7 @@ import {
   createExerciseFeedback,
   showExerciseNotice,
 } from '../lib/exercise-feedback';
+import { upgradeExerciseModal } from './exercise-modal';
 
 type Answer =
   | { kind: 'self' }
@@ -24,6 +25,7 @@ export function setupExercises() {
   document.querySelectorAll<HTMLElement>('[data-exercise]').forEach((root) => {
     if (root.dataset.ready) return;
     root.dataset.ready = 'true';
+    if (root.hasAttribute('data-exercise-modal')) upgradeExerciseModal(root);
     const answer: Answer = JSON.parse(root.dataset.answer!);
     const key = root.dataset.progressKey!;
     const feedback = root.querySelector<HTMLElement>('[data-feedback]')!;

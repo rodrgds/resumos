@@ -10,6 +10,7 @@ export interface ExerciseProgress {
   resultAssistance?: Assistance;
 }
 const STORAGE_KEY = 'resumos-exercise-progress';
+export const EXERCISE_PROGRESS_EVENT = 'exercise-progress-changed';
 
 function readRecords(): Record<string, ExerciseProgress> {
   try {
@@ -48,6 +49,19 @@ export function saveExerciseProgress(key: string, progress: ExerciseProgress) {
     const records = readRecords();
     delete records[key];
     records[key] = progress;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    /* Practice remains available when browser storage is unavailable. */
+  }
+  window.dispatchEvent(new Event(EXERCISE_PROGRESS_EVENT));
+}
+export function isExerciseSolved(progress: ExerciseProgress | undefined) {
+  return progress?.result === 'correct' || progress?.result === 'self-correct';
+}
+export function clearExerciseProgress(keys: string[]) {
+  try {
+    const records = readRecords();
+    keys.forEach((key) => delete records[key]);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   } catch {
     /* Practice remains available when browser storage is unavailable. */
