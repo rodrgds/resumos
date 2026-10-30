@@ -75,7 +75,7 @@ practices:
   - exemplo/praticar-somas
 ```
 
-As questões aparecem recolhidas no fim da lição. Por defeito, cada conjunto precisa de uma lição publicada da mesma cadeira; referências inválidas interrompem o build. Para uma prova ou banco de questões independente, usa `section: exercicios` e `exerciseScope: course`: ganha uma página e uma ligação em Exercícios, fora da sequência de lições. Escolhe questões que peçam decisões diferentes.
+As questões aparecem recolhidas no fim da lição. Por defeito, cada conjunto precisa de uma lição publicada da mesma cadeira; referências inválidas interrompem o build. Para uma prova ou banco de questões independente, usa `section: exercicios` e `exerciseScope: course`: ganha uma página e uma ligação em Exercícios, fora da sequência de lições. Escolhe questões que peçam decisões diferentes. Dá a cada exercício um título curto que descreva a tarefa ou o tema, sem revelar a resposta. Evita títulos que contenham apenas o número da questão.
 
 ```mdx
 import Exercise from '../../../components/Exercise.astro';
