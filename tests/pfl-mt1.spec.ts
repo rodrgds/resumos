@@ -133,6 +133,13 @@ test('an answered exercise offers a next random exercise', async ({ page }) => {
     name: 'Abrir outro exercício aleatório',
   });
   await expect(random).toBeHidden();
+  await modal.locator('input[type=radio]').nth(0).check();
+  await modal.getByRole('button', { name: 'Verificar resposta' }).click();
+  await expect(modal.locator('[data-feedback]')).toHaveAttribute(
+    'data-result',
+    'attempted',
+  );
+  await expect(random).toBeHidden();
   await modal.locator('input[type=radio]').nth(3).check();
   await modal.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(modal.locator('[data-feedback]')).toHaveAttribute(
