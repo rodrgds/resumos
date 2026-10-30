@@ -115,7 +115,7 @@ Na autoavaliação, o leitor compara com a solução e indica se está certo ou 
 
 ### Respostas de programação
 
-`code` aceita Python, JavaScript, Haskell e Prolog. Os casos são públicos, executados separadamente em motores descartáveis. Em Haskell, o código inicial define as funções e cada teste fornece `main`, sem stdin. Em Prolog, cada teste define `main/0`, que o motor chama depois de consultar o programa; `input` fornece a entrada padrão. Define entradas normais e casos limite, incluindo a entrada vazia quando fizer sentido. Verifica uma implementação alternativa e uma errada, sem comparar o texto do código.
+`code` aceita Python, JavaScript, Haskell e Prolog. Os casos são públicos e usam motores descartáveis. Em Haskell, cada verificação partilha um compilador entre os casos, carregando um programa novo em cada caso; o código inicial define as funções e os testes fornecem `main`, sem stdin. Em Prolog, cada teste define `main/0`, que o motor chama depois de consultar o programa; `input` fornece a entrada padrão. Define entradas normais e casos limite, incluindo a entrada vazia quando fizer sentido. Verifica uma implementação alternativa e uma errada, sem comparar o texto do código.
 
 ```mdx
 <Exercise

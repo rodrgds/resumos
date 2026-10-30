@@ -16,6 +16,10 @@ import {
 } from '../lib/code-exercise';
 import { runProgram } from '../lib/runners/run';
 import { preparePython } from '../lib/runners/python';
+import {
+  prepareHaskell,
+  createHaskellVerification,
+} from '../lib/runners/haskell';
 import { OUTPUT_LIMIT, type RunMessage } from '../lib/runners/types';
 
 const MAX_TEST_MS = 120_000;
@@ -77,7 +81,11 @@ export function setupCodeExercises() {
           cancel = undefined;
           finish();
         };
-        const evaluate = (test: CodeTest, code: string): Promise<TestOutcome> =>
+        const evaluate = (
+          test: CodeTest,
+          code: string,
+          haskellVerification?: ReturnType<typeof createHaskellVerification>,
+        ): Promise<TestOutcome> =>
           new Promise((resolve, reject) => {
             let text = '';
             let dispose: (() => void) | undefined;
@@ -141,7 +149,9 @@ export function setupCodeExercises() {
               input: test.input || '',
             };
             try {
-              dispose = runProgram(request, receive, root);
+              dispose = haskellVerification
+                ? haskellVerification.run(request, receive)
+                : runProgram(request, receive, root);
             } catch (error) {
               cleanup();
               resolve({
@@ -166,10 +176,14 @@ export function setupCodeExercises() {
           output.textContent = '';
           clearFeedback();
           const code = editor.state.doc.toString();
+          const haskellVerification =
+            answer.language === 'haskell'
+              ? createHaskellVerification(root)
+              : undefined;
           try {
             for (const [index, test] of answer.tests.entries()) {
               status.textContent = `Teste ${index + 1}/${answer.tests.length}: ${test.name}`;
-              const outcome = await evaluate(test, code);
+              const outcome = await evaluate(test, code, haskellVerification);
               if (id !== runId) return;
               if (!outcome.passed) {
                 result.dataset.result = 'attempted';
@@ -208,6 +222,7 @@ export function setupCodeExercises() {
                 error instanceof Error ? error.message : String(error);
             }
           } finally {
+            haskellVerification?.dispose();
             if (id === runId && running) finish();
           }
         };
@@ -261,6 +276,10 @@ export function setupCodeExercises() {
         source.hidden = true;
         check.disabled = false;
         check.onclick = () => void run();
+        if (answer.language === 'haskell') {
+          prepareHaskell();
+          root.addEventListener('focusin', prepareHaskell);
+        }
         if (answer.language === 'python')
           root.addEventListener('focusin', preparePython);
         stop.onclick = () => {

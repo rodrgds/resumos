@@ -30,6 +30,8 @@ Cada execução recebe código, ficheiros de apoio e entrada declarada num Worke
 
 Python prepara um intérprete ao focar um editor e prepara o seguinte enquanto o programa corre. A página partilha apenas um Worker de reserva que ainda não executou código do leitor, através de uma iframe na origem dos motores. Cada execução consome esse Worker e termina-o ao concluir ou parar; nunca se reutilizam variáveis, módulos alterados ou ficheiros de programas anteriores. Fechar a página termina também o Worker de reserva. A primeira utilização de cada motor ou biblioteca precisa de ligação; os ficheiros descarregados ficam em cache local para execuções seguintes.
 
+Nos exercícios Haskell, abrir o editor prepara um compilador sem código do leitor. Uma verificação usa esse compilador para todos os casos, carregando um programa novo em cada caso. Ao terminar, parar ou editar durante a execução, o Worker é eliminado. O compilador seguinte é preparado em paralelo e nunca executou uma resposta anterior. O arranque inicial continua a depender do descarregamento e da preparação do GHC; os testes seguintes evitam repetir esse arranque.
+
 Python, Java, Haskell, Prolog, PHP, SQLite e PostgreSQL usam `resumos-code.pages.dev`, porque os motores têm acesso a JavaScript ou armazenamento. Essa origem publica apenas `runners/dist/`, nunca páginas de leitura. O projeto Cloudflare `resumos-code` compila com `npm ci && npm run build:runners`. Mantém a CSP de produção; a configuração de testes troca apenas a origem autorizada do leitor.
 
 `WebPlayground` usa iframe de origem opaca, sem rede. `allow-forms` permite eventos e validação locais; CSP `form-action 'none'` continua a impedir envios. DartPad é a exceção explícita de compilação externa e só abre por escolha do leitor.

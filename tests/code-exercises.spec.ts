@@ -274,3 +274,27 @@ test('Haskell exercises grade behavior and retain edits until reset', async ({
   await expect(editor).toHaveText('dobro x = x');
   await expect(exercise.locator('[data-feedback]')).toBeEmpty();
 });
+
+test('Haskell initializes one compiler connection for all cases in a verification', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  let connections = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/worker.html') connections++;
+  });
+  await page.goto('/exemplo/exercise-help/');
+  const exercise = page.locator('#haskell-double');
+  await exercise.locator('.exercise-disclosure > summary').click();
+  await exercise
+    .getByRole('textbox', { name: 'Código haskell', exact: true })
+    .fill('dobro x = x + x');
+  await exercise
+    .getByRole('button', { name: 'Verificar código', exact: true })
+    .click();
+  await expect(exercise.locator('[data-code-status]')).toHaveText(
+    '2/2 testes passaram.',
+    { timeout: 90_000 },
+  );
+  expect(connections).toBe(1);
+});
