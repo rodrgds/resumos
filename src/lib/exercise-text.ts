@@ -10,8 +10,15 @@ const processor = createMarkdownProcessor({
   rehypePlugins: [rehypeKatex],
 });
 
+/** Escapes a leading list marker so short answers such as "2." stay inline. */
+function escapeLeadingListMarker(text: string) {
+  return text.replace(/^(\d+)\.(?=\s|$)/, '$1\\.').replace(/^-(\s|$)/, '\\-$1');
+}
+
 export async function renderExerciseText(text: string) {
-  const rendered = await (await processor).render(text);
+  const rendered = await (
+    await processor
+  ).render(escapeLeadingListMarker(text));
   const fragment = parseFragment(rendered.code);
   const nodes = fragment.childNodes.filter(
     (node) =>
@@ -22,6 +29,6 @@ export async function renderExerciseText(text: string) {
   if (nodes.length === 1 && 'tagName' in paragraph && paragraph.tagName === 'p')
     return serialize(paragraph);
   throw new Error(
-    'Exercise text fields accept inline Markdown. Use slots for blocks.',
+    `Exercise text fields accept inline Markdown. Use slots for blocks. Received: ${text.slice(0, 240)}`,
   );
 }

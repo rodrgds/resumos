@@ -32,6 +32,7 @@ function exercise(
   solution: string,
   reasoning: string,
   tests: Test[],
+  restriction?: string,
 ): PrologQuestion {
   return {
     id: `mt2-books-${id}`,
@@ -40,6 +41,7 @@ function exercise(
     context: given.includes(facts)
       ? 'Os factos usam `author(ID, Nome, AnoNascimento, País)` e `book(Título, IDAutor, Ano, Páginas, Géneros)`.'
       : undefined,
+    ...(restriction ? { restriction } : {}),
     answer: {
       kind: 'code',
       language: 'prolog',
@@ -87,6 +89,8 @@ const rotator = `rotate(C,I,R,N) :- nth1(I,C,D,Rest), length(D,L), L>0, K is R m
 const matcher = `matches([],[]).
 matches([[H|_]|Ds],[H|Ks]) :- matches(Ds,Ks).`;
 const mover = `move(C,N) :- nth1(I,C,D), length(D,L), Max is L-1, between(1,Max,R), rotate(C,I,R,N).`;
+const noLibraries =
+  'Não utilizes nenhuma biblioteca do Prolog, excepto a CLPFD.';
 export const questions: PrologQuestion[] = [
   exercise(
     'genre',
@@ -352,6 +356,7 @@ A wrote T at N :- author_wrote_book_at_age(A,T,N).`,
         output: 'nao',
       },
     ],
+    noLibraries,
   ),
   exercise(
     'matches',
@@ -377,6 +382,7 @@ A wrote T at N :- author_wrote_book_at_age(A,T,N).`,
         output: 'nao',
       },
     ],
+    noLibraries,
   ),
   exercise(
     'move',
@@ -398,6 +404,7 @@ A wrote T at N :- author_wrote_book_at_age(A,T,N).`,
         output: '[]',
       },
     ],
+    noLibraries,
   ),
   exercise(
     'path',
@@ -425,5 +432,6 @@ bfs([[C|Path]|Queue],K,States) :- findall([N,C|Path],(move(C,N), \+ member(N,[C|
         output: 'nao',
       },
     ],
+    noLibraries,
   ),
 ];

@@ -1,0 +1,111 @@
+---
+import Exercise from './Exercise.astro';
+import CodeSnippet from './CodeSnippet.astro';
+import { renderMarkdown } from '../lib/exercise-markdown';
+import type { ExamQuestion } from '../lib/exam-question';
+
+interface Props {
+  questions: ExamQuestion[];
+}
+const { questions } = Astro.props;
+
+const rendered = await Promise.all(
+  questions.map(async (question) => ({
+    question,
+    prompt: await renderMarkdown(question.prompt),
+    context: question.context ? await renderMarkdown(question.context) : '',
+    solution: await renderMarkdown(question.solution),
+    reasoning: question.reasoning
+      ? await renderMarkdown(question.reasoning)
+      : '',
+    hint: question.hint ? await renderMarkdown(question.hint) : '',
+    hintMore: question.hintMore ? await renderMarkdown(question.hintMore) : '',
+    mistakes: question.mistakes ? await renderMarkdown(question.mistakes) : '',
+  })),
+);
+---
+
+{rendered.map(
+  ({
+    question: q,
+    prompt,
+    context,
+    solution,
+    reasoning,
+    hint,
+    hintMore,
+    mistakes,
+  }) => (
+    <Exercise
+      id={q.id}
+      title={q.title}
+      explanation={q.explanation?.includes('#') ? q.explanation : undefined}
+      restriction={q.restriction}
+      answer={q.answer}
+      revision={q.revision}
+    >
+      {q.source && <p class="exam-source">{q.source}</p>}
+      {context && <Fragment set:html={context} />}
+      {q.definitions && (
+        <CodeSnippet
+          language={q.definitionsLanguage ?? 'text'}
+          code={q.definitions}
+        />
+      )}
+      <Fragment set:html={prompt} />
+      {q.figures?.map((figure) => (
+        <figure class="question-figure">
+          <figcaption>{figure.label}</figcaption>
+          <div
+            class="diagram-figure"
+            role="img"
+            aria-label={figure.alt}
+            tabindex="0"
+            set:html={figure.svg}
+          />
+        </figure>
+      ))}
+      {hint && <Fragment slot="hint" set:html={hint} />}
+      {hintMore && <Fragment slot="hint-more" set:html={hintMore} />}
+      {mistakes && <Fragment slot="mistakes" set:html={mistakes} />}
+      <Fragment slot="solution">
+        {q.answer.kind === 'code' ? (
+          <CodeSnippet language={q.answer.language} code={q.solution} />
+        ) : (
+          <Fragment set:html={solution} />
+        )}
+        {reasoning && <Fragment set:html={reasoning} />}
+      </Fragment>
+    </Exercise>
+  ),
+)}
+
+<style>
+  .exam-source {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font:
+      500 12px/1.5 'Manrope Variable',
+      sans-serif;
+  }
+  .question-figure {
+    margin-inline: 0;
+  }
+  .question-figure figcaption {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .question-figure .diagram-figure {
+    overflow-x: auto;
+    color: var(--text);
+  }
+  .question-figure :global(svg) {
+    display: block;
+    max-width: none;
+    height: auto;
+  }
+  .question-figure .diagram-figure:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+</style>

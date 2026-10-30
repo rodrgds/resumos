@@ -5,6 +5,7 @@ export interface PrologQuestion {
   title: string;
   prompt: string;
   context?: string;
+  restriction?: string;
   definitions?: string;
   figures?: { label: string; alt: string; svg: string }[];
   answer:

@@ -153,3 +153,21 @@ test('an answered exercise offers a next random exercise', async ({ page }) => {
   await expect(next).toHaveCount(1);
   await expect(next).not.toHaveAttribute('aria-labelledby', opened!);
 });
+
+test('PFL exercises keep the original exam restrictions visible', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/pfl/exercicios-mt1/');
+  const mt1 = page.locator('#mt1-2024-part2-q1');
+  await mt1.locator('.exercise-disclosure > summary').click();
+  await expect(
+    mt1.locator('dialog.exercise-modal .exercise-restriction'),
+  ).toContainText('library functions');
+
+  await page.goto('/cadeiras/pfl/exercicios-mt2/');
+  const mt2 = page.locator('#mt2-books-rotate');
+  await mt2.locator('.exercise-disclosure > summary').click();
+  await expect(
+    mt2.locator('dialog.exercise-modal .exercise-restriction'),
+  ).toContainText('CLPFD');
+});
