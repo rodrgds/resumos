@@ -123,3 +123,26 @@ test('the exercise bank opens exercises in a modal, picks a random unsolved one 
     page.getByRole('button', { name: 'Limpar resolvidos' }),
   ).toBeDisabled();
 });
+
+test('an answered exercise offers a next random exercise', async ({ page }) => {
+  await page.goto('/cadeiras/pfl/exercicios-mt1/');
+  const first = page.locator('[data-exercise]').first();
+  await first.locator('.exercise-disclosure > summary').click();
+  const modal = first.locator('dialog.exercise-modal');
+  const random = modal.getByRole('button', {
+    name: 'Abrir outro exercício aleatório',
+  });
+  await expect(random).toBeHidden();
+  await modal.locator('input[type=radio]').nth(3).check();
+  await modal.getByRole('button', { name: 'Verificar resposta' }).click();
+  await expect(modal.locator('[data-feedback]')).toHaveAttribute(
+    'data-result',
+    'correct',
+  );
+  await expect(random).toBeVisible();
+  const opened = await modal.getAttribute('aria-labelledby');
+  await random.click();
+  const next = page.locator('dialog.exercise-modal[open]');
+  await expect(next).toHaveCount(1);
+  await expect(next).not.toHaveAttribute('aria-labelledby', opened!);
+});

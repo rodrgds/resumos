@@ -1,3 +1,8 @@
+import {
+  isExerciseSolved,
+  readExerciseProgress,
+} from '../lib/exercise-progress';
+
 const visibleExercises = () => [
   ...document.querySelectorAll<HTMLElement>(
     '[data-exercise-modal]:not([hidden])',
@@ -56,6 +61,34 @@ export function upgradeExerciseModal(root: HTMLElement) {
   const previous = step('Anterior', icons[1], -1);
   const next = step('Seguinte', icons[2], 1);
   footer.append(previous, position, next);
+
+  const feedbackRow = root.querySelector<HTMLElement>(
+    '.exercise-feedback-row',
+  )!;
+  const random = document.createElement('button');
+  random.type = 'button';
+  random.className = 'exercise-random-next';
+  random.setAttribute('aria-label', 'Abrir outro exercício aleatório');
+  random.title = 'Abrir outro exercício aleatório';
+  random.append(icons[3].cloneNode(true));
+  const randomLabel = document.createElement('span');
+  randomLabel.className = 'exercise-random-next-label';
+  randomLabel.textContent = 'Próximo aleatório';
+  random.append(randomLabel);
+  const openRandom = () => {
+    const others = visibleExercises().filter((item) => item !== root);
+    if (!others.length) return;
+    const unsolved = others.filter(
+      (item) =>
+        !isExerciseSolved(readExerciseProgress(item.dataset.progressKey!)),
+    );
+    const pool = unsolved.length ? unsolved : others;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    dialog.close();
+    chosen.dispatchEvent(new Event('exercise-modal-request'));
+  };
+  random.addEventListener('click', openRandom);
+  feedbackRow.append(random);
   dialog.append(header, body, footer);
   root.append(dialog);
   summary.setAttribute('role', 'button');
@@ -67,6 +100,7 @@ export function upgradeExerciseModal(root: HTMLElement) {
     const index = list.indexOf(root);
     previous.disabled = index <= 0;
     next.disabled = index < 0 || index === list.length - 1;
+    random.disabled = list.length < 2;
     position.textContent = index < 0 ? '' : `${index + 1} de ${list.length}`;
     dialog.showModal();
     dialog.scrollTop = 0;
