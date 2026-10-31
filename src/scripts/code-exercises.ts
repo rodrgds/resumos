@@ -144,8 +144,10 @@ export function setupCodeExercises() {
               language: answer.language,
               code:
                 (answer.language === 'prolog'
-                  ? ':- style_check(-singleton).\n'
-                  : '') + (test.code ? `${code}\n\n${test.code}` : code),
+                  ? ':- style_check(-singleton).\n:- style_check(-discontiguous).\n'
+                  : answer.language === 'haskell'
+                    ? '{-# OPTIONS_GHC -w #-}\n'
+                    : '') + (test.code ? `${code}\n\n${test.code}` : code),
               input: test.input || '',
             };
             try {

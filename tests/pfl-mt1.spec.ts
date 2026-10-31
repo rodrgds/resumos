@@ -171,3 +171,30 @@ test('PFL exercises keep the original exam restrictions visible', async ({
     mt2.locator('dialog.exercise-modal .exercise-restriction'),
   ).toContainText('CLPFD');
 });
+
+test('a correct Haskell answer is not rejected by a compiler warning', async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await page.goto('/cadeiras/pfl/exercicios-mt1/');
+  const exercise = page.locator('#mt1-2024-part2-q3');
+  await exercise.locator('.exercise-disclosure > summary').click();
+  const starter = await exercise.evaluate(
+    (node) =>
+      JSON.parse((node as HTMLElement).dataset.answer!).starter as string,
+  );
+  const solution = `unique [] = []
+unique (x:xs) = x : unique [y | y <- xs, y /= x]
+ranking l = sortByCond [(t,leagueScore t l) | t <- unique [t | d <- l, ((h,a),_) <- d, t <- [h,a]]] cmp
+  where cmp (a,x) (b,y) = x > y || (x == y && a < b)`;
+  await exercise
+    .getByRole('textbox', { name: 'Código haskell', exact: true })
+    .fill(starter.replace('ranking = undefined', solution));
+  await exercise
+    .getByRole('button', { name: 'Verificar código', exact: true })
+    .click();
+  await expect(exercise.locator('[data-code-status]')).toHaveText(
+    '3/3 testes passaram.',
+    { timeout: 180_000 },
+  );
+});
